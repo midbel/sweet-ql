@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/midbel/sweet/internal/config"
-	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/format"
-	"github.com/midbel/sweet/internal/ms"
-	"github.com/midbel/sweet/internal/my"
+	// "github.com/midbel/sweet/internal/lang"
+	// "github.com/midbel/sweet/internal/ms"
+	// "github.com/midbel/sweet/internal/my"
 	// "github.com/midbel/sweet/internal/db2"
 )
 
@@ -28,14 +28,6 @@ func runFormat(args []string) error {
 	set.BoolVar(&writer.UseCrlf, "use-crlf", writer.UseCrlf, "use crlf for newline")
 	set.BoolVar(&writer.PrependComma, "prepend-comma", writer.PrependComma, "write comma before expressions")
 	set.BoolVar(&writer.KeepComment, "keep-comment", writer.KeepComment, "keep comments")
-
-	set.Func("dialect", "SQL dialect", func(value string) error {
-		formatter, err := getFormatterForDialect(value)
-		if err == nil {
-			writer.Formatter = formatter
-		}
-		return err
-	})
 	set.Func("compact", "compact rules to apply", compactRules(writer))
 	set.Func("rewrite", "rewrite rules to apply", rewriteRules(writer))
 	set.Func("upper", "upperize mode", upperizeRules(writer))
@@ -200,20 +192,5 @@ func rewriteRules(writer *format.Writer) func(string) error {
 		default:
 		}
 		return nil
-	}
-}
-
-func getFormatterForDialect(name string) (lang.Formatter, error) {
-	switch name {
-	case "my", "mysql":
-		return my.GetFormatter(), nil
-	case "mssql":
-		return ms.GetFormatter(), nil
-	case "ansi", "pg", "postgres", "sqlite", "lite":
-		return format.GetFormatter(), nil
-	case "db2":
-		return format.GetFormatter(), nil
-	default:
-		return nil, fmt.Errorf("%s unsupported dialect", name)
 	}
 }

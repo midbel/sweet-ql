@@ -31,6 +31,7 @@ func TestParserShouldFail(t *testing.T) {
 func TestParser(t *testing.T) {
 	files := []string{
 		"select.sql",
+		"cte.sql",
 		"delete.sql",
 		"update.sql",
 		"merge.sql",

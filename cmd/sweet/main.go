@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/midbel/sweet/internal/lang/complexity"
 	"github.com/midbel/sweet/internal/lang/parser"
 )
 
@@ -26,11 +25,11 @@ func main() {
 	case "format", "fmt":
 		cmd = runFormat
 	case "lint", "check", "verify":
-		cmd = runLint
+		err = fmt.Errorf("not implemented")
+	case "cyclo", "complexity":
+		err = fmt.Errorf("not implemented")
 	case "debug", "ast":
 		cmd = runDebug
-	case "cyclo", "measure":
-		cmd = runCyclo
 	default:
 		err = fmt.Errorf("unknown command %s", n)
 	}
@@ -42,26 +41,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-func runCyclo(files []string) error {
-	run := func(f string) (int, error) {
-		r, err := os.Open(f)
-		if err != nil {
-			return 0, err
-		}
-		defer r.Close()
-		return complexity.Complexity(r)
-	}
-	for _, f := range files {
-		n, err := run(f)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s: %d", f, n)
-		fmt.Println()
-	}
-	return nil
 }
 
 func runDebug(files []string) error {
