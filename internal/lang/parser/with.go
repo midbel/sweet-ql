@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"errors"
-
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/token"
 )
@@ -18,36 +16,23 @@ func (p *Parser) parseWith() (ast.Statement, error) {
 		p.Next()
 	}
 
-	get := func() (ast.Statement, error) {
+	for !p.Done() && !p.Is(token.Keyword) {
 		cte, err := p.parseSubquery()
 		if err != nil {
 			return nil, err
 		}
-		err = errDone
 		switch {
 		case p.Is(token.Comma):
 			p.Next()
 			if p.Is(token.Keyword) {
 				return nil, p.Unexpected("cte", keywordAfterComma)
 			}
-			err = nil
 		case p.Is(token.Keyword):
 		case p.Is(token.Comment):
 		default:
 			return nil, p.Unexpected("cte", defaultReason)
 		}
-		return cte, errDone
-	}
-
-	for !p.Done() && !p.Is(token.Keyword) {
-		cte, err := p.parseItem(get)
-		if err != nil && !errors.Is(err, errDone) {
-			return nil, err
-		}
 		stmt.Queries = append(stmt.Queries, cte)
-		if errors.Is(err, errDone) {
-			break
-		}
 	}
 	p.reset()
 
@@ -56,6 +41,9 @@ func (p *Parser) parseWith() (ast.Statement, error) {
 }
 
 func (p *Parser) parseSubquery() (ast.Statement, error) {
+	p.Enter()
+	defer p.Leave()
+
 	var (
 		cte ast.CteStatement
 		err error
