@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/keywords"
 )
 
-var ansi = keywords.Set{
+var ansi = [][]string{
 	{"create", "procedure"},
 	{"create", "or", "replace", "procedure"},
 	{"create", "table"},
@@ -167,6 +167,6 @@ var ansi = keywords.Set{
 	{"all", "privileges"},
 }
 
-func GetKeywords() keywords.Set {
-	return ansi
+func GetKeywords() *keywords.Trie {
+	return keywords.NewTrieFrom(ansi)
 }

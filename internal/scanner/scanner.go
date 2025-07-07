@@ -21,12 +21,12 @@ type Scanner struct {
 	cursor
 	old cursor
 
-	keywords keywords.Set
+	keywords *keywords.Trie
 	str      bytes.Buffer
 	query    bytes.Buffer
 }
 
-func Scan(r io.Reader, keywords keywords.Set) (*Scanner, error) {
+func Scan(r io.Reader, keywords *keywords.Trie) (*Scanner, error) {
 	buf, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,6 @@ func Scan(r io.Reader, keywords keywords.Set) (*Scanner, error) {
 		keywords: keywords,
 	}
 	s.cursor.Position.Line = 1
-	s.keywords.Prepare()
 	s.Read()
 	s.Skip(IsBlank)
 	return &s, nil
@@ -52,10 +51,6 @@ func (s *Scanner) Clone(r io.Reader) (*Scanner, error) {
 		other.Register(s.tokens[i])
 	}
 	return other, nil
-}
-
-func (s *Scanner) Keywords() keywords.Set {
-	return s.keywords
 }
 
 func (s *Scanner) Register(fn Tokenizer) {
@@ -178,39 +173,28 @@ func (s *Scanner) scanQuotedIdent(tok *token.Token) {
 }
 
 func (s *Scanner) scanKeyword(tok *token.Token) {
-	list := []string{tok.Literal}
-	kw, standalone, found := s.keywords.Is(list)
-	if !found && kw == "" {
-		return
-	}
-	tok.Type = token.Keyword
-	tok.Literal = strings.ToUpper(tok.Literal)
-
-	if standalone {
-		return
-	}
-
+	var (
+		list  = []string{tok.Literal}
+		match bool
+	)
 	for !s.Done() && !(IsPunct(s.char) || IsOperator(s.char)) {
+		count, ok := s.keywords.Search(list)
+		match = ok
+		if count == 0 {
+			if len(list) > 1 {
+				s.Restore()
+			}
+			break
+		}
 		s.Save()
-
 		s.Skip(IsBlank)
 		s.scanUntil(IsDelim)
-		if len(s.Literal()) == 0 {
-			s.Restore()
-			break
-		}
-		list = append(list, strings.ToLower(s.Literal()))
-
-		res, final, _ := s.keywords.Is(list)
-		if res == "" {
-			s.Restore()
-			return
-		}
+		list = append(list, s.Literal())
+	}
+	if match {
+		res := strings.Join(list, " ")
 		tok.Literal = strings.ToUpper(res)
 		tok.Type = token.Keyword
-		if final {
-			break
-		}
 	}
 }
 

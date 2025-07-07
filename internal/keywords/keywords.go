@@ -1,88 +1,64 @@
 package keywords
 
 import (
-	"errors"
-	"slices"
-	"sort"
 	"strings"
 )
 
-var ErrFound = errors.New("keyword found")
-
-type Set [][]string
-
-func (ks Set) Merge(other Set) Set {
-	return append(ks, other...)
+type Node struct {
+	children map[string]*Node
+	value    string
+	final    bool
 }
 
-func (ks Set) Len() int {
-	return len(ks)
+func NewNode() *Node {
+	node := Node{
+		children: make(map[string]*Node),
+	}
+	return &node
 }
 
-func (ks Set) Find(str string) int {
-	return sort.Search(ks.Len(), func(i int) bool {
-		return str <= ks[i][0]
-	})
+type Trie struct {
+	root *Node
 }
 
-// Is check if the given str is a keyword. A keyword can be a standalone keyword
-// or a compound keyword
-// Is returns a string with the full SQL keyword, a first boolean as flag to indicate
-// it the keyword is a standalone keyword and a final bool to indicate if the given str
-// is a SQL keyword
-func (ks Set) Is(str []string) (string, bool, bool) {
-	var (
-		n = ks.Len()
-		s = strings.ToLower(str[0])
-		i = ks.Find(s)
-	)
-	if i >= n || ks[i][0] != s {
-		return "", false, false
+func NewTrie() *Trie {
+	trie := Trie{
+		root: NewNode(),
 	}
-
-	if len(ks[i]) == 1 && len(str) == 1 && ((i+1 < n && ks[i+1][0] != s) || i+1 == n) {
-		return s, true, true
-	}
-	var (
-		want string
-		got  = strings.ToLower(strings.Join(str, " "))
-		tmp  = strings.Split(got, " ")
-	)
-	for _, kw := range ks[i:] {
-		if kw[0] != s {
-			break
-		}
-		want = strings.Join(kw, " ")
-		switch {
-		case want == got:
-			var final bool
-			if i+1 == n || (len(ks[i+1]) >= len(tmp) && !slices.Equal(tmp, ks[i+1][:len(str)])) {
-				final = true
-			}
-			return got, final, true
-		case strings.HasPrefix(want, got):
-			return got, false, false
-		default:
-		}
-	}
-	return "", false, false
+	return &trie
 }
 
-func (ks Set) Prepare() {
-	seen := make(map[string]struct{})
-	for i := range ks {
-		str := strings.Join(ks[i], "")
-		if _, ok := seen[str]; ok {
-			continue
+func NewTrieFrom(words [][]string) *Trie {
+	t := NewTrie()
+	for _, w := range words {
+		t.Insert(w)
+	}
+	return t
+}
+
+func (t *Trie) Insert(words []string) {
+	node := t.root
+	for _, w := range words {
+		w = strings.ToLower(w)
+		if _, ok := node.children[w]; !ok {
+			n := NewNode()
+			n.value = w
+			node.children[w] = n
 		}
-		seen[str] = struct{}{}
-		for j := range ks[i] {
-			ks[i][j] = strings.ToLower(ks[i][j])
+		node = node.children[w]
+	}
+	node.final = true
+}
+
+func (t *Trie) Search(words []string) (int, bool) {
+	node := t.root
+	for _, w := range words {
+		w = strings.ToLower(w)
+		if next, ok := node.children[w]; ok {
+			node = next
+		} else {
+			return 0, false
 		}
 	}
-	sort.Slice(ks, func(i, j int) bool {
-		fst := strings.Join(ks[i], " ")
-		lst := strings.Join(ks[j], " ")
-		return fst < lst
-	})
+	return len(node.children), node.final
 }

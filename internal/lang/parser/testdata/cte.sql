@@ -17,6 +17,7 @@ with persons3 as (
 		t2.mail 
 	from persons3 t1 
 	join emails2 t2 on t1.id=t2.id
-	join domains d on t2.scheme=d.scheme
+	join domains d on d.scheme=t2.scheme
+	join servers c on c.addr=d.addr
 )
 select * from contacts;
