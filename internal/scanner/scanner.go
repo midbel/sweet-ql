@@ -162,12 +162,12 @@ func (s *Scanner) scanQuotedIdent(tok *token.Token) {
 		s.Write()
 		s.Read()
 	}
-	tok.Type = token.Ident
+	tok.Type = token.QuotedIdent
 	tok.Literal = s.Literal()
 	if !IsIdentQ(s.char) {
 		tok.Type = token.Invalid
 	}
-	if tok.Type == token.Ident {
+	if tok.Type == token.QuotedIdent {
 		s.Read()
 	}
 }

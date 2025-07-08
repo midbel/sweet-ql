@@ -1,6 +1,7 @@
 package format
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -26,6 +27,11 @@ func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
 }
 
 func (w *Writer) FormatName(name ast.Name) error {
+	if name.Quoted {
+		fmt.Println("Writer.FormatName", name.Parts, name.Quoted)
+		w.WriteString("\"")
+		defer w.WriteString("\"")
+	}
 	for i := range name.Parts {
 		if i > 0 {
 			w.WriteString(".")
@@ -59,7 +65,7 @@ func (w *Writer) FormatAlias(alias ast.Alias) error {
 	if w.Upperize.Identifier() || w.Upperize.All() {
 		str = strings.ToUpper(str)
 	}
-	if w.UseQuote {
+	if w.UseQuote || alias.Quoted {
 		str = w.Quote(str)
 	}
 	w.WriteString(str)

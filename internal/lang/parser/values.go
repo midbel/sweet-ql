@@ -56,13 +56,14 @@ func (p *Parser) ParseConstant() (ast.Statement, error) {
 func (p *Parser) ParseIdentifier() (ast.Statement, error) {
 	name := ast.Name{
 		Position: p.GetCurrPosition(),
+		Quoted:   p.Is(token.QuotedIdent),
 	}
 	for p.PeekIs(token.Dot) {
 		name.Parts = append(name.Parts, p.GetCurrLiteral())
 		p.Next()
 		p.Next()
 	}
-	if !p.Is(token.Ident) && !p.Is(token.Star) {
+	if !p.Is(token.QuotedIdent) && !p.Is(token.Ident) && !p.Is(token.Star) {
 		return nil, p.Unexpected("identifier", identExpected)
 	}
 	name.Parts = append(name.Parts, p.GetCurrLiteral())
@@ -84,12 +85,13 @@ func (p *Parser) ParseAlias(stmt ast.Statement) (ast.Statement, error) {
 		p.Next()
 	}
 	switch p.curr.Type {
-	case token.Ident, token.Literal, token.Number:
+	case token.Ident, token.QuotedIdent, token.Literal, token.Number:
 		stmt = ast.Alias{
 			Statement: stmt,
 			Position:  p.GetCurrPosition(),
 			Alias:     p.GetCurrLiteral(),
 			As:        mandatory,
+			Quoted:    p.Is(token.QuotedIdent),
 		}
 		p.Next()
 	default:

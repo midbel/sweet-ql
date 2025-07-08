@@ -123,6 +123,8 @@ func (t Token) String() string {
 		prefix = "macro"
 	case Ident:
 		prefix = "identifier"
+	case QuotedIdent:
+		prefix = "quoted"
 	case Literal:
 		prefix = "literal"
 	case Keyword:

@@ -341,6 +341,7 @@ func (p *Parser) ParseGroupBy() ([]ast.Statement, error) {
 		case p.Is(token.Keyword):
 		case p.Is(token.Comment):
 		case p.Is(token.EOL):
+		case p.Is(token.Rparen):
 		default:
 			return nil, p.Unexpected("group by", defaultReason)
 		}

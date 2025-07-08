@@ -9,6 +9,7 @@ const (
 	Dot
 	Comment
 	Ident
+	QuotedIdent
 	Literal
 	Keyword
 	Macro

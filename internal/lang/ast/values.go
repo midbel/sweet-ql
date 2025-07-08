@@ -270,13 +270,15 @@ func (v Value) False() bool {
 type Alias struct {
 	token.Position
 	Statement
-	Alias string
-	As    bool
+	Alias  string
+	As     bool
+	Quoted bool
 }
 
 type Name struct {
 	token.Position
-	Parts []string
+	Quoted bool
+	Parts  []string
 }
 
 func (n Name) All() bool {

@@ -433,6 +433,7 @@ func (p *Parser) setDefaultFuncSet() {
 
 	prefix := newFuncSet[prefixFunc]()
 	prefix.Register("", token.Ident, p.ParseIdentifier)
+	prefix.Register("", token.QuotedIdent, p.ParseIdentifier)
 	prefix.Register("", token.Star, p.ParseIdentifier)
 	prefix.Register("", token.Literal, p.ParseLiteral)
 	prefix.Register("", token.Number, p.ParseLiteral)
