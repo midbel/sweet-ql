@@ -106,7 +106,7 @@ func (p *Parser) ParseAlterTable() (ast.Statement, error) {
 			New: dst,
 		}
 		p.Next()
-	case p.IsKeyword("RENAME") || p.IsKeyword("RENAME COLUMN"):
+	case p.IsKeyword("RENAME COLUMN"):
 		p.Next()
 		src := p.GetCurrLiteral()
 		p.Next()

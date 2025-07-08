@@ -17,7 +17,6 @@ create table if not exists departments (
 );
 
 alter table employees rename to people;
-alter table employees rename name to fullname;
 alter table employees rename column name to fullname;
 alter table employees drop hired;
 alter table employees drop column hired;
