@@ -198,7 +198,7 @@ func (s *Scanner) scanKeyword(tok *token.Token) {
 		s.Skip(IsBlank)
 		s.scanUntil(IsDelim)
 		if word := s.Literal(); word != "" {
-			parts = append(parts, word)
+			parts = append(parts, strings.ToLower(word))
 		}
 	}
 	if n := len(list); n > 0 {
