@@ -71,6 +71,7 @@ var ansi = [][]string{
 	{"when", "matched"},
 	{"when", "not", "matched"},
 	{"set"},
+	{"insert"},
 	{"insert", "into"},
 	{"values"},
 	{"case"},

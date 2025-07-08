@@ -174,26 +174,35 @@ func (s *Scanner) scanQuotedIdent(tok *token.Token) {
 
 func (s *Scanner) scanKeyword(tok *token.Token) {
 	var (
-		list  = []string{tok.Literal}
-		match bool
+		parts = []string{tok.Literal}
+		list  []string
 	)
-	for !s.Done() && !(IsPunct(s.char) || IsOperator(s.char)) {
-		count, ok := s.keywords.Search(list)
-		match = ok
-		if count == 0 {
-			if len(list) > 1 {
-				s.Restore()
-			}
+
+	s.Save()
+	for {
+		count, ok := s.keywords.Search(parts)
+		if ok {
+			kw := strings.Join(parts, " ")
+			list = append(list, strings.ToUpper(kw))
+		}
+		if count == 0 && !ok {
+			s.Restore()
 			break
 		}
+
+		if s.Done() || IsPunct(s.char) || IsOperator(s.char) {
+			break
+		}
+
 		s.Save()
 		s.Skip(IsBlank)
 		s.scanUntil(IsDelim)
-		list = append(list, s.Literal())
+		if word := s.Literal(); word != "" {
+			parts = append(parts, word)
+		}
 	}
-	if match {
-		res := strings.Join(list, " ")
-		tok.Literal = strings.ToUpper(res)
+	if n := len(list); n > 0 {
+		tok.Literal = strings.ToUpper(list[n-1])
 		tok.Type = token.Keyword
 	}
 }
