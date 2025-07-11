@@ -52,7 +52,7 @@ func NewWriter(w io.Writer) *Writer {
 		UseSpace:  true,
 		Formatter: ansiFormatter{},
 		Upperize:  UpperNone,
-		Compact:   CompactNone,
+		Compact:   compactNone,
 		Rules:     0,
 	}
 	if w != os.Stdout {
@@ -664,7 +664,6 @@ func (w *Writer) WritePrefix() {
 	if w.UseIndent <= 0 {
 		return
 	}
-
 	w.WriteString(strings.Repeat(" ", w.UseIndent*w.getCurrDepth()))
 }
 

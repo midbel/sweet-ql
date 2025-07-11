@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
@@ -194,27 +195,9 @@ func (w *Writer) FormatWhere(stmt ast.Statement) error {
 
 func (w *Writer) formatJoin(join ast.Join) error {
 	if w.Compact.Keyword() {
-		switch join.Type {
-		case "INNER JOIN":
-			join.Type = "JOIN"
-		case "LEFT OUTER JOIN":
-			join.Type = "LEFT JOIN"
-		case "RIGHT OUTER JOIN":
-			join.Type = "RIGHT JOIN"
-		case "FULL OUTER JOIN":
-			join.Type = "FULL JOIN"
-		}
+		join.Type = lang.CompactKeyword(join.Type)
 	} else {
-		switch join.Type {
-		case "JOIN":
-			join.Type = "INNER JOIN"
-		case "LEFT JOIN":
-			join.Type = "LEFT OUTER JOIN"
-		case "RIGHT JOIN":
-			join.Type = "RIGHT OUTER JOIN"
-		case "FULL JOIN":
-			join.Type = "FULL OUTER JOIN"
-		}
+		join.Type = lang.ExpandKeyword(join.Type)
 	}
 	w.WriteKeyword(join.Type)
 	w.WriteBlank()
@@ -506,7 +489,7 @@ func (w *Writer) FormatCte(stmt ast.CteStatement) error {
 		ident = strings.ToUpper(ident)
 	}
 	w.WriteString(ident)
-	if len(stmt.Columns) > 0 {
+	if !w.Compact.Cte() && len(stmt.Columns) > 0 {
 		w.WriteString("(")
 		for i, s := range stmt.Columns {
 			if i > 0 {

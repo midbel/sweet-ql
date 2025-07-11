@@ -111,26 +111,31 @@ func (r RewriteRule) KeepAsIs() bool {
 type CompactMode uint8
 
 const (
-	CompactNone CompactMode = 1 << iota
-	CompactNL
+	CompactNL CompactMode = 1 << iota
 	CompactColumns
 	CompactValues
 	CompactJoin
 	CompactKw
+	CompactCte
 	CompactSpacesAround
+
+	compactAll  = CompactNL | CompactColumns | CompactValues | CompactJoin | CompactKw | CompactCte
+	compactNone = 0
 )
 
 func GetCompactMode(mode string) CompactMode {
 	var compact CompactMode
 	switch mode {
 	case "all", "":
-		compact = CompactNL | CompactColumns | CompactValues | CompactJoin | CompactKw
+		compact = compactAll
 	case "newline":
 		compact = CompactNL
 	case "join":
 		compact = CompactJoin
 	case "keyword":
 		compact = CompactKw
+	case "cte":
+		compact = CompactCte
 	case "columns":
 		compact = CompactColumns
 	case "values":
@@ -138,14 +143,14 @@ func GetCompactMode(mode string) CompactMode {
 	case "no-spaces-around":
 		compact = CompactSpacesAround
 	case "none":
-		compact = CompactNone
+		compact = compactNone
 	default:
 	}
 	return compact
 }
 
 func (c CompactMode) None() bool {
-	return c == CompactNone
+	return c == 0
 }
 
 func (c CompactMode) NoNL() bool {
@@ -172,8 +177,12 @@ func (c CompactMode) Join() bool {
 	return c&CompactJoin == CompactJoin
 }
 
+func (c CompactMode) Cte() bool {
+	return c&CompactCte == CompactCte
+}
+
 func (c CompactMode) All() bool {
-	return c == CompactNL|CompactColumns|CompactValues|CompactJoin
+	return c == compactAll
 }
 
 type UpperMode uint8

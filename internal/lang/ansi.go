@@ -1,6 +1,8 @@
 package lang
 
 import (
+	"strings"
+
 	"github.com/midbel/sweet/internal/keywords"
 	"github.com/midbel/sweet/internal/lang/ast"
 )
@@ -11,6 +13,34 @@ type Formatter interface {
 
 type Parser interface {
 	Parse() (ast.Statement, error)
+}
+
+func ExpandKeyword(kw string) string {
+	switch strings.ToUpper(kw) {
+	case "JOIN":
+		kw = "INNER JOIN"
+	case "LEFT JOIN":
+		kw = "LEFT OUTER JOIN"
+	case "RIGHT JOIN":
+		kw = "RIGHT OUTER JOIN"
+	case "FULL JOIN":
+		kw = "FULL OUTER JOIN"
+	}
+	return kw
+}
+
+func CompactKeyword(kw string) string {
+	switch strings.ToUpper(kw) {
+	case "INNER JOIN":
+		kw = "JOIN"
+	case "LEFT OUTER JOIN":
+		kw = "LEFT JOIN"
+	case "RIGHT OUTER JOIN":
+		kw = "RIGHT JOIN"
+	case "FULL OUTER JOIN":
+		kw = "FULL JOIN"
+	}
+	return kw
 }
 
 var ansi = [][]string{
