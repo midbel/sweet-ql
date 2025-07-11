@@ -153,6 +153,9 @@ func (p *Parser) ParseSelect() (ast.Statement, error) {
 
 func (p *Parser) ParseColumns() ([]ast.Statement, error) {
 	get := func() (ast.Statement, error) {
+		if p.Is(token.Comma) {
+			p.Next()
+		}
 		stmt, err := p.StartExpression()
 		if err != nil {
 			return nil, err
@@ -178,6 +181,9 @@ func (p *Parser) ParseColumns() ([]ast.Statement, error) {
 	defer func() {
 		p.withAlias = withAs
 	}()
+	if p.Is(token.Comma) {
+		return nil, p.Unexpected("select", defaultReason)
+	}
 	for !p.Done() && !p.IsKeyword("FROM") {
 		p.withAlias = true
 		stmt, err := p.parseItem(get)

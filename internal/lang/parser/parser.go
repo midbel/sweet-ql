@@ -172,7 +172,7 @@ func (p *Parser) parseItem(parse ParseFunc) (ast.Statement, error) {
 	if node.Statement, err = parse(); err != nil && !errors.Is(err, errDone) {
 		return nil, err
 	}
-	if p.Is(token.Comment) && pos.Column < p.curr.Column {
+	if p.Is(token.Comment) && pos.Line == p.curr.Line {
 		node.After = p.GetCurrLiteral()
 		p.Next()
 	}

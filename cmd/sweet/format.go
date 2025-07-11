@@ -20,7 +20,6 @@ func runFormat(args []string) error {
 	set.BoolVar(&writer.UseColor, "use-color", writer.UseColor, "colorify SQL keywords, identifiers")
 	set.BoolVar(&writer.UseCrlf, "use-crlf", writer.UseCrlf, "use crlf for newline")
 	set.BoolVar(&writer.PrependComma, "prepend-comma", writer.PrependComma, "write comma before expressions")
-	set.BoolVar(&writer.KeepComment, "keep-comment", writer.KeepComment, "keep comments")
 	set.Func("compact", "compact rule(s) to apply", compactRules(writer))
 	set.Func("rewrite", "rewrite rule(s) to apply", rewriteRules(writer))
 	set.Func("upper", "upperize mode", upperizeRules(writer))

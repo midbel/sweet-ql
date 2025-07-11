@@ -33,7 +33,6 @@ type Writer struct {
 	UseColor      bool
 	UseCrlf       bool
 	PrependComma  bool
-	KeepComment   bool
 	ForceOptional bool
 	Compact       CompactMode
 	Upperize      UpperMode
@@ -189,7 +188,7 @@ func (w *Writer) FormatStatement(stmt ast.Statement) error {
 }
 
 func (w *Writer) writeCommentAfter(stmt ast.Statement) bool {
-	if !w.KeepComment {
+	if w.Compact.Comment() {
 		return false
 	}
 	n, ok := stmt.(ast.Node)
@@ -207,7 +206,7 @@ func (w *Writer) writeCommentAfter(stmt ast.Statement) bool {
 }
 
 func (w *Writer) writeCommentBefore(stmt ast.Statement) {
-	if !w.KeepComment {
+	if w.Compact.Comment() {
 		return
 	}
 	n, ok := stmt.(ast.Node)

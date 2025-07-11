@@ -20,7 +20,7 @@ func (p *Parser) stopExpression(pow int) bool {
 	if p.QueryEnds() {
 		return true
 	}
-	if p.Is(token.Comma) {
+	if p.Is(token.Comma) || p.Is(token.Comment) {
 		return true
 	}
 	if p.IsKeyword("AS") && !isExpressionKeyword(p.GetCurrLiteral()) {
