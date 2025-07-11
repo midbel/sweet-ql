@@ -115,6 +115,8 @@ const (
 	CompactNL
 	CompactColumns
 	CompactValues
+	CompactJoin
+	CompactKw
 	CompactSpacesAround
 )
 
@@ -122,9 +124,13 @@ func GetCompactMode(mode string) CompactMode {
 	var compact CompactMode
 	switch mode {
 	case "all", "":
-		compact = CompactNL | CompactColumns | CompactValues
+		compact = CompactNL | CompactColumns | CompactValues | CompactJoin | CompactKw
 	case "newline":
 		compact = CompactNL
+	case "join":
+		compact = CompactJoin
+	case "keyword":
+		compact = CompactKw
 	case "columns":
 		compact = CompactColumns
 	case "values":
@@ -158,8 +164,16 @@ func (c CompactMode) ValuesStacked() bool {
 	return c&CompactValues == 0
 }
 
+func (c CompactMode) Keyword() bool {
+	return c&CompactKw == CompactKw
+}
+
+func (c CompactMode) Join() bool {
+	return c&CompactJoin == CompactJoin
+}
+
 func (c CompactMode) All() bool {
-	return c == CompactNL|CompactColumns|CompactValues
+	return c == CompactNL|CompactColumns|CompactValues|CompactJoin
 }
 
 type UpperMode uint8

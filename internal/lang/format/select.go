@@ -193,6 +193,29 @@ func (w *Writer) FormatWhere(stmt ast.Statement) error {
 }
 
 func (w *Writer) formatJoin(join ast.Join) error {
+	if w.Compact.Keyword() {
+		switch join.Type {
+		case "INNER JOIN":
+			join.Type = "JOIN"
+		case "LEFT OUTER JOIN":
+			join.Type = "LEFT JOIN"
+		case "RIGHT OUTER JOIN":
+			join.Type = "RIGHT JOIN"
+		case "FULL OUTER JOIN":
+			join.Type = "FULL JOIN"
+		}
+	} else {
+		switch join.Type {
+		case "JOIN":
+			join.Type = "INNER JOIN"
+		case "LEFT JOIN":
+			join.Type = "LEFT OUTER JOIN"
+		case "RIGHT JOIN":
+			join.Type = "RIGHT OUTER JOIN"
+		case "FULL JOIN":
+			join.Type = "FULL OUTER JOIN"
+		}
+	}
 	w.WriteKeyword(join.Type)
 	w.WriteBlank()
 
@@ -204,9 +227,7 @@ func (w *Writer) formatJoin(join ast.Join) error {
 		w.WriteBlank()
 		w.WriteKeyword("ON")
 		w.WriteBlank()
-		return w.compact(func() error {
-			return w.formatBinary(s, false)
-		})
+		return w.formatBinary(s, false)
 	case ast.List:
 		w.WriteBlank()
 		w.WriteKeyword("USING")
@@ -308,8 +329,14 @@ func (w *Writer) FormatWindows(windows []ast.Statement) error {
 		if win.Ident == nil && len(win.Partitions) > 0 {
 			w.WriteKeyword("PARTITION BY")
 			w.WriteBlank()
-			if err := w.formatStmtSlice(win.Partitions); err != nil {
-				return err
+			for i, p := range win.Partitions {
+				if err := w.FormatExpr(p, false); err != nil {
+					return err
+				}
+				if i < len(win.Partitions)-1 {
+					w.WriteString(",")
+					w.WriteBlank()
+				}
 			}
 		}
 		if len(win.Orders) > 0 {

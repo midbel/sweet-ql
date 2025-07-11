@@ -395,5 +395,14 @@ func (w *Writer) FormatReturning(stmt ast.Statement) error {
 	if !ok {
 		return w.FormatExpr(stmt, false)
 	}
-	return w.formatStmtSlice(list.Values)
+	for i, v := range list.Values {
+		if err := w.FormatExpr(v, false); err != nil {
+			return err
+		}
+		if i < len(list.Values)-1 {
+			w.WriteString(",")
+			w.WriteBlank()
+		}
+	}
+	return nil
 }

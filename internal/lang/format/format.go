@@ -331,16 +331,6 @@ func (w *Writer) formatCollate(stmt ast.Collate, _ bool) error {
 	return nil
 }
 
-func (w *Writer) formatStmtSlice(values []ast.Statement) error {
-	for i, v := range values {
-		w.WriteComma(i)
-		if err := w.FormatExpr(v, false); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (w *Writer) formatList(stmt ast.List, stacked bool) error {
 	w.WriteString("(")
 	if stacked {
@@ -419,8 +409,14 @@ func (w *Writer) formatCall(call ast.Call) error {
 			if over.Ident == nil && len(over.Partitions) > 0 {
 				w.WriteKeyword("PARTITION BY")
 				w.WriteBlank()
-				if err := w.formatStmtSlice(over.Partitions); err != nil {
-					return err
+				for i, p := range over.Partitions {
+					if err := w.FormatExpr(p, false); err != nil {
+						return err
+					}
+					if i < len(over.Partitions)-1 {
+						w.WriteString(",")
+						w.WriteBlank()
+					}
 				}
 			}
 			if len(over.Orders) > 0 {
@@ -625,22 +621,6 @@ func (w *Writer) WriteQuoted(str string) {
 	w.inner.WriteRune('\'')
 	if w.withColor() {
 		w.WriteString(resetCode)
-	}
-}
-
-func (w *Writer) WriteComma(i int) {
-	if (!w.PrependComma || w.Compact.All()) && i > 0 {
-		w.WriteString(",")
-	}
-	if i > 0 {
-		w.WriteNL()
-	}
-	if w.PrependComma && !w.Compact.All() {
-		if i == 0 {
-			w.WriteBlank()
-		} else {
-			w.WriteString(",")
-		}
 	}
 }
 
