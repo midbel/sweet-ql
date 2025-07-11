@@ -512,14 +512,18 @@ func (w *Writer) FormatCte(stmt ast.CteStatement) error {
 	w.WriteKeyword("AS")
 	w.WriteBlank()
 	w.WriteString("(")
-	w.WriteNL()
+	if !w.Compact.All() {
+		w.WriteNL()
+	}
 
 	w.Enter()
 	defer w.Leave()
 	if err := w.FormatStatement(stmt.Statement); err != nil {
 		return err
 	}
-	w.WriteNL()
+	if !w.Compact.All() {
+		w.WriteNL()
+	}
 	w.WriteString(")")
 	return nil
 }

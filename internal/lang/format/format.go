@@ -97,7 +97,7 @@ func (w *Writer) startStatement(stmt ast.Statement) error {
 	w.writeCommentBefore(stmt)
 	err := w.FormatStatement(stmt)
 	if err == nil {
-		w.WriteNL()
+		// w.WriteNL()
 		w.WriteEOL()
 		w.writeCommentAfter(stmt)
 		w.WriteNL()
