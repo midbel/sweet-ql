@@ -26,7 +26,6 @@ func GetFormatter() lang.Formatter {
 type Writer struct {
 	inner *bufio.Writer
 
-	// Compact       bool
 	UseQuote      bool
 	UseAs         bool
 	UseIndent     int
@@ -53,6 +52,7 @@ func NewWriter(w io.Writer) *Writer {
 		UseSpace:  true,
 		Formatter: ansiFormatter{},
 		Upperize:  UpperNone,
+		Compact:   CompactNone,
 		Rules:     0,
 	}
 	if w != os.Stdout {
@@ -63,61 +63,8 @@ func NewWriter(w io.Writer) *Writer {
 
 func Compact(w io.Writer) *Writer {
 	ws := NewWriter(w)
-	ws.Compact = CompactAll
+	ws.Compact = GetCompactMode("")
 	return ws
-}
-
-func (w *Writer) configure(ps lang.Parser) {
-	p, ok := ps.(*parser.Parser)
-	if !ok {
-		return
-	}
-	w.UseIndent = int(p.GetDefaultInt("indent", int64(w.UseIndent)))
-	w.UseSpace = p.GetDefaultBool("space", w.UseSpace)
-	w.UseAs = p.GetDefaultBool("as", w.UseAs)
-	w.UseQuote = p.GetDefaultBool("quote", w.UseQuote)
-	w.UseCrlf = p.GetDefaultBool("crlf", w.UseCrlf)
-	w.KeepComment = p.GetDefaultBool("comment", w.KeepComment)
-	for _, r := range p.GetStrings("rewrite") {
-		switch r {
-		case "all":
-			w.Rules |= RewriteAll
-		case "use-std-op":
-			w.Rules |= RewriteStdOp
-		case "use-std-expr":
-			w.Rules |= RewriteStdExpr
-		case "missing-cte-alias":
-			w.Rules |= RewriteMissCteAlias
-		case "missing-view-alias":
-			w.Rules |= RewriteMissViewAlias
-		case "subquery-as-cte":
-			w.Rules |= RewriteWithCte
-		case "cte-as-subquery":
-			w.Rules |= RewriteWithSubqueries
-		case "join-as-subquery":
-			w.Rules |= RewriteJoinSubquery
-		case "join-without-literal":
-			w.Rules |= RewriteJoinPredicate
-		default:
-		}
-	}
-	for _, r := range p.GetStrings("upperize") {
-		switch r {
-		case "all":
-			w.Upperize |= UpperId | UpperKw | UpperFn | UpperType
-		case "keyword", "kw":
-			w.Upperize |= UpperKw
-		case "function", "fn":
-			w.Upperize |= UpperFn
-		case "identifier", "ident", "id":
-			w.Upperize |= UpperId
-		case "type":
-			w.Upperize |= UpperType
-		case "none":
-			w.Upperize = UpperNone
-		default:
-		}
-	}
 }
 
 func (w *Writer) Format(r io.Reader) error {
@@ -125,7 +72,6 @@ func (w *Writer) Format(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	w.configure(p)
 	for {
 		stmt, err := p.Parse()
 		if err != nil {
@@ -340,7 +286,6 @@ func (w *Writer) FormatExpr(stmt ast.Statement, nl bool) error {
 	case ast.When:
 		err = w.FormatWhen(stmt)
 	default:
-		// err = w.FormatStatement(stmt)
 		return fmt.Errorf("%T unsupported expression type", stmt)
 	}
 	return err
@@ -777,7 +722,7 @@ func (w *Writer) compact(fn func() error) error {
 	defer func() {
 		w.Compact = c
 	}()
-	w.Compact = CompactAll
+	w.Compact = GetCompactMode("")
 	return fn()
 }
 

@@ -26,6 +26,36 @@ const (
 		RewriteGroupByAggr
 )
 
+func GetRewriteRule(rule string) RewriteRule {
+	var value RewriteRule
+	switch rule {
+	case "all", "":
+		value = RewriteAll
+	case "use-std-op":
+		value = RewriteStdOp
+	case "use-std-expr":
+		value = RewriteStdExpr
+	case "missing-cte-alias":
+		value = RewriteMissCteAlias
+	case "missing-view-alias":
+		value = RewriteMissViewAlias
+	case "subquery-as-cte":
+		value = RewriteWithCte
+	case "cte-as-subquery":
+		value = RewriteWithSubqueries
+	case "join-as-subquery":
+		value = RewriteJoinSubquery
+	case "join-without-literal":
+		value = RewriteJoinPredicate
+	case "groupby-group":
+		value = RewriteGroupByGroup
+	case "groupby-aggr":
+		value = RewriteGroupByAggr
+	default:
+	}
+	return value
+}
+
 func (r RewriteRule) All() bool {
 	return r == RewriteAll
 }
@@ -81,15 +111,35 @@ func (r RewriteRule) KeepAsIs() bool {
 type CompactMode uint8
 
 const (
-	CompactNL CompactMode = 1 << iota
+	CompactNone CompactMode = 1 << iota
+	CompactNL
 	CompactColumns
 	CompactValues
 	CompactSpacesAround
-	CompactAll = CompactNL | CompactColumns | CompactValues
 )
 
+func GetCompactMode(mode string) CompactMode {
+	var compact CompactMode
+	switch mode {
+	case "all", "":
+		compact = CompactNL | CompactColumns | CompactValues
+	case "newline":
+		compact = CompactNL
+	case "columns":
+		compact = CompactColumns
+	case "values":
+		compact = CompactValues
+	case "no-spaces-around":
+		compact = CompactSpacesAround
+	case "none":
+		compact = CompactNone
+	default:
+	}
+	return compact
+}
+
 func (c CompactMode) None() bool {
-	return c == 0
+	return c == CompactNone
 }
 
 func (c CompactMode) NoNL() bool {
@@ -109,7 +159,7 @@ func (c CompactMode) ValuesStacked() bool {
 }
 
 func (c CompactMode) All() bool {
-	return c&CompactAll == CompactAll
+	return c == CompactNL|CompactColumns|CompactValues
 }
 
 type UpperMode uint8
@@ -121,6 +171,26 @@ const (
 	UpperId
 	UpperType
 )
+
+func GetUpperizeMode(mode string) UpperMode {
+	var upper UpperMode
+	switch mode {
+	case "all", "":
+		upper = UpperKw | UpperFn | UpperId | UpperType
+	case "keyword", "kw":
+		upper = UpperKw
+	case "function", "func", "fn":
+		upper = UpperFn
+	case "identifier", "ident", "id":
+		upper = UpperId
+	case "type":
+		upper = UpperType
+	case "none":
+		upper = UpperNone
+	default:
+	}
+	return upper
+}
 
 func (u UpperMode) All() bool {
 	return u.Identifier() && u.Function() && u.Keyword() && u.Type()

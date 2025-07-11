@@ -161,16 +161,20 @@ func (w *Writer) FormatSelect(stmt ast.SelectStatement) error {
 func (w *Writer) FormatSelectColumns(columns []ast.Statement) error {
 	w.Enter()
 	defer w.Leave()
+
 	for i := range columns {
 		if i > 0 {
 			w.WriteNL()
 		}
 		w.writeCommentBefore(columns[i])
 		w.WritePrefix()
+		if w.PrependComma && i > 0 {
+			w.WriteString(",")
+		}
 		if err := w.FormatExpr(columns[i], false); err != nil {
 			return err
 		}
-		if i < len(columns)-1 {
+		if !w.PrependComma && i < len(columns)-1 {
 			w.WriteString(",")
 		}
 		w.writeCommentAfter(columns[i])

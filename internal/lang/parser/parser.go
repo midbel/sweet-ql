@@ -3,12 +3,10 @@ package parser
 import (
 	"errors"
 	"io"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/midbel/sweet/internal/config"
 	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/scanner"
@@ -21,7 +19,6 @@ type ParseFunc func() (ast.Statement, error)
 
 type Parser struct {
 	*frame
-	*config.Config
 	stack []*frame
 
 	level int
@@ -51,7 +48,6 @@ func ParseWithScanner(scan *scanner.Scanner) (*Parser, error) {
 		return nil, err
 	}
 	var p Parser
-	p.Config = config.Make()
 	p.frame = f
 	p.queries = make(map[string]ast.Statement)
 	p.values = make(map[string]ast.Statement)
@@ -62,35 +58,7 @@ func ParseWithScanner(scan *scanner.Scanner) (*Parser, error) {
 	p.setDefaultFuncSet()
 	p.toggleAlias()
 
-	return &p, p.start()
-}
-
-func (p *Parser) DefineVars(file string) error {
-	r, err := os.Open(file)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	return nil
-}
-
-func (p *Parser) start() error {
-	for p.Is(token.Macro) {
-		var err error
-		switch p.GetCurrLiteral() {
-		case "FORMAT":
-			err = p.ParseFormatMacro()
-		case "LINT":
-			err = p.ParseLintMacro()
-		default:
-			err = p.ParseMacro()
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return &p, nil
 }
 
 func (p *Parser) Parse() (ast.Statement, error) {
@@ -178,12 +146,6 @@ func (p *Parser) restore() {
 }
 
 func (p *Parser) parse() (ast.Statement, error) {
-	if p.Is(token.Macro) {
-		if err := p.ParseMacro(); err != nil {
-			return nil, err
-		}
-		return p.Parse()
-	}
 	return p.parseItem(func() (ast.Statement, error) {
 		stmt, err := p.ParseStatement()
 		if err != nil {
