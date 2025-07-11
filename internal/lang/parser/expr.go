@@ -294,7 +294,7 @@ func (p *Parser) parseCollateExpr(left ast.Statement) (ast.Statement, error) {
 		Statement: left,
 	}
 	p.Next()
-	if !p.Is(token.Ident) {
+	if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 		return nil, p.Unexpected("collate", identExpected)
 	}
 	stmt.Collation = p.GetCurrLiteral()
