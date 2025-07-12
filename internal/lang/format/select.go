@@ -235,10 +235,13 @@ func (w *Writer) FormatFrom(list []ast.Statement) error {
 	w.Enter()
 	defer w.Leave()
 
+	w.WriteBlank()
 	for i := range list {
-		w.WriteNL()
-		w.writeCommentBefore(list[i])
-		w.WritePrefix()
+		if i > 0 {
+			w.WriteNL()
+			w.writeCommentBefore(list[i])
+			w.WritePrefix()
+		}
 		if err := w.FormatStatement(list[i]); err != nil {
 			return err
 		}
