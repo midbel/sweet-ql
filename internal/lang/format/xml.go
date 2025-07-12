@@ -14,7 +14,7 @@ func (w *Writer) FormatXmlElement(elem ast.XmlElement) error {
 	w.Enter()
 
 	w.WritePrefix()
-	w.WriteString("NAME")
+	w.WriteString("name")
 	w.WriteBlank()
 	if err := w.FormatExpr(elem.Name, false); err != nil {
 		return err

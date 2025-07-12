@@ -46,7 +46,7 @@ func (p *Parser) ParseXmlRoot(left ast.Statement) (ast.Statement, error) {
 
 func (p *Parser) ParseXmlElement(left ast.Statement) (ast.Statement, error) {
 	p.Next()
-	if !p.Is(token.Ident) && strings.ToUpper(p.GetCurrLiteral()) != "NAME" {
+	if !p.IsIdent("NAME") {
 		return nil, p.Unexpected("xmlelement", identExpected)
 	}
 	p.Next()
@@ -139,11 +139,10 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Statement, error) {
 			if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 				return nil, p.Unexpected("xmlattributes", defaultReason)
 			}
-			name := ast.Name{
+			attr.Name = ast.Name{
 				Position: p.GetCurrPosition(),
+				Parts:    []string{p.GetCurrLiteral()},
 			}
-			name.Parts = append(name.Parts, p.GetCurrLiteral())
-			attr.Name = name
 			p.Next()
 		}
 		if needAs && attr.Name == nil {
@@ -190,33 +189,30 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 			if !p.Curr().IsValue() {
 				return nil, p.Unexpected("xmlnamespaces", valueExpected)
 			}
-			name := ast.Name{
+			ns.Uri = ast.Name{
 				Position: p.GetCurrPosition(),
+				Parts:    []string{p.GetCurrLiteral()},
 			}
-			name.Parts = append(name.Parts, p.GetCurrLiteral())
-			ns.Uri = name
 			p.Next()
 			count++
 		} else {
 			if !p.Curr().IsValue() {
 				return nil, p.Unexpected("xmlnamespaces", valueExpected)
 			}
-			name := ast.Name{
+			ns.Uri = ast.Name{
 				Position: p.GetCurrPosition(),
+				Parts:    []string{p.GetCurrLiteral()},
 			}
-			name.Parts = append(name.Parts, p.GetCurrLiteral())
-			ns.Uri = name
 			p.Next()
 			if p.IsKeyword("AS") {
 				p.Next()
 				if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 					return nil, p.Unexpected("xmlattributes", defaultReason)
 				}
-				name := ast.Name{
+				ns.Name = ast.Name{
 					Position: p.GetCurrPosition(),
+					Parts:    []string{p.GetCurrLiteral()},
 				}
-				name.Parts = append(name.Parts, p.GetCurrLiteral())
-				ns.Name = name
 				p.Next()
 			}
 			if ns.Name == nil {
