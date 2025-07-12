@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/token"
 )
@@ -342,8 +344,12 @@ func (p *Parser) parseKeywordExpr(left ast.Statement) (ast.Statement, error) {
 }
 
 func (p *Parser) parseCallExpr(left ast.Statement) (ast.Statement, error) {
-	if _, ok := left.(ast.Name); !ok {
+	n, ok := left.(ast.Name)
+	if !ok {
 		return nil, p.Unexpected("call", identExpected)
+	}
+	if strings.HasPrefix(strings.ToUpper(n.Name()), "XML") {
+		return p.ParseXML(left)
 	}
 	p.Next()
 	stmt := ast.Call{
