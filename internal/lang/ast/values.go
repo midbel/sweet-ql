@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"slices"
 	"strings"
 
 	"github.com/midbel/sweet/internal/token"
@@ -114,22 +113,6 @@ type Exists struct {
 	Statement
 }
 
-var sqlAggregates = []string{
-	"max",
-	"min",
-	"avg",
-	"sum",
-	"count",
-}
-
-var sqlBuiltins = []string{
-	"max",
-	"min",
-	"avg",
-	"sum",
-	"count",
-}
-
 type Call struct {
 	Position token.Position
 	Distinct bool
@@ -146,17 +129,9 @@ func (c Call) GetNames() []string {
 func (c Call) GetIdent() string {
 	n, ok := c.Ident.(Name)
 	if !ok {
-		return "?"
+		return ""
 	}
 	return n.Ident()
-}
-
-func (c Call) IsAggregate() bool {
-	return slices.Contains(sqlAggregates, c.GetIdent())
-}
-
-func (c Call) BuiltinSql() bool {
-	return slices.Contains(sqlBuiltins, c.GetIdent())
 }
 
 type Row struct {

@@ -368,9 +368,6 @@ func (w *Writer) rewriteGroupBy(stmt ast.SelectStatement) (ast.SelectStatement, 
 				}
 			}
 		case ast.Call:
-			if v.IsAggregate() {
-				continue
-			}
 		default:
 		}
 	}

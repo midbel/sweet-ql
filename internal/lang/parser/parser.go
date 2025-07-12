@@ -254,7 +254,23 @@ func (p *Parser) parseColumnsList() ([]string, error) {
 }
 
 func (p *Parser) IsKeyword(kw string) bool {
-	return p.Curr().Type == token.Keyword && p.GetCurrLiteral() == kw
+	kw = strings.ToUpper(kw)
+	return p.Is(token.Keyword) && strings.ToUpper(p.GetCurrLiteral()) == kw
+}
+
+func (p *Parser) IsIdent(ident string) bool {
+	ident = strings.ToUpper(ident)
+	return p.Is(token.Ident) && strings.ToUpper(p.GetCurrLiteral()) == ident
+}
+
+func (p *Parser) PeekKeyword(kw string) bool {
+	kw = strings.ToUpper(kw)
+	return p.PeekIs(token.Keyword) && strings.ToUpper(p.GetPeekLiteral()) == kw
+}
+
+func (p *Parser) PeekIdent(ident string) bool {
+	ident = strings.ToUpper(ident)
+	return p.PeekIs(token.Ident) && strings.ToUpper(p.GetPeekLiteral()) == ident
 }
 
 func (p *Parser) Unexpected(ctx, reason string) error {

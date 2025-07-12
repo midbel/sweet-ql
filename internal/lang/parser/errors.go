@@ -8,17 +8,17 @@ import (
 )
 
 const (
-	defaultReason      = "one or more errors have been detected in your query"
-	missingOpenParen   = "missing opening parenthesis before expression/statement"
-	missingCloseParen  = "missing closing parenthesis after expression/statement"
-	keywordAfterComma  = "unexpected keyword after comma"
-	missingOperator    = "missing operator after identifier"
-	identExpected      = "a valid identifier is expected"
-	valueExpected      = "a valid value expected (number, boolean, identifier)"
-	missingEol         = "missing semicolon at end of statement"
-	unknownOperator    = "unknown operator"
-	macroOptionUnknown = "macro option unknown"
-	syntaxError        = "syntax error"
+	defaultReason     = "one or more errors have been detected in your query"
+	missingOpenParen  = "missing opening parenthesis before expression/statement"
+	missingCloseParen = "missing closing parenthesis after expression/statement"
+	keywordAfterComma = "unexpected keyword after comma"
+	missingOperator   = "missing operator after identifier"
+	identExpected     = "a valid identifier is expected"
+	valueExpected     = "a valid value expected (number, boolean, identifier)"
+	missingEol        = "missing semicolon at end of statement"
+	missingComma      = "missing comma"
+	unknownOperator   = "unknown operator"
+	syntaxError       = "syntax error"
 )
 
 func keywordExpected(kw ...string) string {

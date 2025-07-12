@@ -346,7 +346,7 @@ func (p *Parser) parseKeywordExpr(left ast.Statement) (ast.Statement, error) {
 func (p *Parser) parseCallExpr(left ast.Statement) (ast.Statement, error) {
 	n, ok := left.(ast.Name)
 	if !ok {
-		return nil, p.Unexpected("call", identExpected)
+		return nil, p.Unexpected("function", identExpected)
 	}
 	if strings.HasPrefix(strings.ToUpper(n.Name()), "XML") {
 		return p.ParseXML(left)

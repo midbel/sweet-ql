@@ -1,6 +1,7 @@
 package lang
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/midbel/sweet/internal/keywords"
@@ -13,6 +14,30 @@ type Formatter interface {
 
 type Parser interface {
 	Parse() (ast.Statement, error)
+}
+
+var AggregateFunctions = []string{
+	"MAX",
+	"MIN",
+	"AVG",
+	"SUM",
+	"COUNT",
+}
+
+func IsAggregateFunc(ident string) bool {
+	return slices.Contains(AggregateFunctions, strings.ToUpper(ident))
+}
+
+var BuiltinFunctions = []string{
+	"MAX",
+	"MIN",
+	"AVG",
+	"SUM",
+	"COUNT",
+}
+
+func IsBuiltinFunc(ident string) bool {
+	return slices.Contains(BuiltinFunctions, strings.ToUpper(ident))
 }
 
 func ExpandKeyword(kw string) string {

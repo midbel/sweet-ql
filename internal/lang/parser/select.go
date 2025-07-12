@@ -625,6 +625,7 @@ func (p *Parser) ParseLimit() (ast.Statement, error) {
 		case p.Is(token.Keyword):
 		case p.Is(token.Comment):
 		case p.Is(token.EOL):
+		case p.Is(token.Rparen) && p.QueryEnds():
 		default:
 			return nil, p.Unexpected("LIMIT", defaultReason)
 		}

@@ -240,6 +240,12 @@ func (w *Writer) FormatExpr(stmt ast.Statement, nl bool) error {
 	switch stmt := stmt.(type) {
 	case ast.Node:
 		return w.FormatExpr(stmt.Statement, nl)
+	case ast.XmlElement:
+		return w.FormatXmlElement(stmt)
+	case ast.XmlText:
+		return w.FormatXmlText(stmt)
+	case ast.XmlComment:
+		return w.FormatXmlComment(stmt)
 	case ast.Placeholder:
 		w.FormatPlaceholder(stmt)
 	case ast.Name:

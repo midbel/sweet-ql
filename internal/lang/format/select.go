@@ -414,6 +414,8 @@ func (w *Writer) FormatLimit(stmt ast.Statement) error {
 	var limit ast.Statement
 	if n, ok := stmt.(ast.Node); ok {
 		limit = n.Statement
+	} else {
+		limit = stmt
 	}
 	lim, ok := limit.(ast.Limit)
 	if !ok {
@@ -424,7 +426,8 @@ func (w *Writer) FormatLimit(stmt ast.Statement) error {
 	w.WriteBlank()
 	w.WriteString(strconv.Itoa(lim.Count))
 	if lim.Offset > 0 {
-		w.WriteBlank()
+		w.WriteNL()
+		w.WritePrefix()
 		w.WriteKeyword("OFFSET")
 		w.WriteBlank()
 		w.WriteString(strconv.Itoa(lim.Offset))

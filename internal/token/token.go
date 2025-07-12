@@ -25,7 +25,7 @@ func (t Token) IsJoin() bool {
 }
 
 func (t Token) IsValue() bool {
-	return t.Type == Ident || t.Type == Literal || t.Type == Number
+	return t.Type == Ident || t.Type == QuotedIdent || t.Type == Literal || t.Type == Number
 }
 
 func (t Token) IsPlaceholder() bool {

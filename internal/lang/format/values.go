@@ -1,7 +1,6 @@
 package format
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -28,7 +27,6 @@ func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
 
 func (w *Writer) FormatName(name ast.Name) error {
 	if name.Quoted {
-		fmt.Println("Writer.FormatName", name.Parts, name.Quoted)
 		w.WriteString("\"")
 		defer w.WriteString("\"")
 	}
