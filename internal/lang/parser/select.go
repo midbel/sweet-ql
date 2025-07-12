@@ -233,7 +233,7 @@ func (p *Parser) ParseFrom() ([]ast.Statement, error) {
 		case p.Is(token.Comment):
 		case p.Is(token.Keyword):
 		case p.Is(token.EOL):
-		case p.Is(token.Rparen):
+		case p.Is(token.Rparen) && p.Nested():
 		default:
 			return nil, p.Unexpected("FROM", defaultReason)
 		}
@@ -347,7 +347,7 @@ func (p *Parser) ParseGroupBy() ([]ast.Statement, error) {
 		case p.Is(token.Keyword):
 		case p.Is(token.Comment):
 		case p.Is(token.EOL):
-		case p.Is(token.Rparen):
+		case p.Is(token.Rparen) && p.Nested():
 		default:
 			return nil, p.Unexpected("group by", defaultReason)
 		}
@@ -577,9 +577,9 @@ func (p *Parser) ParseOrderBy() ([]ast.Statement, error) {
 		case p.Is(token.Keyword):
 		case p.Is(token.EOL):
 		case p.Is(token.Comment):
-		case p.Is(token.Rparen):
+		case p.Is(token.Rparen) && p.Nested():
 		default:
-			return nil, p.Unexpected("group by", defaultReason)
+			return nil, p.Unexpected("order by", defaultReason)
 		}
 		return order, nil
 	}
