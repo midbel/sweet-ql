@@ -87,11 +87,6 @@ func NoCte(level Severity) Rule {
 }
 
 func (r noCte) Verify(stmt ast.Statement) []error {
-	switch q := stmt.(type) {
-	case ast.SelectStatement:
-	case ast.WithStatement:
-	default:
-	}
 	return nil
 }
 
@@ -115,6 +110,24 @@ func (r cteColumns) Verify(stmt ast.Statement) []error {
 
 func (_ cteColumns) Name() string {
 	return "cte-columns"
+}
+
+type cteColumnsCount struct {
+	severity Severity
+}
+
+func CteColumnsCount(level Severity) Rule {
+	return cteColumnsCount{
+		severity: level,
+	}
+}
+
+func (r cteColumnsCount) Verify(stmt ast.Statement) []error {
+	return nil
+}
+
+func (_ cteColumnsCount) Name() string {
+	return "cte-columns-count"
 }
 
 type noSubquery struct {
@@ -233,4 +246,40 @@ func (r undefinedAlias) Verify(stmt ast.Statement) []error {
 
 func (_ undefinedAlias) Name() string {
 	return "undefined-alias"
+}
+
+type noIdentQuoted struct {
+	severity Severity
+}
+
+func NoIdentQuoted(level Severity) Rule {
+	return noIdentQuoted{
+		severity: level,
+	}
+}
+
+func (r noIdentQuoted) Verify(stmt ast.Statement) []error {
+	return nil
+}
+
+func (_ noIdentQuoted) Name() string {
+	return "no-ident-quoted"
+}
+
+type missingIdentQuoted struct {
+	severity Severity
+}
+
+func MissingIdentQuoted(level Severity) Rule {
+	return missingIdentQuoted{
+		severity: level,
+	}
+}
+
+func (r missingIdentQuoted) Verify(stmt ast.Statement) []error {
+	return nil
+}
+
+func (_ missingIdentQuoted) Name() string {
+	return "missing-ident-quoted"
 }
