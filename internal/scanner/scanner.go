@@ -10,6 +10,8 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+var TabSize = 4
+
 type Tokenizer interface {
 	Can(rune, rune) bool
 	Scan(*Scanner, *token.Token)
@@ -177,7 +179,6 @@ func (s *Scanner) scanKeyword(tok *token.Token) {
 		parts = []string{tok.Literal}
 		list  []string
 	)
-
 	s.Save()
 	for {
 		count, ok := s.keywords.Search(parts)
@@ -352,6 +353,10 @@ func (s *Scanner) Save() {
 }
 
 func (s *Scanner) Restore() {
+	written := s.cursor.written - s.old.written
+	if s.query.Len() >= written && written > 0 {
+		s.query.Truncate(s.cursor.written - written)
+	}
 	s.cursor = s.old
 }
 
@@ -376,6 +381,7 @@ func (s *Scanner) Read() {
 
 	if r != space || s.char != r {
 		s.query.WriteRune(r)
+		s.cursor.written = s.query.Len()
 	}
 
 	s.char, s.curr, s.next = r, s.next, s.next+n
@@ -383,7 +389,11 @@ func (s *Scanner) Read() {
 		s.Position.Line++
 		s.Position.Column = -1
 	}
-	s.Position.Column++
+	if s.char != tab {
+		s.Position.Column++
+	} else {
+		s.Position.Column += TabSize
+	}
 }
 
 func (s *Scanner) Curr() rune {
@@ -417,6 +427,8 @@ func (s *Scanner) Skip(accept func(rune) bool) {
 }
 
 type cursor struct {
+	written int // number of character from the query
+
 	char rune
 	curr int
 	next int

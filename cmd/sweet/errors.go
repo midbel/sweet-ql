@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/midbel/sweet/internal/lang/parser"
+	"github.com/midbel/sweet/internal/scanner"
 )
 
 func reportError(err error) {
@@ -23,10 +24,11 @@ func reportError(err error) {
 		parts = parts[:pos.Line]
 	}
 
+	tab := strings.Repeat(" ", scanner.TabSize)
 	for i := range parts {
 		var (
 			lino = pos.Line - len(parts) + i + 1
-			line = strings.TrimSpace(parts[i])
+			line = strings.ReplaceAll(parts[i], "\t", tab)
 		)
 		if lino < first {
 			continue
