@@ -25,7 +25,7 @@ func main() {
 	case "format", "fmt":
 		cmd = runFormat
 	case "lint", "check", "verify":
-		err = fmt.Errorf("not implemented")
+		cmd = runLint
 	case "cyclo", "complexity":
 		err = fmt.Errorf("not implemented")
 	case "debug", "ast":

@@ -1,30 +1,32 @@
 package lint
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"slices"
 
-	"github.com/midbel/sweet/internal/ast"
-	"github.com/midbel/sweet/internal/token"
+	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/lang/parser"
 )
 
-type Level int8
+type Severity int8
 
 const (
-	None Level = 1 << iota
+	None Severity = 1 << iota
 	Warning
 	Error
 )
 
-type LintError struct {
-	token.Position
-	Severity Level
-	Rule     string
-	Reason   string
-	Query    string
+type Issue struct {
+	Severity
+	Rule   string
+	Reason string
+	Query  string
 }
 
 type Rule interface {
-	Verify(ast.Statement) []error
+	Verify(ast.Statement) ([]Issue, error)
 	Name() string
 }
 
@@ -32,29 +34,67 @@ type Linter struct {
 	rules []Rule
 }
 
-func Default() *Linter {
-	rules := []Rule{}
-	return Lint(rules)
+func Lint(r io.Reader) []Issue {
+	return nil
 }
 
-func Lint(rules []Rule) *Linter {
+func LintDefault(r io.Reader) ([]Issue, error) {
+	p, err := parser.NewParser(r)
+	if err != nil {
+		return nil, err
+	}
+	var (
+		lint = DefaultLinter()
+		all  []Issue
+	)
+	for {
+		stmt, err := p.Parse()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		issues, err := lint.Lint(stmt)
+		if err != nil {
+			return nil, err
+		}
+		all = slices.Concat(all, issues)
+	}
+	return all, nil
+}
+
+func DefaultLinter() *Linter {
+	rules := []Rule{
+		NoStar(Error),
+		CteColumns(Error),
+		CteColumnsCount(Error),
+		NoCte(Warning),
+	}
+	return NewLinter(rules)
+}
+
+func NewLinter(rules []Rule) *Linter {
 	i := Linter{
 		rules: rules,
 	}
 	return &i
 }
 
-func (i *Linter) Lint(stmt ast.Statement) []error {
-	var list []Error
-	for _, r := range i.Rules {
-		errs := r.Verify(stmt)
-		list = slices.Concat(list, err)
+func (i *Linter) Lint(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	for _, r := range i.rules {
+		issues, err := r.Verify(stmt)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
 	}
-	return list
+	return list, nil
 }
 
 type noStar struct {
-	severity Level
+	severity Severity
 }
 
 func NoStar(level Severity) Rule {
@@ -67,17 +107,64 @@ func (r noStar) Name() string {
 	return "no-star"
 }
 
-func (r noStar) Verify(stmt ast.Statement) []error {
+func (r noStar) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r noStar) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
 	switch q := stmt.(type) {
-	case ast.SelectStatement:
 	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = issues
+	case ast.SelectStatement:
+		issues, err := r.checkStar(q)
+		if err != nil {
+			return nil, err
+		}
+		list = issues
 	default:
 	}
-	return nil
+	return list, nil
+}
+
+func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	for _, c := range q.Columns {
+		n, ok := c.(ast.Name)
+		if !ok {
+			continue
+		}
+		if n.Name() == "*" {
+			i := Issue{
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "use explicit column names instead of '*'",
+			}
+			list = append(list, i)
+		}
+	}
+	return list, nil
 }
 
 type noCte struct {
-	severity Level
+	severity Severity
 }
 
 func NoCte(level Severity) Rule {
@@ -86,8 +173,16 @@ func NoCte(level Severity) Rule {
 	}
 }
 
-func (r noCte) Verify(stmt ast.Statement) []error {
-	return nil
+func (r noCte) Verify(stmt ast.Statement) ([]Issue, error) {
+	if _, ok := stmt.(ast.WithStatement); ok {
+		i := Issue{
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use subqueries instead of cte",
+		}
+		return []Issue{i}, nil
+	}
+	return nil, nil
 }
 
 func (_ noCte) Name() string {
@@ -104,8 +199,27 @@ func CteColumns(level Severity) Rule {
 	}
 }
 
-func (r cteColumns) Verify(stmt ast.Statement) []error {
-	return nil
+func (r cteColumns) Verify(stmt ast.Statement) ([]Issue, error) {
+	q, ok := stmt.(ast.WithStatement)
+	if !ok {
+		return nil, nil
+	}
+	var list []Issue
+	for _, q := range q.Queries {
+		c, ok := q.(ast.CteStatement)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		if len(c.Columns) == 0 {
+			i := Issue{
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "missing explicit columns definition list for cte",
+			}
+			list = append(list, i)
+		}
+	}
+	return list, nil
 }
 
 func (_ cteColumns) Name() string {
@@ -122,8 +236,31 @@ func CteColumnsCount(level Severity) Rule {
 	}
 }
 
-func (r cteColumnsCount) Verify(stmt ast.Statement) []error {
-	return nil
+func (r cteColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
+	q, ok := stmt.(ast.WithStatement)
+	if !ok {
+		return nil, nil
+	}
+	var list []Issue
+	for _, q := range q.Queries {
+		c, ok := q.(ast.CteStatement)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		e, ok := c.Statement.(ast.SelectStatement)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		if len(c.Columns) > 0 && len(e.Columns) != len(c.Columns) {
+			i := Issue{
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "invalid number of columns declared in cte",
+			}
+			list = append(list, i)
+		}
+	}
+	return list, nil
 }
 
 func (_ cteColumnsCount) Name() string {
@@ -131,7 +268,7 @@ func (_ cteColumnsCount) Name() string {
 }
 
 type noSubquery struct {
-	severity Level
+	severity Severity
 }
 
 func NoSubquery(level Severity) Rule {
@@ -140,13 +277,8 @@ func NoSubquery(level Severity) Rule {
 	}
 }
 
-func (r noSubquery) Verify(stmt ast.Statement) []error {
-	switch q := stmt.(type) {
-	case ast.SelectStatement:
-	case ast.WithStatement:
-	default:
-	}
-	return nil
+func (r noSubquery) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ noSubquery) Name() string {
@@ -159,17 +291,12 @@ type groupbyColumns struct {
 
 func GroupbyColumns(level Severity) Rule {
 	return groupbyColumns{
-		severiry: level,
+		severity: level,
 	}
 }
 
-func (r groupbyColumns) Verify(stmt ast.Statement) []error {
-	switch q := stmt.(type) {
-	case ast.SelectStatement:
-	case ast.WithStatement:
-	default:
-	}
-	return nil
+func (r groupbyColumns) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ groupbyColumns) Name() string {
@@ -186,8 +313,8 @@ func MissingAlias(level Severity) Rule {
 	}
 }
 
-func (r missingAlias) Verify(stmt ast.Statement) []error {
-	return nil
+func (r missingAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ missingAlias) Name() string {
@@ -204,8 +331,8 @@ func NoAlias(level Severity) Rule {
 	}
 }
 
-func (r noAlias) Verify(stmt ast.Statement) []error {
-	return nil
+func (r noAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ noAlias) Name() string {
@@ -222,8 +349,8 @@ func InvalidAlias(level Severity) Rule {
 	}
 }
 
-func (r invalidAlias) Verify(stmt ast.Statement) []error {
-	return nil
+func (r invalidAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ invalidAlias) Name() string {
@@ -240,8 +367,8 @@ func UndefinedAlias(level Severity) Rule {
 	}
 }
 
-func (r undefinedAlias) Verify(stmt ast.Statement) []error {
-	return nil
+func (r undefinedAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ undefinedAlias) Name() string {
@@ -258,8 +385,8 @@ func NoIdentQuoted(level Severity) Rule {
 	}
 }
 
-func (r noIdentQuoted) Verify(stmt ast.Statement) []error {
-	return nil
+func (r noIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ noIdentQuoted) Name() string {
@@ -276,8 +403,8 @@ func MissingIdentQuoted(level Severity) Rule {
 	}
 }
 
-func (r missingIdentQuoted) Verify(stmt ast.Statement) []error {
-	return nil
+func (r missingIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 func (_ missingIdentQuoted) Name() string {
