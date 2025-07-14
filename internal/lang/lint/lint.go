@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
@@ -115,6 +116,8 @@ func DefaultLinter() *Linter {
 		NoStar(Error),
 		CteColumns(Error),
 		CteColumnsCount(Error),
+		CteUnused(Warning),
+		CteDuplicate(Error),
 		NoSubquery(Warning),
 	}
 	return NewLinter(rules)
@@ -235,6 +238,148 @@ func (r noCte) Verify(stmt ast.Statement) ([]Issue, error) {
 
 func (_ noCte) Name() string {
 	return "no-cte"
+}
+
+type cteDuplicate struct {
+	severity Severity
+}
+
+func CteDuplicate(level Severity) Rule {
+	return cteDuplicate{
+		severity: level,
+	}
+}
+
+func (r cteDuplicate) Verify(stmt ast.Statement) ([]Issue, error) {
+	q, ok := stmt.(ast.WithStatement)
+	if !ok {
+		return nil, nil
+	}
+	var (
+		names = make(map[string]struct{})
+		list  []Issue
+	)
+	for _, q := range q.Queries {
+		c, ok := q.(ast.CteStatement)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		if _, ok := names[c.Ident]; ok {
+			i := Issue{
+				Position: c.Position,
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "cte use name already defined",
+			}
+			list = append(list, i)
+		}
+		names[c.Ident] = struct{}{}
+	}
+	return list, nil
+}
+
+func (_ cteDuplicate) Name() string {
+	return "cte-duplicate"
+}
+
+type cteUnused struct {
+	severity Severity
+}
+
+func CteUnused(level Severity) Rule {
+	return cteUnused{
+		severity: level,
+	}
+}
+
+func (r cteUnused) Verify(stmt ast.Statement) ([]Issue, error) {
+	q, ok := stmt.(ast.WithStatement)
+	if !ok {
+		return nil, nil
+	}
+	var (
+		positions = make(map[string]token.Position)
+		names     = make(map[string]int)
+	)
+	for _, q := range q.Queries {
+		c, ok := q.(ast.CteStatement)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		names[c.Ident] = 0
+		positions[c.Ident] = c.Position
+	}
+	for _, q := range q.Queries {
+		c, ok := q.(ast.CteStatement)
+		if !ok {
+			continue
+		}
+		used, _ := r.getNames(c.Statement)
+		for _, n := range used {
+			if _, ok := names[n]; !ok {
+				continue
+			}
+			names[n]++
+		}
+	}
+	used, _ := r.getNames(q.Statement)
+	for _, n := range used {
+		if _, ok := names[n]; !ok {
+			continue
+		}
+		names[n]++
+	}
+	var list []Issue
+	for n, c := range names {
+		if c > 0 {
+			continue
+		}
+		i := Issue{
+			Position: positions[n],
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "cte is defined but not used",
+		}
+		list = append(list, i)
+	}
+	return list, nil
+}
+
+func (_ cteUnused) getNames(stmt ast.Statement) ([]string, error) {
+	q, ok := stmt.(ast.SelectStatement)
+	if !ok {
+		return nil, nil
+	}
+	var (
+		get   func(ast.Statement) string
+		names = make(map[string]struct{})
+	)
+	get = func(stmt ast.Statement) string {
+		switch q := stmt.(type) {
+		case ast.Join:
+			return get(q.Table)
+		case ast.Name:
+			return q.Name()
+		case ast.Alias:
+			return get(q.Statement)
+		case ast.Group:
+			return ""
+		default:
+			return ""
+		}
+	}
+	for _, t := range q.Tables {
+		n := get(t)
+		if n == "" {
+			continue
+		}
+		names[n] = struct{}{}
+	}
+	return slices.Collect(maps.Keys(names)), nil
+}
+
+func (_ cteUnused) Name() string {
+	return "cte-unused"
 }
 
 type cteColumns struct {
