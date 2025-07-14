@@ -369,14 +369,14 @@ func (s *Scanner) Read() {
 		s.char = utf8.RuneError
 		return
 	}
-	if s.old.char == semicolon {
-		s.query.Reset()
-	}
 	r, n := utf8.DecodeRune(s.input[s.next:])
 	if r == utf8.RuneError {
 		s.char = r
 		s.next = len(s.input)
 		return
+	}
+	if s.char == semicolon {
+		s.query.Reset()
 	}
 
 	if r != space || s.char != r {

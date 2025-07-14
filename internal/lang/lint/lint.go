@@ -8,6 +8,7 @@ import (
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/lang/parser"
+	"github.com/midbel/sweet/internal/token"
 )
 
 type Severity int8
@@ -18,11 +19,26 @@ const (
 	Error
 )
 
+func (s Severity) String() string {
+	switch s {
+	case None:
+		return "off"
+	case Warning:
+		return "warning"
+	case Error:
+		return "error"
+	default:
+		return ""
+	}
+}
+
 type Issue struct {
+	Query string
+	token.Position
+
 	Severity
 	Rule   string
 	Reason string
-	Query  string
 }
 
 type Rule interface {
@@ -34,8 +50,34 @@ type Linter struct {
 	rules []Rule
 }
 
-func Lint(r io.Reader) []Issue {
-	return nil
+func Lint(r io.Reader, rules []Rule) ([]Issue, error) {
+	p, err := parser.NewParser(r)
+	if err != nil {
+		return nil, err
+	}
+	var (
+		lint = NewLinter(rules)
+		all  []Issue
+	)
+	for {
+		stmt, err := p.Parse()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		issues, err := lint.Lint(stmt)
+		if err != nil {
+			return nil, err
+		}
+		query := p.Query()
+		for i := range issues {
+			issues[i].Query = query
+		}
+		all = slices.Concat(all, issues)
+	}
+	return all, nil
 }
 
 func LintDefault(r io.Reader) ([]Issue, error) {
@@ -59,6 +101,10 @@ func LintDefault(r io.Reader) ([]Issue, error) {
 		if err != nil {
 			return nil, err
 		}
+		query := p.Query()
+		for i := range issues {
+			issues[i].Query = query
+		}
 		all = slices.Concat(all, issues)
 	}
 	return all, nil
@@ -69,7 +115,7 @@ func DefaultLinter() *Linter {
 		NoStar(Error),
 		CteColumns(Error),
 		CteColumnsCount(Error),
-		NoCte(Warning),
+		NoSubquery(Warning),
 	}
 	return NewLinter(rules)
 }
@@ -153,6 +199,7 @@ func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
 		}
 		if n.Name() == "*" {
 			i := Issue{
+				Position: n.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "use explicit column names instead of '*'",
@@ -174,8 +221,9 @@ func NoCte(level Severity) Rule {
 }
 
 func (r noCte) Verify(stmt ast.Statement) ([]Issue, error) {
-	if _, ok := stmt.(ast.WithStatement); ok {
+	if w, ok := stmt.(ast.WithStatement); ok {
 		i := Issue{
+			Position: w.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "use subqueries instead of cte",
@@ -212,6 +260,7 @@ func (r cteColumns) Verify(stmt ast.Statement) ([]Issue, error) {
 		}
 		if len(c.Columns) == 0 {
 			i := Issue{
+				Position: c.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "missing explicit columns definition list for cte",
@@ -253,6 +302,7 @@ func (r cteColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
 		}
 		if len(c.Columns) > 0 && len(e.Columns) != len(c.Columns) {
 			i := Issue{
+				Position: c.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "invalid number of columns declared in cte",
@@ -278,7 +328,69 @@ func NoSubquery(level Severity) Rule {
 }
 
 func (r noSubquery) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
+}
+
+func (r noSubquery) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			c, ok := q.(ast.CteStatement)
+			if !ok {
+
+			}
+			issues, err := r.verify(c)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkSubquery(q)
+	default:
+	}
+	return list, nil
+}
+
+func (r noSubquery) checkSubquery(stmt ast.SelectStatement) ([]Issue, error) {
+	var (
+		get  func(ast.Statement) ast.Statement
+		list []Issue
+	)
+
+	get = func(q ast.Statement) ast.Statement {
+		switch x := q.(type) {
+		case ast.Join:
+			return get(x.Table)
+		case ast.Alias:
+			return get(x.Statement)
+		case ast.Group:
+			return x.Statement
+		default:
+			return q
+		}
+	}
+	for i := range stmt.Tables {
+		q := get(stmt.Tables[i])
+		if e, ok := q.(ast.SelectStatement); ok {
+			i := Issue{
+				Position: e.Position,
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "prefer using cte instead of subquery",
+			}
+			list = append(list, i)
+		}
+	}
+	return list, nil
 }
 
 func (_ noSubquery) Name() string {

@@ -5,19 +5,30 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/midbel/sweet/internal/lang/lint"
 	"github.com/midbel/sweet/internal/lang/parser"
 	"github.com/midbel/sweet/internal/scanner"
+	"github.com/midbel/sweet/internal/token"
 )
 
-func reportError(err error) {
+func ReportError(err error) {
 	var pserr parser.ParseError
 	if !errors.As(err, &pserr) {
 		fmt.Println(err)
 		return
 	}
+	reportError(pserr.Query, pserr.Literal(), pserr.Position())
+	fmt.Println(pserr)
+	fmt.Println()
+}
+
+func ReportIssue(issue lint.Issue) {
+	reportError(issue.Query, "", issue.Position)
+}
+
+func reportError(query, literal string, pos token.Position) {
 	var (
-		parts = strings.Split(pserr.Query, "\n")
-		pos   = pserr.Position()
+		parts = strings.Split(query, "\n")
 		first = pos.Line - 3
 	)
 	if pos.Line < len(parts) {
@@ -37,11 +48,9 @@ func reportError(err error) {
 		fmt.Println()
 	}
 	fmt.Print(strings.Repeat(" ", 6+pos.Column-1))
-	if str := pserr.Literal(); len(str) > 0 {
-		fmt.Println(strings.Repeat("^", len(str)))
+	if len(literal) > 0 {
+		fmt.Println(strings.Repeat("^", len(literal)))
 	} else {
 		fmt.Println("^")
 	}
-	fmt.Println(pserr)
-	fmt.Println()
 }

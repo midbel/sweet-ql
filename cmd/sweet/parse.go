@@ -41,7 +41,7 @@ func runParse(args []string) error {
 			break
 		}
 		if err != nil {
-			reportError(err)
+			ReportError(err)
 			continue
 		}
 		fmt.Printf("%+v\n", stmt)

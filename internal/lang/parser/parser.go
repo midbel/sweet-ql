@@ -253,6 +253,10 @@ func (p *Parser) parseColumnsList() ([]string, error) {
 	return list, err
 }
 
+func (p *Parser) Query() string {
+	return p.scan.Query()
+}
+
 func (p *Parser) IsKeyword(kw string) bool {
 	kw = strings.ToUpper(kw)
 	return p.Is(token.Keyword) && strings.ToUpper(p.GetCurrLiteral()) == kw
@@ -283,7 +287,7 @@ func (p *Parser) Unexpected(ctx, reason string) error {
 		Context: ctx,
 	}
 	p.restore()
-	err.Query = p.scan.Query()
+	err.Query = p.Query()
 	return err
 }
 

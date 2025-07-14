@@ -14,6 +14,7 @@ type Formatter interface {
 
 type Parser interface {
 	Parse() (ast.Statement, error)
+	Query() string
 }
 
 var AggregateFunctions = []string{

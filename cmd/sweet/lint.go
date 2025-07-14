@@ -35,7 +35,8 @@ func runLint(args []string) error {
 		return err
 	}
 	for _, i := range issues {
-		fmt.Println(i.Severity, i.Rule, i.Reason)
+		fmt.Println(i.Position, i.Severity, i.Rule, i.Reason)
+		ReportIssue(i)
 	}
 	if len(issues) > 0 {
 
