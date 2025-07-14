@@ -6,11 +6,12 @@ import (
 )
 
 func (p *Parser) parseWith() (ast.Statement, error) {
-	p.Next()
 	var (
 		stmt ast.WithStatement
 		err  error
 	)
+	stmt.Position = p.GetCurrPosition()
+	p.Next()
 	if p.IsKeyword("RECURSIVE") {
 		stmt.Recursive = true
 		p.Next()
@@ -51,6 +52,7 @@ func (p *Parser) parseSubquery() (ast.Statement, error) {
 	if !p.Is(token.Ident) {
 		return nil, p.Unexpected("subquery", identExpected)
 	}
+	cte.Position = p.GetCurrPosition()
 	cte.Ident = p.GetCurrLiteral()
 	p.Next()
 

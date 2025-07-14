@@ -24,6 +24,9 @@ func ReportError(err error) {
 
 func ReportIssue(issue lint.Issue) {
 	reportError(issue.Query, "", issue.Position)
+	fmt.Printf("[%s] %s at %s", issue.Rule, issue.Reason, issue.Position)
+	fmt.Println()
+	fmt.Println()
 }
 
 func reportError(query, literal string, pos token.Position) {
