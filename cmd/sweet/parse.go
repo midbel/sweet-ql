@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/parser"
@@ -14,15 +15,8 @@ import (
 )
 
 func runParse(args []string) error {
-	var (
-		set     = flag.NewFlagSet("parse", flag.ExitOnError)
-		dialect string
-	)
-	set.StringVar(&dialect, "dialect", "", "SQL dialect")
+	set := flag.NewFlagSet("parse", flag.ExitOnError)
 	if err := set.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return nil
-		}
 		return err
 	}
 	r, err := os.Open(set.Arg(0))
@@ -50,22 +44,17 @@ func runParse(args []string) error {
 }
 
 func runScan(args []string) error {
-	var (
-		set     = flag.NewFlagSet("scan", flag.ExitOnError)
-		dialect string
-	)
-	set.StringVar(&dialect, "dialect", "", "SQL dialect")
+	set := flag.NewFlagSet("scan", flag.ExitOnError)
 	if err := set.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-
-		}
 		return err
 	}
-	r, err := os.Open(set.Arg(0))
-	if err != nil {
-		return err
+	var r io.Reader
+	if f, err := os.Open(set.Arg(0)); err == nil {
+		defer f.Close()
+		r = f
+	} else {
+		r = strings.NewReader(set.Arg(0))
 	}
-	defer r.Close()
 
 	scan, err := scanner.Scan(r, lang.GetKeywords())
 	if err != nil {
