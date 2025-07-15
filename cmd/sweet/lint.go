@@ -10,6 +10,23 @@ import (
 	"github.com/midbel/sweet/internal/lang/lint"
 )
 
+var supportedRules = map[string]func(lint.Severity) lint.Rule{
+	"no-star":              lint.NoStar,
+	"no-cte":               lint.NoCte,
+	"cte-columns":          lint.CteColumns,
+	"cte-columns-count":    lint.CteColumnsCount,
+	"cte-unused":           lint.CteUnused,
+	"cte-duplicate":        lint.CteDuplicate,
+	"no-subquery":          lint.NoSubquery,
+	"groupby-columns":      lint.GroupbyColumns,
+	"missing-alias-fields": lint.MissingAliasOnFields,
+	"missing-alias-tables": lint.MissingAliasOnTables,
+	"no-alias-fields":      lint.NoAliasOnFields,
+	"no-alias-tables":      lint.NoAliasOnTables,
+	"invalid-alias":        lint.InvalidAlias,
+	"undefined-alias":      lint.UndefinedAlias,
+}
+
 func runLint(args []string) error {
 	var (
 		set   = flag.NewFlagSet("lint", flag.ExitOnError)
@@ -30,7 +47,21 @@ func runLint(args []string) error {
 		return nil
 	})
 	set.Func("r", "enable rule", func(value string) error {
-		_ = rules
+		rule, severity, ok := strings.Cut(value, ":")
+
+		level := lint.None
+		if ok {
+			if severity == "" || severity == "error" {
+				level = lint.Error
+			} else if severity == "warning" {
+				level = lint.Warning
+			}
+		}
+		fn, ok := supportedRules[rule]
+		if !ok {
+			return fmt.Errorf("%s: unknown/unsupported lint rule", rule)
+		}
+		rules = append(rules, fn(level))
 		return nil
 	})
 	if err := set.Parse(args); err != nil {
@@ -44,7 +75,15 @@ func runLint(args []string) error {
 	} else {
 		r = strings.NewReader(set.Arg(0))
 	}
-	issues, err := lint.LintDefault(r)
+	var (
+		issues []lint.Issue
+		err    error
+	)
+	if len(rules) == 0 {
+		issues, err = lint.LintDefault(r)
+	} else {
+		issues, err = lint.Lint(r, rules)
+	}
 	if err != nil {
 		return err
 	}

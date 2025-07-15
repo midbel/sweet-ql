@@ -23,7 +23,9 @@ func ReportError(err error) {
 }
 
 func ReportIssue(issue lint.Issue) {
-	reportError(issue.Query, "", issue.Position)
+	if issue.Line != 0 && issue.Column != 0 {
+		reportError(issue.Query, "", issue.Position)
+	}
 	fmt.Printf("[%s] %s at %s", issue.Rule, issue.Reason, issue.Position)
 	fmt.Println()
 	fmt.Println()

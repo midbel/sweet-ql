@@ -351,13 +351,12 @@ func (p *Parser) parseCallExpr(left ast.Statement) (ast.Statement, error) {
 	if strings.HasPrefix(strings.ToUpper(n.Name()), "XML") {
 		return p.ParseXML(left)
 	}
-	p.Next()
 	stmt := ast.Call{
-		Position: p.GetCurrPosition(),
+		Position: n.Position,
 		Ident:    left,
-		Distinct: p.IsKeyword("DISTINCT"),
 	}
-	if stmt.Distinct {
+	p.Next()
+	if stmt.Distinct = p.IsKeyword("DISTINCT"); stmt.Distinct {
 		p.Next()
 	}
 	for !p.Done() && !p.Is(token.Rparen) {

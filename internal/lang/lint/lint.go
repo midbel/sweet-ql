@@ -7,6 +7,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/lang/parser"
 	"github.com/midbel/sweet/internal/token"
@@ -40,6 +41,7 @@ type Issue struct {
 	Severity
 	Rule   string
 	Reason string
+	Cause  string
 }
 
 type Rule interface {
@@ -48,7 +50,8 @@ type Rule interface {
 }
 
 type Linter struct {
-	rules []Rule
+	rules      []Rule
+	SetOptions (RuleOptions)
 }
 
 func Lint(r io.Reader, rules []Rule) ([]Issue, error) {
@@ -119,6 +122,7 @@ func DefaultLinter() *Linter {
 		CteUnused(Warning),
 		CteDuplicate(Error),
 		NoSubquery(Warning),
+		GroupbyColumns(Error),
 	}
 	return NewLinter(rules)
 }
@@ -152,7 +156,7 @@ func NoStar(level Severity) Rule {
 	}
 }
 
-func (r noStar) Name() string {
+func (_ noStar) Name() string {
 	return "no-star"
 }
 
@@ -408,7 +412,7 @@ func (r cteColumns) Verify(stmt ast.Statement) ([]Issue, error) {
 				Position: c.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "missing explicit columns definition list for cte",
+				Reason:   "columns definition missing for cte",
 			}
 			list = append(list, i)
 		}
@@ -530,7 +534,7 @@ func (r noSubquery) checkSubquery(stmt ast.SelectStatement) ([]Issue, error) {
 				Position: e.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "prefer using cte instead of subquery",
+				Reason:   "avoid using subquery",
 			}
 			list = append(list, i)
 		}
@@ -553,7 +557,91 @@ func GroupbyColumns(level Severity) Rule {
 }
 
 func (r groupbyColumns) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
+}
+
+func (r groupbyColumns) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkGroupBy(q)
+	}
+	return list, nil
+}
+
+func (r groupbyColumns) checkGroupBy(stmt ast.SelectStatement) ([]Issue, error) {
+	if len(stmt.Groups) == 0 {
+		return nil, nil
+	}
+	var names []string
+	for _, g := range stmt.Groups {
+		n, ok := g.(ast.Name)
+		if !ok {
+			return nil, fmt.Errorf("%s: column name expected", r.Name())
+		}
+		names = append(names, n.Name())
+	}
+
+	var (
+		list []Issue
+		get  func(ast.Statement) ast.Statement
+	)
+
+	get = func(q ast.Statement) ast.Statement {
+		switch q := q.(type) {
+		case ast.Name:
+			return q
+		case ast.Alias:
+			return get(q.Statement)
+		case ast.Call:
+			return q
+		default:
+		}
+		return nil
+	}
+
+	for _, c := range stmt.Columns {
+		n := get(c)
+		switch c := n.(type) {
+		case ast.Name:
+			if !slices.Contains(names, c.Name()) {
+				i := Issue{
+					Position: c.Position,
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "column does not appear in group by",
+				}
+				list = append(list, i)
+			}
+		case ast.Call:
+			if !lang.IsAggregateFunc(c.GetIdent()) {
+				i := Issue{
+					Position: c.Position,
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "column used inside a non-aggregate function",
+				}
+				list = append(list, i)
+			}
+		default:
+		}
+	}
+	return list, nil
 }
 
 func (_ groupbyColumns) Name() string {
@@ -561,17 +649,91 @@ func (_ groupbyColumns) Name() string {
 }
 
 type missingAlias struct {
-	severity Severity
+	severity    Severity
+	checkFields bool
+	checkTables bool
 }
 
 func MissingAlias(level Severity) Rule {
 	return missingAlias{
-		severity: level,
+		severity:    level,
+		checkFields: true,
+		checkTables: true,
+	}
+}
+
+func MissingAliasOnFields(level Severity) Rule {
+	return missingAlias{
+		severity:    level,
+		checkFields: true,
+	}
+}
+
+func MissingAliasOnTables(level Severity) Rule {
+	return missingAlias{
+		severity:    level,
+		checkTables: true,
 	}
 }
 
 func (r missingAlias) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
+}
+
+func (r missingAlias) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkMissingAlias(q)
+	default:
+	}
+	return list, nil
+}
+
+func (r missingAlias) checkMissingAlias(stmt ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	if r.checkFields {
+		for _, c := range stmt.Columns {
+			if _, ok := c.(ast.Alias); !ok {
+				i := Issue{
+					Position: getPosition(c),
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "field used without alias",
+				}
+				list = append(list, i)
+			}
+		}
+	}
+	if r.checkTables {
+		for _, t := range stmt.Tables {
+			if _, ok := t.(ast.Alias); !ok {
+				i := Issue{
+					Position: getPosition(t),
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "table used without alias",
+				}
+				list = append(list, i)
+			}
+		}
+	}
+	return list, nil
 }
 
 func (_ missingAlias) Name() string {
@@ -579,17 +741,91 @@ func (_ missingAlias) Name() string {
 }
 
 type noAlias struct {
-	severity Severity
+	severity    Severity
+	checkFields bool
+	checkTables bool
 }
 
 func NoAlias(level Severity) Rule {
 	return noAlias{
-		severity: level,
+		severity:    level,
+		checkFields: true,
+		checkTables: true,
+	}
+}
+
+func NoAliasOnFields(level Severity) Rule {
+	return noAlias{
+		severity:    level,
+		checkFields: true,
+	}
+}
+
+func NoAliasOnTables(level Severity) Rule {
+	return noAlias{
+		severity:    level,
+		checkTables: true,
 	}
 }
 
 func (r noAlias) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
+}
+
+func (r noAlias) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkNoAlias(q)
+	default:
+	}
+	return list, nil
+}
+
+func (r noAlias) checkNoAlias(stmt ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	if r.checkFields {
+		for _, c := range stmt.Columns {
+			if a, ok := c.(ast.Alias); ok {
+				i := Issue{
+					Position: a.Position,
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "field used with an alias",
+				}
+				list = append(list, i)
+			}
+		}
+	}
+	if r.checkTables {
+		for _, t := range stmt.Tables {
+			if a, ok := t.(ast.Alias); ok {
+				i := Issue{
+					Position: a.Position,
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "table used with an alias",
+				}
+				list = append(list, i)
+			}
+		}
+	}
+	return list, nil
 }
 
 func (_ noAlias) Name() string {
@@ -607,6 +843,35 @@ func InvalidAlias(level Severity) Rule {
 }
 
 func (r invalidAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r invalidAlias) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkInvalidAlias(q)
+	default:
+	}
+	return list, nil
+}
+
+func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) {
 	return nil, nil
 }
 
@@ -625,7 +890,80 @@ func UndefinedAlias(level Severity) Rule {
 }
 
 func (r undefinedAlias) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
+}
+
+func (r undefinedAlias) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkUndefinedAlias(q)
+	default:
+	}
+	return list, nil
+}
+
+func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, error) {
+	var aliases []string
+	for _, t := range stmt.Tables {
+		if a, ok := t.(ast.Alias); ok {
+			aliases = append(aliases, a.Alias)
+		}
+	}
+	var (
+		list []Issue
+		get  func(ast.Statement) []string
+	)
+	get = func(q ast.Statement) []string {
+		switch q := q.(type) {
+		case ast.Name:
+			return q.Parts[:len(q.Parts)-1]
+		case ast.Alias:
+			return get(q.Statement)
+		case ast.Call:
+			var list []string
+			for i := range q.Args {
+				list = slices.Concat(list, get(q.Args[i]))
+			}
+			return list
+		default:
+			return nil
+		}
+	}
+	for _, c := range stmt.Columns {
+		ns := get(c)
+		if len(ns) == 0 {
+			continue
+		}
+		ok := slices.ContainsFunc(aliases, func(n string) bool {
+			return slices.Contains(ns, n)
+		})
+		if !ok || len(aliases) == 0 {
+			i := Issue{
+				Position: getPosition(c),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "field qualified by name not defined",
+			}
+			list = append(list, i)
+		}
+	}
+	return list, nil
 }
 
 func (_ undefinedAlias) Name() string {
@@ -666,4 +1004,20 @@ func (r missingIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
 
 func (_ missingIdentQuoted) Name() string {
 	return "missing-ident-quoted"
+}
+
+func getPosition(stmt ast.Statement) token.Position {
+	var pos token.Position
+	switch q := stmt.(type) {
+	case ast.Name:
+		return q.Position
+	case ast.Call:
+		return q.Position
+	case ast.Value:
+		return q.Position
+	case ast.Group:
+		return getPosition(q.Statement)
+	default:
+		return pos
+	}
 }

@@ -23,9 +23,10 @@ type Scanner struct {
 	cursor
 	old cursor
 
+	inString bool
+
 	keywords *keywords.Trie
 	str      bytes.Buffer
-	query    bytes.Buffer
 }
 
 func Scan(r io.Reader, keywords *keywords.Trie) (*Scanner, error) {
@@ -60,11 +61,7 @@ func (s *Scanner) Register(fn Tokenizer) {
 }
 
 func (s *Scanner) Query() string {
-	return s.query.String()
-}
-
-func (s *Scanner) Clear() {
-	s.query.Reset()
+	return string(s.input[:s.curr])
 }
 
 func (s *Scanner) Scan() token.Token {
@@ -217,6 +214,10 @@ func (s *Scanner) scanUntil(until func(rune) bool) {
 }
 
 func (s *Scanner) scanString(tok *token.Token) {
+	s.inString = true
+	defer func() {
+		s.inString = false
+	}()
 	s.Read()
 	for !IsLiteralQ(s.char) && !s.Done() {
 		s.Write()
@@ -353,10 +354,6 @@ func (s *Scanner) Save() {
 }
 
 func (s *Scanner) Restore() {
-	written := s.cursor.written - s.old.written
-	if s.query.Len() >= written && written > 0 {
-		s.query.Truncate(s.cursor.written - written)
-	}
 	s.cursor = s.old
 }
 
@@ -374,14 +371,6 @@ func (s *Scanner) Read() {
 		s.char = r
 		s.next = len(s.input)
 		return
-	}
-	if s.char == semicolon {
-		s.query.Reset()
-	}
-
-	if r != space || s.char != r {
-		s.query.WriteRune(r)
-		s.cursor.written = s.query.Len()
 	}
 
 	s.char, s.curr, s.next = r, s.next, s.next+n
