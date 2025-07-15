@@ -12,6 +12,7 @@ import (
 
 var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"no-star":              lint.NoStar,
+	"duplicate-field":      lint.DuplicateField,
 	"no-cte":               lint.NoCte,
 	"cte-columns":          lint.CteColumns,
 	"cte-columns-count":    lint.CteColumnsCount,

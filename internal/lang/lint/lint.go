@@ -160,6 +160,70 @@ func (i *Linter) Lint(stmt ast.Statement) ([]Issue, error) {
 	return list, nil
 }
 
+type duplicateField struct {
+	severity Severity
+}
+
+func DuplicateField(level Severity) Rule {
+	return duplicateField{
+		severity: level,
+	}
+}
+
+func (_ duplicateField) Name() string {
+	return "duplicate-field"
+}
+
+func (r duplicateField) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r duplicateField) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkDuplicateFields(q)
+	default:
+	}
+	return list, nil
+}
+
+func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, error) {
+	var (
+		names = make(map[string]struct{})
+		list  []Issue
+	)
+	for _, c := range q.Columns {
+		ns := getNames(c)
+		if _, ok := names[ns[len(ns)-1]]; ok {
+			i := Issue{
+				Position: getPosition(c),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "duplicate field in fields",
+			}
+			list = append(list, i)
+		}
+		names[ns[len(ns)-1]] = struct{}{}
+	}
+	return list, nil
+}
+
 type noStar struct {
 	severity Severity
 }
@@ -1075,6 +1139,8 @@ func getPosition(stmt ast.Statement) token.Position {
 		return q.Position
 	case ast.Group:
 		return getPosition(q.Statement)
+	case ast.Binary:
+		return q.Position
 	default:
 		return pos
 	}
