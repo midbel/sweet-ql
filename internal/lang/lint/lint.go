@@ -44,14 +44,28 @@ type Issue struct {
 	Cause  string
 }
 
+type RuleOptions uint64
+
+const (
+	CheckFields RuleOptions = 1 << iota
+	CheckTables
+)
+
+func (r RuleOptions) withCheckFields() bool {
+	return r&CheckFields == CheckFields
+}
+
+func (r RuleOptions) withCheckTables() bool {
+	return r&CheckFields == CheckTables
+}
+
 type Rule interface {
 	Verify(ast.Statement) ([]Issue, error)
 	Name() string
 }
 
 type Linter struct {
-	rules      []Rule
-	SetOptions (RuleOptions)
+	rules []Rule
 }
 
 func Lint(r io.Reader, rules []Rule) ([]Issue, error) {
@@ -630,6 +644,10 @@ func (r groupbyColumns) checkGroupBy(stmt ast.SelectStatement) ([]Issue, error) 
 			}
 		case ast.Call:
 			if !lang.IsAggregateFunc(c.GetIdent()) {
+				ns := getNames(c)
+				if len(ns) == 1 && slices.Contains(names, ns[0]) {
+					break
+				}
 				i := Issue{
 					Position: c.Position,
 					Severity: r.severity,
@@ -649,30 +667,28 @@ func (_ groupbyColumns) Name() string {
 }
 
 type missingAlias struct {
-	severity    Severity
-	checkFields bool
-	checkTables bool
+	severity Severity
+	options  RuleOptions
 }
 
 func MissingAlias(level Severity) Rule {
 	return missingAlias{
-		severity:    level,
-		checkFields: true,
-		checkTables: true,
+		severity: level,
+		options:  CheckFields | CheckTables,
 	}
 }
 
 func MissingAliasOnFields(level Severity) Rule {
 	return missingAlias{
-		severity:    level,
-		checkFields: true,
+		severity: level,
+		options:  CheckFields,
 	}
 }
 
 func MissingAliasOnTables(level Severity) Rule {
 	return missingAlias{
-		severity:    level,
-		checkTables: true,
+		severity: level,
+		options:  CheckTables,
 	}
 }
 
@@ -707,7 +723,7 @@ func (r missingAlias) verify(stmt ast.Statement) ([]Issue, error) {
 
 func (r missingAlias) checkMissingAlias(stmt ast.SelectStatement) ([]Issue, error) {
 	var list []Issue
-	if r.checkFields {
+	if r.options.withCheckFields() {
 		for _, c := range stmt.Columns {
 			if _, ok := c.(ast.Alias); !ok {
 				i := Issue{
@@ -720,7 +736,7 @@ func (r missingAlias) checkMissingAlias(stmt ast.SelectStatement) ([]Issue, erro
 			}
 		}
 	}
-	if r.checkTables {
+	if r.options.withCheckTables() {
 		for _, t := range stmt.Tables {
 			if _, ok := t.(ast.Alias); !ok {
 				i := Issue{
@@ -741,30 +757,28 @@ func (_ missingAlias) Name() string {
 }
 
 type noAlias struct {
-	severity    Severity
-	checkFields bool
-	checkTables bool
+	severity Severity
+	options  RuleOptions
 }
 
 func NoAlias(level Severity) Rule {
 	return noAlias{
-		severity:    level,
-		checkFields: true,
-		checkTables: true,
+		severity: level,
+		options:  CheckFields | CheckTables,
 	}
 }
 
 func NoAliasOnFields(level Severity) Rule {
 	return noAlias{
-		severity:    level,
-		checkFields: true,
+		severity: level,
+		options:  CheckFields,
 	}
 }
 
 func NoAliasOnTables(level Severity) Rule {
 	return noAlias{
-		severity:    level,
-		checkTables: true,
+		severity: level,
+		options:  CheckTables,
 	}
 }
 
@@ -799,7 +813,7 @@ func (r noAlias) verify(stmt ast.Statement) ([]Issue, error) {
 
 func (r noAlias) checkNoAlias(stmt ast.SelectStatement) ([]Issue, error) {
 	var list []Issue
-	if r.checkFields {
+	if r.options.withCheckFields() {
 		for _, c := range stmt.Columns {
 			if a, ok := c.(ast.Alias); ok {
 				i := Issue{
@@ -812,7 +826,7 @@ func (r noAlias) checkNoAlias(stmt ast.SelectStatement) ([]Issue, error) {
 			}
 		}
 	}
-	if r.checkTables {
+	if r.options.withCheckTables() {
 		for _, t := range stmt.Tables {
 			if a, ok := t.(ast.Alias); ok {
 				i := Issue{
@@ -872,7 +886,49 @@ func (r invalidAlias) verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) {
-	return nil, nil
+	if q.Where == nil {
+		return nil, nil
+	}
+	var aliases []string
+	for _, c := range q.Columns {
+		a, ok := c.(ast.Alias)
+		if ok {
+			aliases = append(aliases, a.Alias)
+		}
+	}
+	if len(aliases) == 0 {
+		return nil, nil
+	}
+	b, ok := q.Where.(ast.Binary)
+	if !ok {
+		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	var list []Issue
+	for _, n := range getNames(b) {
+		if ok := slices.Contains(aliases, n); ok {
+			i := Issue{
+				Position: b.Position,
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "alias used in \"where\" clause of select",
+			}
+			list = append(list, i)
+		}
+	}
+	for _, g := range q.Groups {
+		for _, n := range getNames(g) {
+			if ok := slices.Contains(aliases, n); ok {
+				i := Issue{
+					Position: getPosition(g),
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "alias used in \"group by\" clause of select",
+				}
+				list = append(list, i)
+			}
+		}
+	}
+	return list, nil
 }
 
 func (_ invalidAlias) Name() string {
@@ -919,40 +975,22 @@ func (r undefinedAlias) verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, error) {
-	var aliases []string
+	var (
+		aliases []string
+		list    []Issue
+	)
 	for _, t := range stmt.Tables {
 		if a, ok := t.(ast.Alias); ok {
 			aliases = append(aliases, a.Alias)
 		}
 	}
-	var (
-		list []Issue
-		get  func(ast.Statement) []string
-	)
-	get = func(q ast.Statement) []string {
-		switch q := q.(type) {
-		case ast.Name:
-			return q.Parts[:len(q.Parts)-1]
-		case ast.Alias:
-			return get(q.Statement)
-		case ast.Call:
-			var list []string
-			for i := range q.Args {
-				list = slices.Concat(list, get(q.Args[i]))
-			}
-			return list
-		default:
-			return nil
-		}
-	}
+
 	for _, c := range stmt.Columns {
-		ns := get(c)
-		if len(ns) == 0 {
+		ns := getNames(c)
+		if len(ns) <= 1 {
 			continue
 		}
-		ok := slices.ContainsFunc(aliases, func(n string) bool {
-			return slices.Contains(ns, n)
-		})
+		ok := slices.Contains(aliases, ns[len(ns)-2])
 		if !ok || len(aliases) == 0 {
 			i := Issue{
 				Position: getPosition(c),
@@ -1004,6 +1042,26 @@ func (r missingIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
 
 func (_ missingIdentQuoted) Name() string {
 	return "missing-ident-quoted"
+}
+
+func getNames(q ast.Statement) []string {
+	switch q := q.(type) {
+	case ast.Name:
+		return q.Parts
+	case ast.Alias:
+		return getNames(q.Statement)
+	case ast.Call:
+		var list []string
+		for i := range q.Args {
+			list = slices.Concat(list, getNames(q.Args[i]))
+		}
+		return list
+	case ast.Binary:
+		list := slices.Concat(getNames(q.Left), getNames(q.Right))
+		return list
+	default:
+		return nil
+	}
 }
 
 func getPosition(stmt ast.Statement) token.Position {
