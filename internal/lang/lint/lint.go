@@ -730,6 +730,67 @@ func (_ groupbyColumns) Name() string {
 	return "groupby-columns"
 }
 
+type setAlias struct {
+	severity Severity
+}
+
+func SetAlias(level Severity) Rule {
+	return setAlias{
+		severity: level,
+	}
+}
+
+func (r setAlias) Name() string {
+	return "set-alias"
+}
+
+func (r setAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r setAlias) verify(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		for _, q := range q.Queries {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		issues, err := r.verify(q.Statement)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	case ast.CteStatement:
+		return r.verify(q.Statement)
+	case ast.SelectStatement:
+		return r.checkAliasForCalculatedFields(q)
+	default:
+	}
+	return list, nil
+}
+
+func (r setAlias) checkAliasForCalculatedFields(q ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	for _, c := range q.Columns {
+		switch c.(type) {
+		case ast.Call, ast.Binary:
+			i := Issue{
+				Position: getPosition(c),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "use alias for calculated field",
+			}
+			list = append(list, i)
+		default:
+		}
+	}
+	return list, nil
+}
+
 type missingAlias struct {
 	severity Severity
 	options  RuleOptions

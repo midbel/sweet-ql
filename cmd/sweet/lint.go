@@ -20,6 +20,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"cte-duplicate":        lint.CteDuplicate,
 	"no-subquery":          lint.NoSubquery,
 	"groupby-columns":      lint.GroupbyColumns,
+	"set-alias":            lint.SetAlias,
 	"missing-alias-fields": lint.MissingAliasOnFields,
 	"missing-alias-tables": lint.MissingAliasOnTables,
 	"no-alias-fields":      lint.NoAliasOnFields,
