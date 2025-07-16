@@ -6,37 +6,6 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func ReplaceOp(b Binary) Binary {
-	if b.Op == "!=" {
-		b.Op = "<>"
-	}
-	return b
-}
-
-func ReplaceExpr(b Binary) Statement {
-	v, ok := b.Right.(Value)
-	if !ok {
-		return b
-	}
-	if !v.Constant() {
-		return b
-	}
-	x := Is{
-		Ident: b.Left,
-		Value: b.Right,
-	}
-	switch b.Op {
-	case "=":
-		return x
-	case "<>":
-		return Not{
-			Statement: x,
-		}
-	default:
-		return b
-	}
-}
-
 type Group struct {
 	Statement
 }
