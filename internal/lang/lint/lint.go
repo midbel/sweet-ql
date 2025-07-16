@@ -918,11 +918,13 @@ func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, 
 
 type noIdentQuoted struct {
 	severity Severity
+	options  RuleOptions
 }
 
 func NoIdentQuoted(level Severity) Rule {
 	return noIdentQuoted{
 		severity: level,
+		options:  CheckFields | CheckTables,
 	}
 }
 
@@ -936,11 +938,13 @@ func (r noIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
 
 type missingIdentQuoted struct {
 	severity Severity
+	options  RuleOptions
 }
 
 func MissingIdentQuoted(level Severity) Rule {
 	return missingIdentQuoted{
 		severity: level,
+		options:  CheckFields | CheckTables,
 	}
 }
 
