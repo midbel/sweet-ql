@@ -6,43 +6,6 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func GetNamesFromWhere(where Statement, prefix string) []Statement {
-	var (
-		names []Statement
-		walk  func(Statement)
-		seen  = make(map[string]struct{})
-	)
-
-	walk = func(stmt Statement) {
-		switch stmt := stmt.(type) {
-		case Between:
-			walk(stmt.Ident)
-		case In:
-			walk(stmt.Ident)
-		case Is:
-			walk(stmt.Ident)
-		case Unary:
-			walk(stmt.Right)
-		case Binary:
-			walk(stmt.Left)
-			walk(stmt.Right)
-		case Name:
-			ident := stmt.Ident()
-			if _, ok := seen[ident]; ok {
-				break
-			}
-			if strings.HasPrefix(stmt.Ident(), prefix) {
-				seen[ident] = struct{}{}
-				names = append(names, stmt)
-			}
-		default:
-		}
-	}
-
-	walk(where)
-	return names
-}
-
 func ReplaceOp(b Binary) Binary {
 	if b.Op == "!=" {
 		b.Op = "<>"
@@ -98,10 +61,6 @@ type Not struct {
 	Statement
 }
 
-func (n Not) GetNames() []string {
-	return GetNamesFromStmt([]Statement{n.Statement})
-}
-
 type Collate struct {
 	token.Position
 	Statement
@@ -120,10 +79,6 @@ type Call struct {
 	Args     []Statement
 	Filter   Statement
 	Over     Statement
-}
-
-func (c Call) GetNames() []string {
-	return GetNamesFromStmt(c.Args)
 }
 
 func (c Call) GetIdent() string {
@@ -149,22 +104,11 @@ type Unary struct {
 	Op    string
 }
 
-func (u Unary) GetNames() []string {
-	return GetNamesFromStmt([]Statement{u.Right})
-}
-
 type Binary struct {
 	token.Position
 	Left  Statement
 	Right Statement
 	Op    string
-}
-
-func (b Binary) GetNames() []string {
-	var list []string
-	list = append(list, GetNamesFromStmt([]Statement{b.Left})...)
-	list = append(list, GetNamesFromStmt([]Statement{b.Right})...)
-	return list
 }
 
 func (b Binary) IsRelation() bool {
@@ -191,13 +135,6 @@ type In struct {
 	token.Position
 	Ident Statement
 	Value Statement
-}
-
-func (i In) GetNames() []string {
-	var list []string
-	list = append(list, GetNamesFromStmt([]Statement{i.Ident})...)
-	list = append(list, GetNamesFromStmt([]Statement{i.Value})...)
-	return list
 }
 
 type Between struct {

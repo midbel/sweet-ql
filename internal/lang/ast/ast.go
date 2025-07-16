@@ -6,6 +6,8 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+type Statement interface{}
+
 type Node struct {
 	Statement
 	Before []string
@@ -26,8 +28,6 @@ func (n Node) GetNames() []string {
 	}
 	return q.GetNames()
 }
-
-type Statement interface{}
 
 type Limit struct {
 	token.Position
@@ -340,122 +340,4 @@ type DeleteStatement struct {
 
 func (s DeleteStatement) Keyword() (string, error) {
 	return "DELETE FROM", nil
-}
-
-func getNamesFromStatments(cs []Statement) []string {
-	var list []string
-	for _, c := range cs {
-		c, ok := c.(Name)
-		if !ok {
-			continue
-		}
-		n := c.Parts[len(c.Parts)-1]
-		if n == "" || n == "*" {
-			continue
-		}
-		list = append(list, n)
-	}
-	return list
-}
-
-func getSchemasFromStmt(all []Statement) []string {
-	var list []string
-	for _, c := range all {
-		if c, ok := c.(interface{ Schema() string }); ok {
-			schema := c.Schema()
-			if schema == "" {
-				continue
-			}
-			list = append(list, schema)
-		}
-	}
-	return list
-}
-
-func GetAliasFromStmt(all []Statement) []string {
-	var list []string
-	for _, c := range all {
-		a, ok := c.(Alias)
-		if !ok {
-			continue
-		}
-		list = append(list, a.Alias)
-	}
-	return list
-}
-
-func GetNamesFromStmt(all []Statement) []string {
-	get := func(s Statement) []string {
-		if n, ok := s.(Name); ok {
-			if len(n.Parts) == 0 {
-				return nil
-			}
-			return []string{n.Parts[len(n.Parts)-1]}
-		}
-		if g, ok := s.(interface{ GetNames() []string }); ok {
-			return g.GetNames()
-		}
-		return nil
-	}
-	var list []string
-	for _, s := range all {
-		list = append(list, get(s)...)
-	}
-	return list
-
-}
-
-func SubstituteQueries(list []Statement, stmt Statement) Statement {
-	queries := make(map[string]Statement)
-	for _, q := range list {
-		c, ok := q.(CteStatement)
-		if !ok {
-			continue
-		}
-		queries[c.Ident] = c.Statement
-	}
-	for n, q := range queries {
-		s, ok := q.(SelectStatement)
-		if !ok {
-			continue
-		}
-		queries[n] = substituteSelect(s, queries)
-	}
-	switch q := stmt.(type) {
-	case SelectStatement:
-		stmt = substituteSelect(q, queries)
-	default:
-	}
-	return stmt
-}
-
-func substituteSelect(stmt SelectStatement, queries map[string]Statement) Statement {
-	for i, t := range stmt.Tables {
-		ident, alias := GetIdentFromStatement(t)
-		if ident == "" {
-			continue
-		}
-		q, ok := queries[ident]
-		if ok {
-			stmt.Tables[i] = Alias{
-				Statement: q,
-				Alias:     alias,
-			}
-		}
-	}
-	return stmt
-}
-
-func GetIdentFromStatement(stmt Statement) (string, string) {
-	switch s := stmt.(type) {
-	case Name:
-		return s.Ident(), s.Ident()
-	case Alias:
-		ident, _ := GetIdentFromStatement(s.Statement)
-		return ident, s.Alias
-	case Join:
-		return GetIdentFromStatement(s.Table)
-	default:
-		return "", ""
-	}
 }
