@@ -151,7 +151,7 @@ func (p *Parser) parse() (ast.Statement, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !p.Is(token.EOL) {
+		if !p.Is(token.EOL) && !p.Done() {
 			return nil, p.Unexpected("statement", missingEol)
 		}
 		p.Next()

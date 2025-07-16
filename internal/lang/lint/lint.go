@@ -477,6 +477,136 @@ func (r cteColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
 	return list, nil
 }
 
+type subqueryColumnsCount struct {
+	severity Severity
+}
+
+func SubqueryColumnsCount(level Severity) Rule {
+	return subqueryColumnsCount{
+		severity: level,
+	}
+}
+
+func (_ subqueryColumnsCount) Name() string {
+	return "subquery-columns-count"
+}
+
+func (r subqueryColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r subqueryColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
+	list, err := verify[ast.SelectStatement](stmt, r.checkColumnsCount)
+	if err != nil {
+		return nil, err
+	}
+	others, err := verify[ast.SelectStatement](stmt, r.checkWhere)
+	if err != nil {
+		return nil, err
+	}
+	return slices.Concat(list, others), nil
+}
+
+func (r subqueryColumnsCount) checkColumnsCount(q ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	for _, c := range q.Columns {
+		g, ok := c.(ast.Group)
+		if !ok {
+			continue
+		}
+		q, ok := g.Statement.(ast.SelectStatement)
+		if !ok {
+			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		switch len(q.Columns) {
+		case 0:
+			// not possible!!!
+		case 1:
+			n, ok := q.Columns[0].(ast.Name)
+			if ok && n.Name() == "*" {
+				i := Issue{
+					Position: getPosition(q.Columns[0]),
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "'*' should not be used in subquery",
+				}
+				list = append(list, i)
+			}
+		default:
+			i := Issue{
+				Position: getPosition(q.Columns[0]),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "invalid columns count used by subquery",
+			}
+			list = append(list, i)
+		}
+	}
+	return nil, nil
+}
+
+func (r subqueryColumnsCount) checkWhere(q ast.SelectStatement) ([]Issue, error) {
+	var check func(ast.Statement) ([]Issue, error)
+	check = func(q ast.Statement) ([]Issue, error) {
+		switch q := q.(type) {
+		case ast.Binary:
+			if !q.IsRelation() {
+				return nil, nil
+			}
+			left, err := check(q.Left)
+			if err != nil {
+				return nil, err
+			}
+			right, err := check(q.Right)
+			if err != nil {
+				return nil, err
+			}
+			return slices.Concat(left, right), nil
+		case ast.Between:
+			left, err := check(q.Lower)
+			if err != nil {
+				return nil, err
+			}
+			right, err := check(q.Upper)
+			if err != nil {
+				return nil, err
+			}
+			return slices.Concat(left, right), nil
+		case ast.In:
+			return verify[ast.SelectStatement](q.Value, r.checkColumnsCount)
+		default:
+			return nil, nil
+		}
+	}
+	return check(q.Where)
+}
+
+type subqueryNameJoin struct {
+	severity Severity
+}
+
+func SubqueryNameJoin(level Severity) Rule {
+	return subqueryNameJoin{
+		severity: level,
+	}
+}
+
+func (_ subqueryNameJoin) Name() string {
+	return "subquery-name-join"
+}
+
+func (r subqueryNameJoin) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r subqueryNameJoin) verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
+}
+
+func (r subqueryNameJoin) checkNames(q ast.SelectStatement) ([]Issue, error) {
+	return nil, nil
+}
+
 type noSubquery struct {
 	severity Severity
 }
@@ -973,6 +1103,8 @@ func verify[T any](stmt ast.Statement, check func(T) ([]Issue, error)) ([]Issue,
 		}
 		return list, nil
 	case ast.CteStatement:
+		return verify(q.Statement, check)
+	case ast.Group:
 		return verify(q.Statement, check)
 	case T:
 		return check(q)

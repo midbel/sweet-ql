@@ -336,6 +336,79 @@ func (w *Writer) formatCollate(stmt ast.Collate, _ bool) error {
 	return nil
 }
 
+func (w *Writer) formatIs(stmt ast.Is, not, nl bool) error {
+	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
+		return err
+	}
+	w.WriteBlank()
+	w.WriteKeyword("IS")
+	w.WriteBlank()
+	if not {
+		w.WriteKeyword("NOT")
+		w.WriteBlank()
+	}
+	return w.FormatExpr(stmt.Value, false)
+}
+
+func (w *Writer) formatIn(stmt ast.In, not, nl bool) error {
+	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
+		return err
+	}
+	w.WriteBlank()
+	if not {
+		w.WriteKeyword("NOT")
+		w.WriteBlank()
+	}
+	w.WriteKeyword("IN")
+	if !w.Compact.All() {
+		w.WriteBlank()
+	}
+	if stmt, ok := stmt.Value.(ast.Group); ok {
+		return w.compact(func() error {
+			return w.formatGroup(stmt)
+		})
+	}
+	return w.FormatExpr(stmt.Value, false)
+}
+
+func (w *Writer) formatBetween(stmt ast.Between, not, nl bool) error {
+	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
+		return err
+	}
+	w.WriteBlank()
+	if not {
+		w.WriteKeyword("NOT")
+		w.WriteBlank()
+	}
+	w.WriteKeyword("BETWEEN")
+	w.WriteBlank()
+	if err := w.FormatExpr(stmt.Lower, false); err != nil {
+		return err
+	}
+	w.WriteBlank()
+	w.WriteKeyword("AND")
+	w.WriteBlank()
+	return w.FormatExpr(stmt.Upper, false)
+}
+
+func (w *Writer) formatAll(stmt ast.All, _ bool) error {
+	w.WriteKeyword("ALL")
+	w.WriteString("(")
+	defer w.WriteString(")")
+	return w.compact(func() error {
+		return w.FormatExpr(stmt.Statement, false)
+	})
+}
+
+func (w *Writer) formatAny(stmt ast.Any, _ bool) error {
+	w.WriteKeyword("ANY")
+	w.WriteString("(")
+	defer w.WriteString(")")
+	return w.compact(func() error {
+		return w.FormatExpr(stmt.Statement, false)
+	})
+}
+
 func (w *Writer) formatList(stmt ast.List, stacked bool) error {
 	w.WriteString("(")
 	if stacked {
@@ -362,6 +435,77 @@ func (w *Writer) formatList(stmt ast.List, stacked bool) error {
 	}
 	w.WriteString(")")
 	return nil
+}
+
+func (w *Writer) formatGroup(stmt ast.Group) error {
+	if _, ok := stmt.Statement.(ast.SelectStatement); ok {
+		w.WriteString("(")
+		if !w.Compact.All() {
+			w.WriteNL()
+		}
+		if err := w.FormatStatement(stmt.Statement); err != nil {
+			return err
+		}
+		if !w.Compact.All() {
+			w.WriteNL()
+			w.WritePrefix()
+		}
+		w.WriteString(")")
+		return nil
+	}
+	w.Enter()
+	defer w.Leave()
+
+	w.WriteString("(")
+	w.WriteNL()
+	w.WritePrefix()
+	w.WritePrefix()
+	if err := w.FormatExpr(stmt.Statement, false); err != nil {
+		return nil
+	}
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteString(")")
+	return nil
+}
+
+func (w *Writer) formatUnary(stmt ast.Unary, nl bool) error {
+	w.WriteString(stmt.Op)
+	w.WriteBlank()
+	return w.FormatExpr(stmt.Right, nl)
+}
+
+func (w *Writer) formatBinary(stmt ast.Binary, nl bool) error {
+	if stmt.IsRelation() {
+		return w.formatRelation(stmt, nl)
+	}
+	if err := w.FormatExpr(stmt.Left, nl); err != nil {
+		return err
+	}
+	if w.Compact.KeepSpacesAround() {
+		w.WriteBlank()
+	}
+	w.WriteKeyword(stmt.Op)
+	if w.Compact.KeepSpacesAround() {
+		w.WriteBlank()
+	}
+	if err := w.FormatExpr(stmt.Right, nl); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *Writer) formatRelation(stmt ast.Binary, nl bool) error {
+	if err := w.FormatExpr(stmt.Left, false); err != nil {
+		return err
+	}
+	w.WriteNL()
+	w.Enter()
+	w.WritePrefix()
+	w.WriteKeyword(stmt.Op)
+	w.WriteBlank()
+	w.Leave()
+	return w.FormatExpr(stmt.Right, false)
 }
 
 func (w *Writer) formatCall(call ast.Call) error {
@@ -446,139 +590,6 @@ func (w *Writer) formatCall(call ast.Call) error {
 		default:
 			return fmt.Errorf("window: unsupported statement type %T", over)
 		}
-	}
-	return nil
-}
-
-func (w *Writer) formatIs(stmt ast.Is, not, nl bool) error {
-	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	w.WriteKeyword("IS")
-	w.WriteBlank()
-	if not {
-		w.WriteKeyword("NOT")
-		w.WriteBlank()
-	}
-	return w.FormatExpr(stmt.Value, false)
-}
-
-func (w *Writer) formatIn(stmt ast.In, not, nl bool) error {
-	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	if not {
-		w.WriteKeyword("NOT")
-		w.WriteBlank()
-	}
-	w.WriteKeyword("IN")
-	if !w.Compact.All() {
-		w.WriteBlank()
-	}
-	if stmt, ok := stmt.Value.(ast.Group); ok {
-		return w.compact(func() error {
-			return w.formatGroup(stmt)
-		})
-	}
-	return w.FormatExpr(stmt.Value, false)
-}
-
-func (w *Writer) formatBetween(stmt ast.Between, not, nl bool) error {
-	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	if not {
-		w.WriteKeyword("NOT")
-		w.WriteBlank()
-	}
-	w.WriteKeyword("BETWEEN")
-	w.WriteBlank()
-	if err := w.FormatExpr(stmt.Lower, false); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	w.WriteKeyword("AND")
-	w.WriteBlank()
-	return w.FormatExpr(stmt.Upper, false)
-}
-
-func (w *Writer) formatUnary(stmt ast.Unary, nl bool) error {
-	w.WriteString(stmt.Op)
-	w.WriteBlank()
-	return w.FormatExpr(stmt.Right, nl)
-}
-
-func (w *Writer) formatGroup(stmt ast.Group) error {
-	if _, ok := stmt.Statement.(ast.SelectStatement); ok {
-		w.WriteString("(")
-		if !w.Compact.All() {
-			w.WriteNL()
-		}
-		if err := w.FormatStatement(stmt.Statement); err != nil {
-			return err
-		}
-		if !w.Compact.All() {
-			w.WriteNL()
-			w.WritePrefix()
-		}
-		w.WriteString(")")
-		return nil
-	}
-	w.WriteString("(")
-	defer w.WriteString(")")
-	return w.FormatExpr(stmt.Statement, false)
-}
-
-func (w *Writer) formatRelation(stmt ast.Binary, nl bool) error {
-	if err := w.FormatExpr(stmt.Left, false); err != nil {
-		return err
-	}
-	w.WriteNL()
-	w.Enter()
-	w.WritePrefix()
-	w.WriteKeyword(stmt.Op)
-	w.WriteBlank()
-	w.Leave()
-	return w.FormatExpr(stmt.Right, false)
-}
-
-func (w *Writer) formatAll(stmt ast.All, _ bool) error {
-	w.WriteKeyword("ALL")
-	w.WriteString("(")
-	defer w.WriteString(")")
-	return w.compact(func() error {
-		return w.FormatExpr(stmt.Statement, false)
-	})
-}
-
-func (w *Writer) formatAny(stmt ast.Any, _ bool) error {
-	w.WriteKeyword("ANY")
-	w.WriteString("(")
-	defer w.WriteString(")")
-	return w.compact(func() error {
-		return w.FormatExpr(stmt.Statement, false)
-	})
-}
-
-func (w *Writer) formatBinary(stmt ast.Binary, nl bool) error {
-	if stmt.IsRelation() {
-		return w.formatRelation(stmt, nl)
-	}
-	if err := w.FormatExpr(stmt.Left, nl); err != nil {
-		return err
-	}
-	if w.Compact.KeepSpacesAround() {
-		w.WriteBlank()
-	}
-	w.WriteKeyword(stmt.Op)
-	if w.Compact.KeepSpacesAround() {
-		w.WriteBlank()
-	}
-	if err := w.FormatExpr(stmt.Right, nl); err != nil {
-		return err
 	}
 	return nil
 }
