@@ -179,28 +179,7 @@ func (r duplicateField) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r duplicateField) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkDuplicateFields(q)
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkDuplicateFields)
 }
 
 func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, error) {
@@ -215,7 +194,7 @@ func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, er
 				Position: getPosition(c),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "duplicate field in fields",
+				Reason:   "duplicate field",
 			}
 			list = append(list, i)
 		}
@@ -243,36 +222,7 @@ func (r noStar) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r noStar) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = issues
-	case ast.SelectStatement:
-		issues, err := r.checkStar(q)
-		if err != nil {
-			return nil, err
-		}
-		list = issues
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkStar)
 }
 
 func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
@@ -287,7 +237,7 @@ func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
 				Position: n.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "use explicit column names instead of '*'",
+				Reason:   "use explicit field names",
 			}
 			list = append(list, i)
 		}
@@ -305,21 +255,25 @@ func NoCte(level Severity) Rule {
 	}
 }
 
+func (_ noCte) Name() string {
+	return "no-cte"
+}
+
 func (r noCte) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r noCte) verify(stmt ast.Statement) ([]Issue, error) {
 	if w, ok := stmt.(ast.WithStatement); ok {
 		i := Issue{
 			Position: w.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "use subqueries instead of cte",
+			Reason:   "use subquery instead of cte",
 		}
 		return []Issue{i}, nil
 	}
 	return nil, nil
-}
-
-func (_ noCte) Name() string {
-	return "no-cte"
 }
 
 type cteDuplicate struct {
@@ -332,7 +286,15 @@ func CteDuplicate(level Severity) Rule {
 	}
 }
 
+func (_ cteDuplicate) Name() string {
+	return "cte-duplicate"
+}
+
 func (r cteDuplicate) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r cteDuplicate) verify(stmt ast.Statement) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
@@ -351,17 +313,13 @@ func (r cteDuplicate) Verify(stmt ast.Statement) ([]Issue, error) {
 				Position: c.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "cte use name already defined",
+				Reason:   "duplicate cte name",
 			}
 			list = append(list, i)
 		}
 		names[c.Ident] = struct{}{}
 	}
 	return list, nil
-}
-
-func (_ cteDuplicate) Name() string {
-	return "cte-duplicate"
 }
 
 type cteUnused struct {
@@ -374,7 +332,15 @@ func CteUnused(level Severity) Rule {
 	}
 }
 
+func (_ cteUnused) Name() string {
+	return "cte-unused"
+}
+
 func (r cteUnused) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r cteUnused) verify(stmt ast.Statement) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
@@ -391,12 +357,16 @@ func (r cteUnused) Verify(stmt ast.Statement) ([]Issue, error) {
 		names[c.Ident] = 0
 		positions[c.Ident] = c.Position
 	}
-	for _, q := range q.Queries {
+	var (
+		all  = slices.Concat(q.Queries, []ast.Statement{q.Statement})
+		list []Issue
+	)
+	for _, q := range all {
 		c, ok := q.(ast.CteStatement)
 		if !ok {
 			continue
 		}
-		used, _ := r.getNames(c.Statement)
+		used := getTables(c.Statement)
 		for _, n := range used {
 			if _, ok := names[n]; !ok {
 				continue
@@ -404,14 +374,6 @@ func (r cteUnused) Verify(stmt ast.Statement) ([]Issue, error) {
 			names[n]++
 		}
 	}
-	used, _ := r.getNames(q.Statement)
-	for _, n := range used {
-		if _, ok := names[n]; !ok {
-			continue
-		}
-		names[n]++
-	}
-	var list []Issue
 	for n, c := range names {
 		if c > 0 {
 			continue
@@ -427,43 +389,6 @@ func (r cteUnused) Verify(stmt ast.Statement) ([]Issue, error) {
 	return list, nil
 }
 
-func (_ cteUnused) getNames(stmt ast.Statement) ([]string, error) {
-	q, ok := stmt.(ast.SelectStatement)
-	if !ok {
-		return nil, nil
-	}
-	var (
-		get   func(ast.Statement) string
-		names = make(map[string]struct{})
-	)
-	get = func(stmt ast.Statement) string {
-		switch q := stmt.(type) {
-		case ast.Join:
-			return get(q.Table)
-		case ast.Name:
-			return q.Name()
-		case ast.Alias:
-			return get(q.Statement)
-		case ast.Group:
-			return ""
-		default:
-			return ""
-		}
-	}
-	for _, t := range q.Tables {
-		n := get(t)
-		if n == "" {
-			continue
-		}
-		names[n] = struct{}{}
-	}
-	return slices.Collect(maps.Keys(names)), nil
-}
-
-func (_ cteUnused) Name() string {
-	return "cte-unused"
-}
-
 type cteColumns struct {
 	severity Severity
 }
@@ -474,7 +399,15 @@ func CteColumns(level Severity) Rule {
 	}
 }
 
+func (_ cteColumns) Name() string {
+	return "cte-columns"
+}
+
 func (r cteColumns) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r cteColumns) verify(stmt ast.Statement) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
@@ -498,10 +431,6 @@ func (r cteColumns) Verify(stmt ast.Statement) ([]Issue, error) {
 	return list, nil
 }
 
-func (_ cteColumns) Name() string {
-	return "cte-columns"
-}
-
 type cteColumnsCount struct {
 	severity Severity
 }
@@ -512,7 +441,15 @@ func CteColumnsCount(level Severity) Rule {
 	}
 }
 
+func (_ cteColumnsCount) Name() string {
+	return "cte-columns-count"
+}
+
 func (r cteColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r cteColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
@@ -540,10 +477,6 @@ func (r cteColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
 	return list, nil
 }
 
-func (_ cteColumnsCount) Name() string {
-	return "cte-columns-count"
-}
-
 type noSubquery struct {
 	severity Severity
 }
@@ -554,37 +487,16 @@ func NoSubquery(level Severity) Rule {
 	}
 }
 
+func (_ noSubquery) Name() string {
+	return "no-subquery"
+}
+
 func (r noSubquery) Verify(stmt ast.Statement) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
 func (r noSubquery) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			c, ok := q.(ast.CteStatement)
-			if !ok {
-
-			}
-			issues, err := r.verify(c)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkSubquery(q)
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkSubquery)
 }
 
 func (r noSubquery) checkSubquery(stmt ast.SelectStatement) ([]Issue, error) {
@@ -620,10 +532,6 @@ func (r noSubquery) checkSubquery(stmt ast.SelectStatement) ([]Issue, error) {
 	return list, nil
 }
 
-func (_ noSubquery) Name() string {
-	return "no-subquery"
-}
-
 type groupbyColumns struct {
 	severity Severity
 }
@@ -634,32 +542,16 @@ func GroupbyColumns(level Severity) Rule {
 	}
 }
 
+func (_ groupbyColumns) Name() string {
+	return "groupby-columns"
+}
+
 func (r groupbyColumns) Verify(stmt ast.Statement) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
 func (r groupbyColumns) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkGroupBy(q)
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkGroupBy)
 }
 
 func (r groupbyColumns) checkGroupBy(stmt ast.SelectStatement) ([]Issue, error) {
@@ -726,10 +618,6 @@ func (r groupbyColumns) checkGroupBy(stmt ast.SelectStatement) ([]Issue, error) 
 	return list, nil
 }
 
-func (_ groupbyColumns) Name() string {
-	return "groupby-columns"
-}
-
 type setAlias struct {
 	severity Severity
 }
@@ -749,28 +637,7 @@ func (r setAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r setAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkAliasForCalculatedFields(q)
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkAliasForCalculatedFields)
 }
 
 func (r setAlias) checkAliasForCalculatedFields(q ast.SelectStatement) ([]Issue, error) {
@@ -817,33 +684,16 @@ func MissingAliasOnTables(level Severity) Rule {
 	}
 }
 
+func (_ missingAlias) Name() string {
+	return "missing-alias"
+}
+
 func (r missingAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
 func (r missingAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkMissingAlias(q)
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkMissingAlias)
 }
 
 func (r missingAlias) checkMissingAlias(stmt ast.SelectStatement) ([]Issue, error) {
@@ -877,10 +727,6 @@ func (r missingAlias) checkMissingAlias(stmt ast.SelectStatement) ([]Issue, erro
 	return list, nil
 }
 
-func (_ missingAlias) Name() string {
-	return "missing-alias"
-}
-
 type noAlias struct {
 	severity Severity
 	options  RuleOptions
@@ -907,33 +753,16 @@ func NoAliasOnTables(level Severity) Rule {
 	}
 }
 
+func (_ noAlias) Name() string {
+	return "no-alias"
+}
+
 func (r noAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
 func (r noAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkNoAlias(q)
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkNoAlias)
 }
 
 func (r noAlias) checkNoAlias(stmt ast.SelectStatement) ([]Issue, error) {
@@ -967,10 +796,6 @@ func (r noAlias) checkNoAlias(stmt ast.SelectStatement) ([]Issue, error) {
 	return list, nil
 }
 
-func (_ noAlias) Name() string {
-	return "no-alias"
-}
-
 type invalidAlias struct {
 	severity Severity
 }
@@ -981,33 +806,16 @@ func InvalidAlias(level Severity) Rule {
 	}
 }
 
+func (_ invalidAlias) Name() string {
+	return "invalid-alias"
+}
+
 func (r invalidAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
 func (r invalidAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkInvalidAlias(q)
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkInvalidAlias)
 }
 
 func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) {
@@ -1056,10 +864,6 @@ func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) 
 	return list, nil
 }
 
-func (_ invalidAlias) Name() string {
-	return "invalid-alias"
-}
-
 type undefinedAlias struct {
 	severity Severity
 }
@@ -1070,33 +874,16 @@ func UndefinedAlias(level Severity) Rule {
 	}
 }
 
+func (_ undefinedAlias) Name() string {
+	return "undefined-alias"
+}
+
 func (r undefinedAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
 func (r undefinedAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		for _, q := range q.Queries {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		issues, err := r.verify(q.Statement)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	case ast.CteStatement:
-		return r.verify(q.Statement)
-	case ast.SelectStatement:
-		return r.checkUndefinedAlias(q)
-	default:
-	}
-	return list, nil
+	return verify[ast.SelectStatement](stmt, r.checkUndefinedAlias)
 }
 
 func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, error) {
@@ -1121,16 +908,12 @@ func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, 
 				Position: getPosition(c),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "field qualified by name not defined",
+				Reason:   "field qualified by undefined alias",
 			}
 			list = append(list, i)
 		}
 	}
 	return list, nil
-}
-
-func (_ undefinedAlias) Name() string {
-	return "undefined-alias"
 }
 
 type noIdentQuoted struct {
@@ -1143,12 +926,12 @@ func NoIdentQuoted(level Severity) Rule {
 	}
 }
 
-func (r noIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
-}
-
 func (_ noIdentQuoted) Name() string {
 	return "no-ident-quoted"
+}
+
+func (r noIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
 }
 
 type missingIdentQuoted struct {
@@ -1161,12 +944,37 @@ func MissingIdentQuoted(level Severity) Rule {
 	}
 }
 
+func (_ missingIdentQuoted) Name() string {
+	return "missing-ident-quoted"
+}
+
 func (r missingIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
 	return nil, nil
 }
 
-func (_ missingIdentQuoted) Name() string {
-	return "missing-ident-quoted"
+func verify[T any](stmt ast.Statement, check func(T) ([]Issue, error)) ([]Issue, error) {
+	switch q := stmt.(type) {
+	case ast.WithStatement:
+		var (
+			list []Issue
+			all  = slices.Clone(q.Queries)
+		)
+		all = append(all, q.Statement)
+		for _, q := range all {
+			issues, err := verify(q, check)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		return list, nil
+	case ast.CteStatement:
+		return verify(q.Statement, check)
+	case T:
+		return check(q)
+	default:
+		return nil, nil
+	}
 }
 
 func getNames(q ast.Statement) []string {
@@ -1187,6 +995,39 @@ func getNames(q ast.Statement) []string {
 	default:
 		return nil
 	}
+}
+
+func getTables(stmt ast.Statement) []string {
+	q, ok := stmt.(ast.SelectStatement)
+	if !ok {
+		return nil
+	}
+	var (
+		get   func(ast.Statement) string
+		names = make(map[string]struct{})
+	)
+	get = func(stmt ast.Statement) string {
+		switch q := stmt.(type) {
+		case ast.Join:
+			return get(q.Table)
+		case ast.Name:
+			return q.Name()
+		case ast.Alias:
+			return get(q.Statement)
+		case ast.Group:
+			return ""
+		default:
+			return ""
+		}
+	}
+	for _, t := range q.Tables {
+		n := get(t)
+		if n == "" {
+			continue
+		}
+		names[n] = struct{}{}
+	}
+	return slices.Collect(maps.Keys(names))
 }
 
 func getPosition(stmt ast.Statement) token.Position {
