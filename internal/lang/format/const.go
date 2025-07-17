@@ -3,27 +3,17 @@ package format
 type RewriteRule uint16
 
 const (
-	RewriteStdExpr = 1 << iota
-	RewriteStdOp
+	RewriteStdOp = 1 << iota
 	RewriteMissCteAlias
 	RewriteMissViewAlias
 	RewriteWithCte
 	RewriteWithSubqueries
-	RewriteJoinSubquery
-	RewriteJoinPredicate
-	RewriteGroupByGroup
-	RewriteGroupByAggr
 
-	RewriteAll = RewriteStdExpr |
-		RewriteStdOp |
+	RewriteAll = RewriteStdOp |
 		RewriteMissCteAlias |
 		RewriteMissViewAlias |
 		RewriteWithCte |
-		RewriteWithSubqueries |
-		RewriteJoinSubquery |
-		RewriteJoinPredicate |
-		RewriteGroupByGroup |
-		RewriteGroupByAggr
+		RewriteWithSubqueries
 )
 
 func GetRewriteRule(rule string) RewriteRule {
@@ -33,8 +23,6 @@ func GetRewriteRule(rule string) RewriteRule {
 		value = RewriteAll
 	case "use-std-op":
 		value = RewriteStdOp
-	case "use-std-expr":
-		value = RewriteStdExpr
 	case "missing-cte-alias":
 		value = RewriteMissCteAlias
 	case "missing-view-alias":
@@ -43,14 +31,6 @@ func GetRewriteRule(rule string) RewriteRule {
 		value = RewriteWithCte
 	case "cte-as-subquery":
 		value = RewriteWithSubqueries
-	case "join-as-subquery":
-		value = RewriteJoinSubquery
-	case "join-without-literal":
-		value = RewriteJoinPredicate
-	case "groupby-group":
-		value = RewriteGroupByGroup
-	case "groupby-aggr":
-		value = RewriteGroupByAggr
 	default:
 	}
 	return value
@@ -58,10 +38,6 @@ func GetRewriteRule(rule string) RewriteRule {
 
 func (r RewriteRule) All() bool {
 	return r == RewriteAll
-}
-
-func (r RewriteRule) UseStdExpr() bool {
-	return r&RewriteStdExpr != 0
 }
 
 func (r RewriteRule) UseStdOp() bool {
@@ -82,26 +58,6 @@ func (r RewriteRule) ReplaceCteWithSubquery() bool {
 
 func (r RewriteRule) ReplaceSubqueryWithCte() bool {
 	return r&RewriteWithCte != 0
-}
-
-func (r RewriteRule) JoinAsSubquery() bool {
-	return r&RewriteJoinSubquery != 0
-}
-
-func (r RewriteRule) JoinPredicate() bool {
-	return r&RewriteJoinPredicate != 0
-}
-
-func (r RewriteRule) SetRewriteGroupBy() bool {
-	return r.SetRewriteGroupByGroup() || r.SetRewriteGroupByAggr()
-}
-
-func (r RewriteRule) SetRewriteGroupByGroup() bool {
-	return r&RewriteGroupByGroup != 0
-}
-
-func (r RewriteRule) SetRewriteGroupByAggr() bool {
-	return r&RewriteGroupByAggr != 0
 }
 
 func (r RewriteRule) KeepAsIs() bool {
