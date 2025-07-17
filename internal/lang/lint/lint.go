@@ -226,20 +226,43 @@ func (r noStar) verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	for _, c := range q.Columns {
-		n, ok := c.(ast.Name)
-		if !ok {
-			continue
+	var (
+		list []Issue
+		walk func(ast.Statement) ast.Statement
+	)
+	walk = func(q ast.Statement) ast.Statement {
+		switch q := q.(type) {
+		case ast.Name, ast.SelectStatement:
+			return q
+		case ast.Alias:
+			return walk(q.Statement)
+		case ast.Group:
+			return walk(q.Statement)
+		case ast.Join:
+			return walk(q.Table)
+		default:
+			return nil
 		}
-		if n.Name() == "*" {
-			i := Issue{
-				Position: n.Position,
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "use explicit field names",
+	}
+	for _, c := range slices.Concat(q.Columns, q.Tables) {
+		switch n := walk(c).(type) {
+		case ast.Name:
+			if n.Name() == "*" {
+				i := Issue{
+					Position: n.Position,
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "use explicit field names",
+				}
+				list = append(list, i)
 			}
-			list = append(list, i)
+		case ast.SelectStatement:
+			issues, err := r.checkStar(n)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		default:
 		}
 	}
 	return list, nil
