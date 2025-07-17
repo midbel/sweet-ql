@@ -639,7 +639,7 @@ func (r subqueryNames) checkExportedNames(q ast.SelectStatement) ([]Issue, error
 func (r subqueryNames) checkNames(stmt ast.Statement, names [][]string) ([]Issue, error) {
 	var list []Issue
 	for _, n := range getNames2(stmt) {
-		if len(n) != 2 || n[0] != names[0][0] {
+		if len(n) == 0 || n[0] != names[0][0] {
 			continue
 		}
 		ok := slices.ContainsFunc(names, func(ns []string) bool {
