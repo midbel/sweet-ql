@@ -193,11 +193,15 @@ func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, er
 			if err != nil {
 				return nil, err
 			}
-			list = slices.Concat(list, issue)
+			list = slices.Concat(list, issues)
 			continue
 		}
 		ns := getNames2(c)
-		if _, ok := names[ns[len(ns)-1]]; ok {
+		if len(ns) != 1 {
+			continue
+		}
+		name := ns[0]
+		if _, ok := names[name[len(name)-1]]; ok {
 			i := Issue{
 				Position: getPosition(c),
 				Severity: r.severity,
@@ -206,7 +210,7 @@ func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, er
 			}
 			list = append(list, i)
 		}
-		names[ns[len(ns)-1]] = struct{}{}
+		names[name[len(name)-1]] = struct{}{}
 	}
 	issues, err := r.verify(q.Where)
 	if err != nil {
@@ -1265,7 +1269,11 @@ func verifyList[T any](stmts []ast.Statement, check checkFunc[T]) ([]Issue, erro
 func getNames2(q ast.Statement) [][]string {
 	switch q := q.(type) {
 	case ast.Name:
-		return [][]string{q.Parts}
+		var parts []string
+		for i := range q.Parts {
+			parts = append(parts, q.Parts[i].Name)
+		}
+		return [][]string{parts}
 	case ast.Alias:
 		return getNames2(q.Statement)
 	case ast.Call:
@@ -1285,7 +1293,11 @@ func getNames2(q ast.Statement) [][]string {
 func getNames(q ast.Statement) []string {
 	switch q := q.(type) {
 	case ast.Name:
-		return q.Parts
+		var parts []string
+		for i := range q.Parts {
+			parts = append(parts, q.Parts[i].Name)
+		}
+		return parts
 	case ast.Alias:
 		return getNames(q.Statement)
 	case ast.Call:

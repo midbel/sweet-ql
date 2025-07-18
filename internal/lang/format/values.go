@@ -26,22 +26,22 @@ func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
 }
 
 func (w *Writer) FormatName(name ast.Name) error {
-	if name.Quoted {
-		w.WriteString("\"")
-		defer w.WriteString("\"")
-	}
+	// if name.Quoted {
+	// 	w.WriteString("\"")
+	// 	defer w.WriteString("\"")
+	// }
 	for i := range name.Parts {
 		if i > 0 {
 			w.WriteString(".")
 		}
-		str := name.Parts[i]
+		str := name.Parts[i].Name
 		if str == "" && i == len(name.Parts)-1 {
 			str = "*"
 		}
 		if w.Upperize.Identifier() || w.Upperize.All() {
 			str = strings.ToUpper(str)
 		}
-		if w.UseQuote && str != "*" {
+		if name.Parts[i].Quoted || (w.UseQuote && str != "*") {
 			str = w.Quote(str)
 		}
 		w.WriteString(str)

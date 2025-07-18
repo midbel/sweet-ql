@@ -374,6 +374,7 @@ func (p *Parser) setParseFunc() {
 func (p *Parser) setFuncSetForTable() {
 	prefix := newFuncSet[prefixFunc]()
 	prefix.Register("", token.Ident, p.ParseIdent)
+	prefix.Register("", token.QuotedIdent, p.ParseIdent)
 	prefix.Register("", token.Lparen, p.parseGroupExpr)
 	prefix.Register("ROW", token.Keyword, p.ParseRow)
 

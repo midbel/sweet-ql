@@ -53,11 +53,14 @@ func (p *Parser) ParseXmlElement(left ast.Statement) (ast.Statement, error) {
 	if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 		return nil, p.Unexpected("xmlelement", identExpected)
 	}
+	ident := ast.Identifier{
+		Quoted: p.Is(token.QuotedIdent),
+		Name:   p.GetCurrLiteral(),
+	}
 	name := ast.Name{
 		Position: p.GetCurrPosition(),
-		Quoted:   p.Is(token.QuotedIdent),
+		Parts:    []ast.Identifier{ident},
 	}
-	name.Parts = append(name.Parts, p.GetCurrLiteral())
 	p.Next()
 	xml := ast.XmlElement{
 		Ident: left,
@@ -139,9 +142,13 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Statement, error) {
 			if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 				return nil, p.Unexpected("xmlattributes", defaultReason)
 			}
+			ident := ast.Identifier{
+				Quoted: p.Is(token.QuotedIdent),
+				Name:   p.GetCurrLiteral(),
+			}
 			attr.Name = ast.Name{
 				Position: p.GetCurrPosition(),
-				Parts:    []string{p.GetCurrLiteral()},
+				Parts:    []ast.Identifier{ident},
 			}
 			p.Next()
 		}
@@ -189,9 +196,13 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 			if !p.Curr().IsValue() {
 				return nil, p.Unexpected("xmlnamespaces", valueExpected)
 			}
+			ident := ast.Identifier{
+				Quoted: p.Is(token.QuotedIdent),
+				Name:   p.GetCurrLiteral(),
+			}
 			ns.Uri = ast.Name{
 				Position: p.GetCurrPosition(),
-				Parts:    []string{p.GetCurrLiteral()},
+				Parts:    []ast.Identifier{ident},
 			}
 			p.Next()
 			count++
@@ -199,9 +210,13 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 			if !p.Curr().IsValue() {
 				return nil, p.Unexpected("xmlnamespaces", valueExpected)
 			}
+			ident := ast.Identifier{
+				Quoted: p.Is(token.QuotedIdent),
+				Name:   p.GetCurrLiteral(),
+			}
 			ns.Uri = ast.Name{
 				Position: p.GetCurrPosition(),
-				Parts:    []string{p.GetCurrLiteral()},
+				Parts:    []ast.Identifier{ident},
 			}
 			p.Next()
 			if p.IsKeyword("AS") {
@@ -209,9 +224,13 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 				if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 					return nil, p.Unexpected("xmlattributes", defaultReason)
 				}
+				ident := ast.Identifier{
+					Quoted: p.Is(token.QuotedIdent),
+					Name:   p.GetCurrLiteral(),
+				}
 				ns.Name = ast.Name{
 					Position: p.GetCurrPosition(),
-					Parts:    []string{p.GetCurrLiteral()},
+					Parts:    []ast.Identifier{ident},
 				}
 				p.Next()
 			}

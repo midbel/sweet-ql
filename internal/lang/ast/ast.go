@@ -21,14 +21,6 @@ func (n Node) Get() Statement {
 	return n
 }
 
-func (n Node) GetNames() []string {
-	q, ok := n.Statement.(interface{ GetNames() []string })
-	if !ok {
-		return nil
-	}
-	return q.GetNames()
-}
-
 type Limit struct {
 	token.Position
 
@@ -131,14 +123,6 @@ type WithStatement struct {
 	Statement
 }
 
-func (s WithStatement) GetNames() []string {
-	q, ok := s.Statement.(interface{ GetNames() []string })
-	if !ok {
-		return nil
-	}
-	return q.GetNames()
-}
-
 func (s WithStatement) Keyword() (string, error) {
 	return "WITH", nil
 }
@@ -182,29 +166,6 @@ func (s SelectStatement) ColumnsCount() int {
 
 func (s SelectStatement) Keyword() (string, error) {
 	return "SELECT", nil
-}
-
-func (s SelectStatement) GetNames() []string {
-	var list []string
-	for _, c := range s.Columns {
-		switch c := c.(type) {
-		case Alias:
-			list = append(list, c.Alias)
-		case Name:
-			if len(c.Parts) == 0 {
-				return nil
-			}
-			n := c.Parts[len(c.Parts)-1]
-			if n == "" || n == "*" {
-				return nil
-			}
-			list = append(list, n)
-		case Call:
-			list = append(list, c.Ident.(Name).Name())
-		default:
-		}
-	}
-	return list
 }
 
 func getCompoundKeyword(kw string, all, distinct bool) (string, error) {

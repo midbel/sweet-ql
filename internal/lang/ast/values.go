@@ -156,10 +156,14 @@ type Alias struct {
 	Quoted bool
 }
 
+type Identifier struct {
+	Quoted bool
+	Name   string
+}
+
 type Name struct {
 	token.Position
-	Quoted bool
-	Parts  []string
+	Parts []Identifier
 }
 
 func (n Name) All() bool {
@@ -169,9 +173,9 @@ func (n Name) All() bool {
 func (n Name) Schema() string {
 	switch len(n.Parts) {
 	case 2:
-		return n.Parts[0]
+		return n.Parts[0].Name
 	case 3:
-		return n.Parts[1]
+		return n.Parts[1].Name
 	default:
 		return ""
 	}
@@ -181,7 +185,7 @@ func (n Name) Name() string {
 	if len(n.Parts) == 0 {
 		return "*"
 	}
-	str := n.Parts[len(n.Parts)-1]
+	str := n.Parts[len(n.Parts)-1].Name
 	if str == "" {
 		str = "*"
 	}
@@ -193,8 +197,12 @@ func (n Name) Ident() string {
 	if z == 0 {
 		return "*"
 	}
-	if n.Parts[z-1] == "" {
-		n.Parts[z-1] = "*"
+	if n.Parts[z-1].Name == "" {
+		n.Parts[z-1].Name = "*"
 	}
-	return strings.Join(n.Parts, ".")
+	var parts []string
+	for _, i := range n.Parts {
+		parts = append(parts, i.Name)
+	}
+	return strings.Join(parts, ".")
 }

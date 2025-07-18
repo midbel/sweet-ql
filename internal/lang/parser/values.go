@@ -14,8 +14,11 @@ func (p *Parser) ParsePlaceholder() (ast.Statement, error) {
 	case p.Is(token.Placeholder):
 		p.Next()
 	case p.Is(token.NamedHolder):
+		ident := ast.Identifier{
+			Name: p.GetCurrLiteral(),
+		}
 		stmt.Statement = ast.Name{
-			Parts: []string{p.GetCurrLiteral()},
+			Parts: []ast.Identifier{ident},
 		}
 		p.Next()
 	case p.Is(token.PositionHolder):
@@ -56,17 +59,24 @@ func (p *Parser) ParseConstant() (ast.Statement, error) {
 func (p *Parser) ParseIdentifier() (ast.Statement, error) {
 	name := ast.Name{
 		Position: p.GetCurrPosition(),
-		Quoted:   p.Is(token.QuotedIdent),
 	}
 	for p.PeekIs(token.Dot) {
-		name.Parts = append(name.Parts, p.GetCurrLiteral())
+		ident := ast.Identifier{
+			Quoted: p.Is(token.QuotedIdent),
+			Name:   p.GetCurrLiteral(),
+		}
+		name.Parts = append(name.Parts, ident)
 		p.Next()
 		p.Next()
 	}
 	if !p.Is(token.QuotedIdent) && !p.Is(token.Ident) && !p.Is(token.Star) {
 		return nil, p.Unexpected("identifier", identExpected)
 	}
-	name.Parts = append(name.Parts, p.GetCurrLiteral())
+	ident := ast.Identifier{
+		Quoted: p.Is(token.QuotedIdent),
+		Name:   p.GetCurrLiteral(),
+	}
+	name.Parts = append(name.Parts, ident)
 	p.Next()
 	return name, nil
 }
