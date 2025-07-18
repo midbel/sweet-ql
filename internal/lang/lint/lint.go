@@ -184,11 +184,19 @@ func (r duplicateField) verify(stmt ast.Statement) ([]Issue, error) {
 
 func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, error) {
 	var (
-		names = make(map[string]struct{})
 		list  []Issue
+		names = make(map[string]struct{})
 	)
 	for _, c := range q.Columns {
-		ns := getNames(c)
+		if q, ok := c.(ast.SelectStatement); ok {
+			issues, err := r.checkDuplicateFields(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issue)
+			continue
+		}
+		ns := getNames2(c)
 		if _, ok := names[ns[len(ns)-1]]; ok {
 			i := Issue{
 				Position: getPosition(c),
@@ -200,7 +208,11 @@ func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, er
 		}
 		names[ns[len(ns)-1]] = struct{}{}
 	}
-	return list, nil
+	issues, err := r.verify(q.Where)
+	if err != nil {
+		return nil, err
+	}
+	return slices.Concat(list, issues), nil
 }
 
 type noStar struct {
@@ -1078,7 +1090,7 @@ func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) 
 				Position: b.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "alias used in \"where\" clause of select",
+				Reason:   "alias used in \"where\" clause of query",
 			}
 			list = append(list, i)
 		}
@@ -1090,7 +1102,7 @@ func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) 
 					Position: getPosition(g),
 					Severity: r.severity,
 					Rule:     r.Name(),
-					Reason:   "alias used in \"group by\" clause of select",
+					Reason:   "alias used in \"group by\" clause of query",
 				}
 				list = append(list, i)
 			}
@@ -1143,7 +1155,7 @@ func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, 
 				Position: getPosition(c),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "field qualified by undefined alias",
+				Reason:   "undefined name",
 			}
 			list = append(list, i)
 		}
@@ -1191,7 +1203,9 @@ func (r missingIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
 	return nil, nil
 }
 
-func verify[T any](stmt ast.Statement, check func(T) ([]Issue, error)) ([]Issue, error) {
+type checkFunc[T any] func(T) ([]Issue, error)
+
+func verify[T any](stmt ast.Statement, check checkFunc[T]) ([]Issue, error) {
 	switch q := stmt.(type) {
 	case ast.WithStatement:
 		var (
@@ -1211,11 +1225,41 @@ func verify[T any](stmt ast.Statement, check func(T) ([]Issue, error)) ([]Issue,
 		return verify(q.Statement, check)
 	case ast.Group:
 		return verify(q.Statement, check)
+	case ast.UnionStatement:
+		all := []ast.Statement{
+			q.Left,
+			q.Right,
+		}
+		return verifyList(all, check)
+	case ast.IntersectStatement:
+		all := []ast.Statement{
+			q.Left,
+			q.Right,
+		}
+		return verifyList(all, check)
+	case ast.ExceptStatement:
+		all := []ast.Statement{
+			q.Left,
+			q.Right,
+		}
+		return verifyList(all, check)
 	case T:
 		return check(q)
 	default:
 		return nil, nil
 	}
+}
+
+func verifyList[T any](stmts []ast.Statement, check checkFunc[T]) ([]Issue, error) {
+	var list []Issue
+	for _, s := range stmts {
+		issues, err := verify(s, check)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	}
+	return list, nil
 }
 
 func getNames2(q ast.Statement) [][]string {
