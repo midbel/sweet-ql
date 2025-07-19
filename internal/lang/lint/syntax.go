@@ -258,3 +258,25 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, 
 	}
 	return nil, nil
 }
+
+type missingWhere struct {
+	severity Severity
+}
+
+func MissingWhere(level Severity) Rule {
+	return missingWhere{
+		severity: level,
+	}
+}
+
+func (_ missingWhere) Name() string {
+	return "missing-where"
+}
+
+func (r missingWhere) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
+}
+
+func (r missingWhere) verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
+}

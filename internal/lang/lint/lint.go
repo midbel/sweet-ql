@@ -211,7 +211,7 @@ func (r subqueryColumnsCount) checkColumnsCount(q ast.SelectStatement) ([]Issue,
 					Position: getPosition(q.Columns[0]),
 					Severity: r.severity,
 					Rule:     r.Name(),
-					Reason:   "'*' should not be used in subquery",
+					Reason:   "unknown columns count because of use of '*'",
 				}
 				list = append(list, i)
 			}

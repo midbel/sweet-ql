@@ -18,6 +18,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"cte-columns-count":      lint.CteColumnsCount,
 	"cte-unused":             lint.CteUnused,
 	"cte-duplicate":          lint.CteDuplicate,
+	"missing-where":          lint.MissingWhere,
 	"set-columns-count":      lint.SetColumnsCount,
 	"no-subquery":            lint.NoSubquery,
 	"subquery-columns-count": lint.SubqueryColumnsCount,
