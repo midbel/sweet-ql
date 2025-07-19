@@ -214,7 +214,8 @@ type Name struct {
 }
 
 func (n Name) All() bool {
-	return false
+	c := len(n.Parts)
+	return c == 0 || n.Parts[c-1].Name == ""
 }
 
 func (n Name) Schema() string {

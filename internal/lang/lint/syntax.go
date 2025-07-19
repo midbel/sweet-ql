@@ -53,7 +53,7 @@ func (r noStar) checkStatement(stmt ast.Statement) ([]Issue, error) {
 	for _, n := range collect(stmt) {
 		switch n := n.(type) {
 		case ast.Name:
-			if n.Name() == "*" {
+			if n.All() {
 				i := Issue{
 					Position: n.Position,
 					Severity: r.severity,
@@ -218,7 +218,7 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, 
 	}
 	ok = slices.ContainsFunc(q1.Columns, func(c ast.Statement) bool {
 		n, ok := c.(ast.Name)
-		return ok && n.Name() == "*"
+		return ok && n.All()
 	})
 	if ok {
 		i := Issue{
@@ -236,7 +236,7 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, 
 	}
 	ok = slices.ContainsFunc(q2.Columns, func(c ast.Statement) bool {
 		n, ok := c.(ast.Name)
-		return ok && n.Name() == "*"
+		return ok && n.All()
 	})
 	if ok {
 		i := Issue{
