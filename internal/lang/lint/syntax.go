@@ -26,7 +26,7 @@ func (r noStar) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r noStar) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkStar)
+	return verify(stmt, r.checkStar)
 }
 
 func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
@@ -91,7 +91,7 @@ func (r duplicateField) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r duplicateField) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkDuplicateFields)
+	return verify(stmt, r.checkDuplicateFields)
 }
 
 func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, error) {

@@ -202,11 +202,11 @@ func (r subqueryColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r subqueryColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
-	list, err := verify[ast.SelectStatement](stmt, r.checkColumnsCount)
+	list, err := verify(stmt, r.checkColumnsCount)
 	if err != nil {
 		return nil, err
 	}
-	others, err := verify[ast.SelectStatement](stmt, r.checkWhere)
+	others, err := verify(stmt, r.checkWhere)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (r subqueryColumnsCount) checkWhere(q ast.SelectStatement) ([]Issue, error)
 			}
 			return slices.Concat(left, right), nil
 		case ast.In:
-			return verify[ast.SelectStatement](q.Value, r.checkColumnsCount)
+			return verify(q.Value, r.checkColumnsCount)
 		default:
 			return nil, nil
 		}
@@ -305,7 +305,7 @@ func (r subqueryNames) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r subqueryNames) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkExportedNames)
+	return verify(stmt, r.checkExportedNames)
 }
 
 func (r subqueryNames) checkExportedNames(q ast.SelectStatement) ([]Issue, error) {
@@ -414,7 +414,7 @@ func (r noSubquery) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r noSubquery) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkSubquery)
+	return verify(stmt, r.checkSubquery)
 }
 
 func (r noSubquery) checkSubquery(stmt ast.SelectStatement) ([]Issue, error) {
@@ -469,7 +469,7 @@ func (r groupbyColumns) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r groupbyColumns) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkGroupBy)
+	return verify(stmt, r.checkGroupBy)
 }
 
 func (r groupbyColumns) checkGroupBy(stmt ast.SelectStatement) ([]Issue, error) {
@@ -555,7 +555,7 @@ func (r setAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r setAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkAliasForCalculatedFields)
+	return verify(stmt, r.checkAliasForCalculatedFields)
 }
 
 func (r setAlias) checkAliasForCalculatedFields(q ast.SelectStatement) ([]Issue, error) {
@@ -611,7 +611,7 @@ func (r missingAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r missingAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkMissingAlias)
+	return verify(stmt, r.checkMissingAlias)
 }
 
 func (r missingAlias) checkMissingAlias(stmt ast.SelectStatement) ([]Issue, error) {
@@ -680,7 +680,7 @@ func (r noAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r noAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkNoAlias)
+	return verify(stmt, r.checkNoAlias)
 }
 
 func (r noAlias) checkNoAlias(stmt ast.SelectStatement) ([]Issue, error) {
@@ -733,7 +733,7 @@ func (r invalidAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r invalidAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkInvalidAlias)
+	return verify(stmt, r.checkInvalidAlias)
 }
 
 func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) {
@@ -801,7 +801,7 @@ func (r undefinedAlias) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r undefinedAlias) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkUndefinedAlias)
+	return verify(stmt, r.checkUndefinedAlias)
 }
 
 func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, error) {
@@ -874,9 +874,9 @@ func (r missingIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
 	return nil, nil
 }
 
-type checkFunc[T any] func(T) ([]Issue, error)
+type checkSelectFunc func(ast.SelectStatement) ([]Issue, error)
 
-func verify[T any](stmt ast.Statement, check checkFunc[T]) ([]Issue, error) {
+func verify(stmt ast.Statement, check checkSelectFunc) ([]Issue, error) {
 	switch q := stmt.(type) {
 	case ast.WithStatement:
 		var (
@@ -902,14 +902,14 @@ func verify[T any](stmt ast.Statement, check checkFunc[T]) ([]Issue, error) {
 		return verifyList(slx.Make(q.Left, q.Right), check)
 	case ast.ExceptStatement:
 		return verifyList(slx.Make(q.Left, q.Right), check)
-	case T:
+	case ast.SelectStatement:
 		return check(q)
 	default:
 		return nil, nil
 	}
 }
 
-func verifyList[T any](stmts []ast.Statement, check checkFunc[T]) ([]Issue, error) {
+func verifyList(stmts []ast.Statement, check checkSelectFunc) ([]Issue, error) {
 	var list []Issue
 	for _, s := range stmts {
 		issues, err := verify(s, check)
