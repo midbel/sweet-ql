@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
@@ -153,4 +154,107 @@ func (r duplicateField) checkStatement(stmt ast.Statement) ([]Issue, error) {
 		list = slices.Concat(list, issues)
 	}
 	return list, nil
+}
+
+type setColumnsCount struct {
+	severity Severity
+}
+
+func SetColumnsCount(level Severity) Rule {
+	return setColumnsCount{
+		severity: level,
+	}
+}
+
+func (_ setColumnsCount) Name() string {
+	return "set-columns-count"
+}
+
+func (r setColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r setColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
+	switch stmt := stmt.(type) {
+	case ast.UnionStatement:
+		return r.checkUnionColumnsCount(stmt)
+	case ast.ExceptStatement:
+		return r.checkExceptColumnsCount(stmt)
+	case ast.IntersectStatement:
+		return r.checkIntersectColumnsCount(stmt)
+	case ast.WithStatement:
+		var list []Issue
+		for _, q := range slices.Concat(stmt.Queries, slx.One(stmt.Statement)) {
+			issues, err := r.verify(q)
+			if err != nil {
+				return nil, err
+			}
+			list = slices.Concat(list, issues)
+		}
+		return list, nil
+	case ast.CteStatement:
+		return r.verify(stmt.Statement)
+	default:
+		return nil, nil
+	}
+}
+
+func (r setColumnsCount) checkUnionColumnsCount(q ast.UnionStatement) ([]Issue, error) {
+	return r.checkColumnsCount(q.Left, q.Right)
+}
+
+func (r setColumnsCount) checkExceptColumnsCount(q ast.ExceptStatement) ([]Issue, error) {
+	return r.checkColumnsCount(q.Left, q.Right)
+}
+
+func (r setColumnsCount) checkIntersectColumnsCount(q ast.IntersectStatement) ([]Issue, error) {
+	return r.checkColumnsCount(q.Left, q.Right)
+}
+
+func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, error) {
+	q1, ok := left.(ast.SelectStatement)
+	if !ok {
+		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	ok = slices.ContainsFunc(q1.Columns, func(c ast.Statement) bool {
+		n, ok := c.(ast.Name)
+		return ok && n.Name() == "*"
+	})
+	if ok {
+		i := Issue{
+			Position: q1.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "unknown columns count because of use of '*'",
+		}
+		return slx.One(i), nil
+	}
+
+	q2, ok := right.(ast.SelectStatement)
+	if !ok {
+		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	ok = slices.ContainsFunc(q2.Columns, func(c ast.Statement) bool {
+		n, ok := c.(ast.Name)
+		return ok && n.Name() == "*"
+	})
+	if ok {
+		i := Issue{
+			Position: q2.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "unknown columns count because of use of '*'",
+		}
+		return slx.One(i), nil
+	}
+	if len(q1.Columns) != len(q2.Columns) {
+		i := Issue{
+			Position: q1.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "columns count mismatched",
+		}
+		return slx.One(i), nil
+	}
+	return nil, nil
 }
