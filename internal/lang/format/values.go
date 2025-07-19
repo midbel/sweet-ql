@@ -51,7 +51,7 @@ func (w *Writer) FormatAlias(alias ast.Alias) error {
 		return err
 	}
 	w.WriteBlank()
-	if w.UseAs {
+	if !w.Compact.NoAs() {
 		w.WriteKeyword("AS")
 		w.WriteBlank()
 	}

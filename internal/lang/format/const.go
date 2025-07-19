@@ -64,7 +64,7 @@ func (r RewriteRule) KeepAsIs() bool {
 	return r == 0
 }
 
-type CompactMode uint8
+type CompactMode uint64
 
 const (
 	CompactNL CompactMode = 1 << iota
@@ -74,9 +74,10 @@ const (
 	CompactKw
 	CompactCte
 	CompactSpacesAround
+	CompactAs
 	CompactComment
 
-	compactAll  = CompactComment | CompactNL | CompactColumns | CompactValues | CompactJoin | CompactKw | CompactCte
+	compactAll  = CompactAs | CompactComment | CompactNL | CompactColumns | CompactValues | CompactJoin | CompactKw | CompactCte
 	compactNone = 0
 )
 
@@ -103,6 +104,8 @@ func GetCompactMode(mode string) CompactMode {
 		compact = CompactSpacesAround
 	case "none":
 		compact = compactNone
+	case "as":
+		compact = CompactAs
 	default:
 	}
 	return compact
@@ -110,6 +113,10 @@ func GetCompactMode(mode string) CompactMode {
 
 func (c CompactMode) None() bool {
 	return c == 0
+}
+
+func (c CompactMode) NoAs() bool {
+	return c&CompactAs == CompactAs
 }
 
 func (c CompactMode) NoNL() bool {

@@ -27,7 +27,6 @@ type Writer struct {
 	inner *bufio.Writer
 
 	UseQuote      bool
-	UseAs         bool
 	UseIndent     int
 	UseSpace      bool
 	UseColor      bool

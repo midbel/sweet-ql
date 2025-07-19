@@ -13,7 +13,6 @@ func runFormat(args []string) error {
 		set    = flag.NewFlagSet("format", flag.ExitOnError)
 		writer = format.NewWriter(os.Stdout)
 	)
-	set.BoolVar(&writer.UseAs, "use-as", writer.UseAs, "always use as to define alias")
 	set.BoolVar(&writer.UseQuote, "use-quote", writer.UseQuote, "quote all identifier")
 	set.IntVar(&writer.UseIndent, "use-indent", writer.UseIndent, "number of space to use to indent SQL")
 	set.BoolVar(&writer.UseSpace, "use-space", writer.UseSpace, "use tabs instead of space to indent SQL")
