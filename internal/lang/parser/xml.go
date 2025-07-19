@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -59,7 +60,7 @@ func (p *Parser) ParseXmlElement(left ast.Statement) (ast.Statement, error) {
 	}
 	name := ast.Name{
 		Position: p.GetCurrPosition(),
-		Parts:    []ast.Identifier{ident},
+		Parts:    slx.One(ident),
 	}
 	p.Next()
 	xml := ast.XmlElement{
@@ -148,7 +149,7 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Statement, error) {
 			}
 			attr.Name = ast.Name{
 				Position: p.GetCurrPosition(),
-				Parts:    []ast.Identifier{ident},
+				Parts:    slx.One(ident),
 			}
 			p.Next()
 		}
@@ -202,7 +203,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 			}
 			ns.Uri = ast.Name{
 				Position: p.GetCurrPosition(),
-				Parts:    []ast.Identifier{ident},
+				Parts:    slx.One(ident),
 			}
 			p.Next()
 			count++
@@ -216,7 +217,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 			}
 			ns.Uri = ast.Name{
 				Position: p.GetCurrPosition(),
-				Parts:    []ast.Identifier{ident},
+				Parts:    slx.One(ident),
 			}
 			p.Next()
 			if p.IsKeyword("AS") {
@@ -230,7 +231,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 				}
 				ns.Name = ast.Name{
 					Position: p.GetCurrPosition(),
-					Parts:    []ast.Identifier{ident},
+					Parts:    slx.One(ident),
 				}
 				p.Next()
 			}

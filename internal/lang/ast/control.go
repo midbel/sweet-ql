@@ -1,6 +1,9 @@
 package ast
 
 import (
+	"slices"
+
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -36,10 +39,19 @@ type Case struct {
 	Else Statement
 }
 
+func (c Case) GetStatement() []Statement {
+	all := slx.One(c.Cdt)
+	return slices.Concat(all, c.Body, slx.One(c.Else))
+}
+
 type When struct {
 	token.Position
 	Cdt  Statement
 	Body Statement
+}
+
+func (w When) GetStatement() []Statement {
+	return slx.Make(w.Cdt, w.Body)
 }
 
 type Set struct {

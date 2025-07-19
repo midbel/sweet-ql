@@ -18,7 +18,7 @@ func (p *Parser) ParsePlaceholder() (ast.Statement, error) {
 			Name: p.GetCurrLiteral(),
 		}
 		stmt.Statement = ast.Name{
-			Parts: []ast.Identifier{ident},
+			Parts: slices.One(ident),
 		}
 		p.Next()
 	case p.Is(token.PositionHolder):
