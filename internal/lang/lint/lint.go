@@ -10,6 +10,7 @@ import (
 	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/lang/parser"
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -243,25 +244,26 @@ func (r noStar) verify(stmt ast.Statement) ([]Issue, error) {
 
 func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
 	var (
-		list []Issue
-		walk func(ast.Statement) ast.Statement
+		list  []Issue
+		parts = slx.Make(q.Where, q.Having)
 	)
-	walk = func(q ast.Statement) ast.Statement {
-		switch q := q.(type) {
-		case ast.Name, ast.SelectStatement:
-			return q
-		case ast.Alias:
-			return walk(q.Statement)
-		case ast.Group:
-			return walk(q.Statement)
-		case ast.Join:
-			return walk(q.Table)
-		default:
-			return nil
+	for _, c := range slices.Concat(q.Columns, q.Tables, parts) {
+		if c == nil {
+			continue
 		}
+		issues, err := r.checkStatement(c)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
 	}
-	for _, c := range slices.Concat(q.Columns, q.Tables) {
-		switch n := walk(c).(type) {
+	return list, nil
+}
+
+func (r noStar) checkStatement(stmt ast.Statement) ([]Issue, error) {
+	var list []Issue
+	for _, n := range collect(stmt) {
+		switch n := n.(type) {
 		case ast.Name:
 			if n.Name() == "*" {
 				i := Issue{
@@ -278,7 +280,6 @@ func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
 				return nil, err
 			}
 			list = slices.Concat(list, issues)
-		default:
 		}
 	}
 	return list, nil
@@ -1362,5 +1363,25 @@ func getPosition(stmt ast.Statement) token.Position {
 		return q.Position
 	default:
 		return pos
+	}
+}
+
+func collect(q ast.Statement) []ast.Statement {
+	if g, ok := q.(interface{ GetStatement() []ast.Statement }); ok {
+		var all []ast.Statement
+		for _, s := range g.GetStatement() {
+			all = slices.Concat(all, collect(s))
+		}
+		return all
+	}
+	switch q := q.(type) {
+	case ast.Name, ast.SelectStatement:
+		return slx.One(q)
+	case ast.Alias:
+		return collect(q.Statement)
+	case ast.Join:
+		return collect(q.Table)
+	default:
+		return nil
 	}
 }

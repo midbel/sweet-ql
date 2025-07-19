@@ -38,7 +38,7 @@ func runParse(args []string) error {
 			ReportError(err)
 			continue
 		}
-		fmt.Printf("%+v\n", stmt)
+		fmt.Printf("%#v\n", stmt)
 	}
 	return nil
 }

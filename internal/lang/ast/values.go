@@ -3,11 +3,16 @@ package ast
 import (
 	"strings"
 
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
 type Group struct {
 	Statement
+}
+
+func (g Group) GetStatement() []Statement {
+	return slx.One(g.Statement)
 }
 
 type Cast struct {
@@ -30,6 +35,10 @@ type Not struct {
 	Statement
 }
 
+func (n Not) GetStatement() []Statement {
+	return slx.One(n.Statement)
+}
+
 type Collate struct {
 	token.Position
 	Statement
@@ -41,6 +50,10 @@ type Exists struct {
 	Statement
 }
 
+func (e Exists) GetStatement() []Statement {
+	return slx.One(e.Statement)
+}
+
 type Call struct {
 	Position token.Position
 	Distinct bool
@@ -48,6 +61,10 @@ type Call struct {
 	Args     []Statement
 	Filter   Statement
 	Over     Statement
+}
+
+func (c Call) GetStatement() []Statement {
+	return c.Args
 }
 
 func (c Call) GetIdent() string {
@@ -63,6 +80,10 @@ type Row struct {
 	Values []Statement
 }
 
+func (r Row) GetStatement() []Statement {
+	return r.Values
+}
+
 func (r Row) Keyword() (string, error) {
 	return "ROW", nil
 }
@@ -73,11 +94,19 @@ type Unary struct {
 	Op    string
 }
 
+func (u Unary) GetStatement() []Statement {
+	return slx.One(u.Right)
+}
+
 type Binary struct {
 	token.Position
 	Left  Statement
 	Right Statement
 	Op    string
+}
+
+func (b Binary) GetStatement() []Statement {
+	return slx.Make(b.Left, b.Right)
 }
 
 func (b Binary) IsRelation() bool {
@@ -89,9 +118,17 @@ type All struct {
 	Statement
 }
 
+func (a All) GetStatement() []Statement {
+	return slx.One(a.Statement)
+}
+
 type Any struct {
 	token.Position
 	Statement
+}
+
+func (a Any) GetStatement() []Statement {
+	return slx.One(a.Statement)
 }
 
 type Is struct {
@@ -100,10 +137,18 @@ type Is struct {
 	Value Statement
 }
 
+func (i Is) GetStatement() []Statement {
+	return slx.One(i.Value)
+}
+
 type In struct {
 	token.Position
 	Ident Statement
 	Value Statement
+}
+
+func (i In) GetStatement() []Statement {
+	return slx.One(i.Value)
 }
 
 type Between struct {
@@ -112,6 +157,10 @@ type Between struct {
 	Ident Statement
 	Lower Statement
 	Upper Statement
+}
+
+func (b Between) GetStatement() []Statement {
+	return slx.Make(b.Lower, b.Upper)
 }
 
 type List struct {
