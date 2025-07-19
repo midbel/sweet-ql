@@ -197,12 +197,14 @@ func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, er
 			list = slices.Concat(list, issues)
 			continue
 		}
-		ns := getNames2(c)
-		if len(ns) != 1 {
+		var (
+			ns   = getNames2(c)
+			name = slx.First(ns)
+		)
+		if name == nil {
 			continue
 		}
-		name := ns[0]
-		if _, ok := names[name[len(name)-1]]; ok {
+		if _, ok := names[slx.Last(name)]; ok {
 			i := Issue{
 				Position: getPosition(c),
 				Severity: r.severity,
@@ -211,7 +213,7 @@ func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, er
 			}
 			list = append(list, i)
 		}
-		names[name[len(name)-1]] = struct{}{}
+		names[slx.Last(name)] = struct{}{}
 	}
 	issues, err := r.verify(q.Where)
 	if err != nil {
