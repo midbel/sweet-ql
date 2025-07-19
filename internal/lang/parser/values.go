@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -18,7 +19,7 @@ func (p *Parser) ParsePlaceholder() (ast.Statement, error) {
 			Name: p.GetCurrLiteral(),
 		}
 		stmt.Statement = ast.Name{
-			Parts: slices.One(ident),
+			Parts: slx.One(ident),
 		}
 		p.Next()
 	case p.Is(token.PositionHolder):
