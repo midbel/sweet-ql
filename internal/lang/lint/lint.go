@@ -161,67 +161,6 @@ func (i *Linter) Lint(stmt ast.Statement) ([]Issue, error) {
 	return list, nil
 }
 
-type duplicateField struct {
-	severity Severity
-}
-
-func DuplicateField(level Severity) Rule {
-	return duplicateField{
-		severity: level,
-	}
-}
-
-func (_ duplicateField) Name() string {
-	return "duplicate-field"
-}
-
-func (r duplicateField) Verify(stmt ast.Statement) ([]Issue, error) {
-	return r.verify(stmt)
-}
-
-func (r duplicateField) verify(stmt ast.Statement) ([]Issue, error) {
-	return verify[ast.SelectStatement](stmt, r.checkDuplicateFields)
-}
-
-func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, error) {
-	var (
-		list  []Issue
-		names = make(map[string]struct{})
-	)
-	for _, c := range q.Columns {
-		if q, ok := c.(ast.SelectStatement); ok {
-			issues, err := r.checkDuplicateFields(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-			continue
-		}
-		var (
-			ns   = getNames2(c)
-			name = slx.First(ns)
-		)
-		if name == nil {
-			continue
-		}
-		if _, ok := names[slx.Last(name)]; ok {
-			i := Issue{
-				Position: getPosition(c),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "duplicate field",
-			}
-			list = append(list, i)
-		}
-		names[slx.Last(name)] = struct{}{}
-	}
-	issues, err := r.verify(q.Where)
-	if err != nil {
-		return nil, err
-	}
-	return slices.Concat(list, issues), nil
-}
-
 type noCte struct {
 	severity Severity
 }
@@ -1211,7 +1150,7 @@ func getNames2(q ast.Statement) [][]string {
 		for i := range q.Parts {
 			parts = append(parts, q.Parts[i].Name)
 		}
-		return [][]string{parts}
+		return slx.One(parts)
 	case ast.Alias:
 		return getNames2(q.Statement)
 	case ast.Call:
