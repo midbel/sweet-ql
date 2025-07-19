@@ -26,10 +26,6 @@ func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
 }
 
 func (w *Writer) FormatName(name ast.Name) error {
-	// if name.Quoted {
-	// 	w.WriteString("\"")
-	// 	defer w.WriteString("\"")
-	// }
 	for i := range name.Parts {
 		if i > 0 {
 			w.WriteString(".")
@@ -59,7 +55,7 @@ func (w *Writer) FormatAlias(alias ast.Alias) error {
 		w.WriteKeyword("AS")
 		w.WriteBlank()
 	}
-	str := alias.Alias
+	str := alias.Name
 	if w.Upperize.Identifier() || w.Upperize.All() {
 		str = strings.ToUpper(str)
 	}

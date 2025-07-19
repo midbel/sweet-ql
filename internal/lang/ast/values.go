@@ -151,9 +151,7 @@ func (v Value) False() bool {
 type Alias struct {
 	token.Position
 	Statement
-	Alias  string
-	As     bool
-	Quoted bool
+	Identifier
 }
 
 type Identifier struct {

@@ -96,12 +96,14 @@ func (p *Parser) ParseAlias(stmt ast.Statement) (ast.Statement, error) {
 	}
 	switch p.curr.Type {
 	case token.Ident, token.QuotedIdent, token.Literal, token.Number:
+		ident := ast.Identifier{
+			Name:   p.GetCurrLiteral(),
+			Quoted: p.Is(token.QuotedIdent),
+		}
 		stmt = ast.Alias{
-			Statement: stmt,
-			Position:  p.GetCurrPosition(),
-			Alias:     p.GetCurrLiteral(),
-			As:        mandatory,
-			Quoted:    p.Is(token.QuotedIdent),
+			Statement:  stmt,
+			Position:   p.GetCurrPosition(),
+			Identifier: ident,
 		}
 		p.Next()
 	default:

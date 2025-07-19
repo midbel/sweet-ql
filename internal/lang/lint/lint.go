@@ -716,9 +716,9 @@ func (r subqueryNames) getExportedNames(j ast.Join) ([][]string, error) {
 		var ns []string
 		switch n := c.(type) {
 		case ast.Alias:
-			ns = append(ns, a.Alias, n.Alias)
+			ns = append(ns, a.Name, n.Name)
 		case ast.Name:
-			ns = append(ns, a.Alias, n.Name())
+			ns = append(ns, a.Name, n.Name())
 		default:
 		}
 		if len(ns) > 0 {
@@ -1077,7 +1077,7 @@ func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) 
 	for _, c := range q.Columns {
 		a, ok := c.(ast.Alias)
 		if ok {
-			aliases = append(aliases, a.Alias)
+			aliases = append(aliases, a.Name)
 		}
 	}
 	if len(aliases) == 0 {
@@ -1144,7 +1144,7 @@ func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, 
 	)
 	for _, t := range stmt.Tables {
 		if a, ok := t.(ast.Alias); ok {
-			aliases = append(aliases, a.Alias)
+			aliases = append(aliases, a.Name)
 		}
 	}
 
