@@ -206,7 +206,7 @@ func (r subqueryColumnsCount) checkColumnsCount(q ast.SelectStatement) ([]Issue,
 		case 0:
 		case 1:
 			n, ok := q.Columns[0].(ast.Name)
-			if ok && n.Name() == "*" {
+			if ok && n.All() {
 				i := Issue{
 					Position: getPosition(q.Columns[0]),
 					Severity: r.severity,
