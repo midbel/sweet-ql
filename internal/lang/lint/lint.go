@@ -1038,6 +1038,9 @@ func getQueries(stmt ast.Statement) []ast.SelectStatement {
 		if j, ok := t.(ast.Join); ok {
 			t = j.Table
 		}
+		if a, ok := t.(ast.Alias); ok {
+			t = a.Statement
+		}
 		list = slices.Concat(list, getQueries(t))
 	}
 	list = slices.Concat(list, getQueries(q.Where))

@@ -81,27 +81,40 @@ func (r duplicateField) verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	for _, q := range getQueries(q) {
+		issues, err := r.checkColumns(q)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	}
+	return list, nil
+}
+
+func (r duplicateField) checkColumns(q ast.SelectStatement) ([]Issue, error) {
 	var (
 		list  []Issue
 		names [][]ast.Identifier
 	)
 	for _, c := range q.Columns {
 		var id []ast.Identifier
-		switch q := c.(type) {
+		switch c := c.(type) {
 		case ast.Name:
-			id = q.Parts
-		case ast.Alias:
-			id = slx.One(q.Identifier)
-		case ast.Group:
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
+			if c.All() && len(q.Columns) > 1 {
+				i := Issue{
+					Position: getPosition(c),
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "implicit duplicate field",
+				}
+				list = append(list, i)
+				continue
 			}
-			list = slices.Concat(list, issues)
-			continue
+			id = c.Parts
+		case ast.Alias:
+			id = slx.One(c.Identifier)
 		default:
-		}
-		if len(id) == 0 {
 			continue
 		}
 		ok := slices.ContainsFunc(names, func(n []ast.Identifier) bool {
@@ -118,13 +131,6 @@ func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, er
 			continue
 		}
 		names = append(names, id)
-	}
-	for _, q := range slices.Concat(q.Tables, slx.One(q.Where)) {
-		issues, err := r.checkStatement(q)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
 	}
 	return list, nil
 }
