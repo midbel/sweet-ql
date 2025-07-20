@@ -26,88 +26,54 @@ func (r subqueryColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r subqueryColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
-	list, err := verify(stmt, r.checkColumnsCount)
-	if err != nil {
-		return nil, err
-	}
-	others, err := verify(stmt, r.checkWhere)
-	if err != nil {
-		return nil, err
-	}
-	return slices.Concat(list, others), nil
+	return verify(stmt, r.checkColumnsCount)
 }
 
 func (r subqueryColumnsCount) checkColumnsCount(q ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
+	var (
+		list    []Issue
+		queries []ast.SelectStatement
+	)
 	for _, c := range q.Columns {
-		g, ok := c.(ast.Group)
-		if !ok {
-			continue
+		queries = slices.Concat(queries, getQueries(c))
+	}
+	queries = slices.Concat(queries, getQueries(q.Where))
+	queries = slices.Concat(queries, getQueries(q.Having))
+	for _, q := range queries {
+		issues, err := r.checkColumns(q)
+		if err != nil {
+			return nil, err
 		}
-		q, ok := g.Statement.(ast.SelectStatement)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
-		}
-		switch len(q.Columns) {
-		case 0:
-		case 1:
-			n, ok := q.Columns[0].(ast.Name)
-			if ok && n.All() {
-				i := Issue{
-					Position: getPosition(q.Columns[0]),
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "unknown columns count because of use of '*'",
-				}
-				list = append(list, i)
-			}
-		default:
+		list = slices.Concat(list, issues)
+	}
+	return list, nil
+}
+
+func (r subqueryColumnsCount) checkColumns(q ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	switch len(q.Columns) {
+	case 0:
+	case 1:
+		n, ok := q.Columns[0].(ast.Name)
+		if ok && n.All() {
 			i := Issue{
 				Position: getPosition(q.Columns[0]),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "invalid columns count used by subquery",
+				Reason:   "unknown columns count because of use of '*'",
 			}
 			list = append(list, i)
 		}
-	}
-	return nil, nil
-}
-
-func (r subqueryColumnsCount) checkWhere(q ast.SelectStatement) ([]Issue, error) {
-	var check func(ast.Statement) ([]Issue, error)
-	check = func(q ast.Statement) ([]Issue, error) {
-		switch q := q.(type) {
-		case ast.Binary:
-			if !q.IsRelation() {
-				return nil, nil
-			}
-			left, err := check(q.Left)
-			if err != nil {
-				return nil, err
-			}
-			right, err := check(q.Right)
-			if err != nil {
-				return nil, err
-			}
-			return slices.Concat(left, right), nil
-		case ast.Between:
-			left, err := check(q.Lower)
-			if err != nil {
-				return nil, err
-			}
-			right, err := check(q.Upper)
-			if err != nil {
-				return nil, err
-			}
-			return slices.Concat(left, right), nil
-		case ast.In:
-			return verify(q.Value, r.checkColumnsCount)
-		default:
-			return nil, nil
+	default:
+		i := Issue{
+			Position: getPosition(q.Columns[0]),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "invalid columns count used by subquery",
 		}
+		list = append(list, i)
 	}
-	return check(q.Where)
+	return list, nil
 }
 
 type subqueryNames struct {

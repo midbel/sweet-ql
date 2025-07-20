@@ -732,6 +732,9 @@ func getPosition(stmt ast.Statement) token.Position {
 }
 
 func getQueries(stmt ast.Statement) []ast.SelectStatement {
+	if a, ok := stmt.(ast.Alias); ok {
+		return getQueries(a.Statement)
+	}
 	if gs, ok := stmt.(interface{ GetStatement() []ast.Statement }); ok {
 		var res []ast.SelectStatement
 		for _, s := range gs.GetStatement() {
@@ -750,9 +753,6 @@ func getQueries(stmt ast.Statement) []ast.SelectStatement {
 	for _, t := range q.Tables {
 		if j, ok := t.(ast.Join); ok {
 			t = j.Table
-		}
-		if a, ok := t.(ast.Alias); ok {
-			t = a.Statement
 		}
 		list = slices.Concat(list, getQueries(t))
 	}
