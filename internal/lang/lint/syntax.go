@@ -31,15 +31,9 @@ func (r noStar) verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
-	var (
-		list  []Issue
-		parts = slx.Make(q.Where, q.Having)
-	)
-	for _, c := range slices.Concat(q.Columns, q.Tables, parts) {
-		if c == nil {
-			continue
-		}
-		issues, err := r.checkStatement(c)
+	var list []Issue
+	for _, q := range getQueries(q) {
+		issues, err := r.checkColumns(q)
 		if err != nil {
 			return nil, err
 		}
@@ -48,26 +42,17 @@ func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
 	return list, nil
 }
 
-func (r noStar) checkStatement(stmt ast.Statement) ([]Issue, error) {
+func (r noStar) checkColumns(q ast.SelectStatement) ([]Issue, error) {
 	var list []Issue
-	for _, n := range collect(stmt) {
-		switch n := n.(type) {
-		case ast.Name:
-			if n.All() {
-				i := Issue{
-					Position: n.Position,
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "use explicit field names",
-				}
-				list = append(list, i)
+	for _, c := range q.Columns {
+		if n, ok := c.(ast.Name); ok && n.All() {
+			i := Issue{
+				Position: n.Position,
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "use explicit field names",
 			}
-		case ast.SelectStatement:
-			issues, err := r.checkStar(n)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
+			list = append(list, i)
 		}
 	}
 	return list, nil
@@ -278,5 +263,27 @@ func (r missingWhere) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r missingWhere) verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
+}
+
+type enforceType struct {
+	severity Severity
+}
+
+func EnforceType(level Severity) Rule {
+	return missingWhere{
+		severity: level,
+	}
+}
+
+func (_ enforceType) Name() string {
+	return "enforce-type"
+}
+
+func (r enforceType) Verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
+}
+
+func (r enforceType) verify(stmt ast.Statement) ([]Issue, error) {
 	return nil, nil
 }

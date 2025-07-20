@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/midbel/sweet/internal/slx"
@@ -179,6 +180,11 @@ type Placeholder struct {
 type Value struct {
 	token.Position
 	Literal string
+}
+
+func (v Value) Number() bool {
+	_, err := strconv.ParseFloat(v.Literal, 64)
+	return err == nil
 }
 
 func (v Value) Constant() bool {
