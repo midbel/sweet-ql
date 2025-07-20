@@ -126,17 +126,10 @@ func (r cteUnused) verify(stmt ast.Statement) ([]Issue, error) {
 		list []Issue
 	)
 	for _, q := range all {
-		c, ok := q.(ast.CteStatement)
-		if !ok {
-			continue
+		if c, ok := q.(ast.CteStatement); ok {
+			q = c.Statement
 		}
-		used := getTables(c.Statement)
-		for _, n := range used {
-			if _, ok := names[n]; !ok {
-				continue
-			}
-			names[n]++
-		}
+		r.checkTables(q, names)
 	}
 	for n, c := range names {
 		if c > 0 {
@@ -151,6 +144,17 @@ func (r cteUnused) verify(stmt ast.Statement) ([]Issue, error) {
 		list = append(list, i)
 	}
 	return list, nil
+}
+
+func (r cteUnused) checkTables(q ast.Statement, names map[string]int) {
+	for _, q := range getQueries(q) {
+		for _, n := range getTables(q) {
+			if _, ok := names[n]; !ok {
+				continue
+			}
+			names[n]++
+		}
+	}
 }
 
 type cteColumns struct {

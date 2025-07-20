@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -192,6 +193,10 @@ type UnionStatement struct {
 	Distinct bool
 }
 
+func (s UnionStatement) GetStatement() []Statement {
+	return slx.Make(s.Left, s.Right)
+}
+
 func (s UnionStatement) Keyword() (string, error) {
 	return getCompoundKeyword("UNION", s.All, s.Distinct)
 }
@@ -205,6 +210,10 @@ type IntersectStatement struct {
 	Distinct bool
 }
 
+func (s IntersectStatement) GetStatement() []Statement {
+	return slx.Make(s.Left, s.Right)
+}
+
 func (s IntersectStatement) Keyword() (string, error) {
 	return getCompoundKeyword("INTERSECT", s.All, s.Distinct)
 }
@@ -216,6 +225,10 @@ type ExceptStatement struct {
 	Right    Statement
 	All      bool
 	Distinct bool
+}
+
+func (s ExceptStatement) GetStatement() []Statement {
+	return slx.Make(s.Left, s.Right)
 }
 
 func (s ExceptStatement) Keyword() (string, error) {

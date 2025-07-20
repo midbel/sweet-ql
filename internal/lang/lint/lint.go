@@ -965,7 +965,7 @@ func getTables(stmt ast.Statement) []string {
 		case ast.Alias:
 			return get(q.Statement)
 		case ast.Group:
-			return ""
+			return get(q.Statement)
 		default:
 			return ""
 		}
@@ -995,26 +995,6 @@ func getPosition(stmt ast.Statement) token.Position {
 		return q.Position
 	default:
 		return pos
-	}
-}
-
-func collect(q ast.Statement) []ast.Statement {
-	if g, ok := q.(interface{ GetStatement() []ast.Statement }); ok {
-		var all []ast.Statement
-		for _, s := range g.GetStatement() {
-			all = slices.Concat(all, collect(s))
-		}
-		return all
-	}
-	switch q := q.(type) {
-	case ast.Name, ast.SelectStatement:
-		return slx.One(q)
-	case ast.Alias:
-		return collect(q.Statement)
-	case ast.Join:
-		return collect(q.Table)
-	default:
-		return nil
 	}
 }
 

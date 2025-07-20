@@ -106,7 +106,7 @@ func (r duplicateField) checkColumns(q ast.SelectStatement) ([]Issue, error) {
 					Position: getPosition(c),
 					Severity: r.severity,
 					Rule:     r.Name(),
-					Reason:   "implicit duplicate field",
+					Reason:   "implicit duplicated field",
 				}
 				list = append(list, i)
 				continue
@@ -125,24 +125,12 @@ func (r duplicateField) checkColumns(q ast.SelectStatement) ([]Issue, error) {
 				Position: getPosition(c),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "duplicate field",
+				Reason:   "duplicated field",
 			}
 			list = append(list, i)
 			continue
 		}
 		names = append(names, id)
-	}
-	return list, nil
-}
-
-func (r duplicateField) checkStatement(stmt ast.Statement) ([]Issue, error) {
-	var list []Issue
-	for _, c := range collect(stmt) {
-		issues, err := r.verify(c)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
 	}
 	return list, nil
 }
@@ -167,12 +155,6 @@ func (r setColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
 
 func (r setColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
 	switch stmt := stmt.(type) {
-	case ast.UnionStatement:
-		return r.checkUnionColumnsCount(stmt)
-	case ast.ExceptStatement:
-		return r.checkExceptColumnsCount(stmt)
-	case ast.IntersectStatement:
-		return r.checkIntersectColumnsCount(stmt)
 	case ast.WithStatement:
 		var list []Issue
 		for _, q := range slices.Concat(stmt.Queries, slx.One(stmt.Statement)) {
@@ -185,6 +167,14 @@ func (r setColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
 		return list, nil
 	case ast.CteStatement:
 		return r.verify(stmt.Statement)
+	case ast.SelectStatement:
+		return nil, nil
+	case ast.UnionStatement:
+		return r.checkUnionColumnsCount(stmt)
+	case ast.ExceptStatement:
+		return r.checkExceptColumnsCount(stmt)
+	case ast.IntersectStatement:
+		return r.checkIntersectColumnsCount(stmt)
 	default:
 		return nil, nil
 	}
@@ -238,6 +228,7 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, 
 		}
 		return slx.One(i), nil
 	}
+	var list []Issue
 	if len(q1.Columns) != len(q2.Columns) {
 		i := Issue{
 			Position: q1.Position,
@@ -245,9 +236,16 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, 
 			Rule:     r.Name(),
 			Reason:   "columns count mismatched",
 		}
-		return slx.One(i), nil
+		list = append(list, i)
 	}
-	return nil, nil
+	for _, s := range slx.Make(q1, q2) {
+		issues, err := r.verify(s)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	}
+	return list, nil
 }
 
 type missingWhere struct {
@@ -265,7 +263,7 @@ func (_ missingWhere) Name() string {
 }
 
 func (r missingWhere) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
 }
 
 func (r missingWhere) verify(stmt ast.Statement) ([]Issue, error) {
@@ -287,7 +285,7 @@ func (_ enforceType) Name() string {
 }
 
 func (r enforceType) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
 }
 
 func (r enforceType) verify(stmt ast.Statement) ([]Issue, error) {
