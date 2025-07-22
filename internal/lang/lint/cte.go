@@ -222,17 +222,47 @@ func (r cteColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
 	if !ok {
 		return nil, nil
 	}
-	var list []Issue
+	var (
+		list []Issue
+		get  func(ast.Statement) (int, error)
+	)
+	get = func(q ast.Statement) (int, error) {
+		var (
+			left  ast.Statement
+			right ast.Statement
+		)
+		switch c := q.(type) {
+		case ast.SelectStatement:
+			return len(c.Columns), nil
+		case ast.UnionStatement:
+			left, right = c.Left, c.Right
+		case ast.ExceptStatement:
+			left, right = c.Left, c.Right
+		case ast.IntersectStatement:
+			left, right = c.Left, c.Right
+		default:
+			return 0, fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		c1, err := get(left)
+		if err != nil {
+			return c1, err
+		}
+		c2, err := get(right)
+		if err != nil {
+			return c2, err
+		}
+		return min(c1, c2), nil
+	}
 	for _, q := range q.Queries {
 		c, ok := q.(ast.CteStatement)
 		if !ok {
 			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
 		}
-		e, ok := c.Statement.(ast.SelectStatement)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		count, err := get(c.Statement)
+		if err != nil {
+			return nil, err
 		}
-		if len(c.Columns) > 0 && len(e.Columns) != len(c.Columns) {
+		if len(c.Columns) > 0 && count != len(c.Columns) {
 			i := Issue{
 				Position: c.Position,
 				Severity: r.severity,
