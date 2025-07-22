@@ -214,6 +214,10 @@ type Identifier struct {
 	Name   string
 }
 
+func (i Identifier) Star() bool {
+	return !i.Quoted && i.Name == ""
+}
+
 type Name struct {
 	token.Position
 	Parts []Identifier

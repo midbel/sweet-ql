@@ -176,7 +176,92 @@ func (_ noIdentQuoted) Name() string {
 }
 
 func (r noIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return r.verify(stmt)
+}
+
+func (r noIdentQuoted) verify(stmt ast.Statement) ([]Issue, error) {
+	return verify(stmt, r.checkQuotedIdentifiers)
+}
+
+func (r noIdentQuoted) checkQuotedIdentifiers(stmt ast.SelectStatement) ([]Issue, error) {
+	var (
+		queries = getQueries(stmt)
+		list    []Issue
+	)
+	for _, q := range queries {
+		issues, err := r.checkQuotes(q)
+		if err != nil {
+			return nil, err
+		}
+		list = slices.Concat(list, issues)
+	}
+	return list, nil
+}
+
+func (r noIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
+	var (
+		list  []Issue
+		check func(ast.Statement) []Issue
+	)
+	check = func(q ast.Statement) []Issue {
+		switch q := q.(type) {
+		case ast.Name:
+			for _, n := range q.Parts {
+				if n.Quoted {
+					i := Issue{
+						Position: q.Position,
+						Severity: r.severity,
+						Rule:     r.Name(),
+						Reason:   "identifier used with double quote",
+					}
+					return slx.One(i)
+				}
+			}
+		case ast.Alias:
+			var list []Issue
+			if q.Quoted {
+				i := Issue{
+					Position: q.Position,
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "alias used with double quote",
+				}
+				list = append(list, i)
+			}
+			list = slices.Concat(list, check(q.Statement))
+		case ast.Join:
+			var (
+				list = check(q.Table)
+				all  []ast.Statement
+			)
+			if gs, ok := q.Where.(interface{ GetStatement() []ast.Statement }); ok {
+				all = gs.GetStatement()
+			} else {
+				all = slx.One(q.Where)
+			}
+			for _, s := range all {
+				list = slices.Concat(list, check(s))
+			}
+			return list
+		default:
+		}
+		return nil
+	}
+	for _, c := range slices.Concat(q.Columns, q.Tables, q.Groups) {
+		list = slices.Concat(list, check(c))
+	}
+	for _, c := range slx.Make(q.Where, q.Having) {
+		var all []ast.Statement
+		if gs, ok := c.(interface{ GetStatement() []ast.Statement }); ok {
+			all = gs.GetStatement()
+		} else {
+			all = slx.One(c)
+		}
+		for _, s := range all {
+			list = slices.Concat(list, check(s))
+		}
+	}
+	return list, nil
 }
 
 type missingIdentQuoted struct {
