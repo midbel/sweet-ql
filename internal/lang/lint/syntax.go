@@ -267,7 +267,23 @@ func (r missingWhere) Verify(stmt ast.Statement) ([]Issue, error) {
 }
 
 func (r missingWhere) verify(stmt ast.Statement) ([]Issue, error) {
-	return nil, nil
+	return verify(stmt, r.checkMissingWhere)
+}
+
+func (r missingWhere) checkMissingWhere(q ast.SelectStatement) ([]Issue, error) {
+	var list []Issue
+	for _, q := range getQueries(q) {
+		if q.Where == nil {
+			i := Issue{
+				Position: q.Position,
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "missing where clause from query",
+			}
+			list = append(list, i)
+		}
+	}
+	return list, nil
 }
 
 type enforceType struct {
