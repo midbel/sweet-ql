@@ -131,9 +131,6 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Statement, error) {
 		if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 			needAs = true
 		}
-		if !p.Curr().IsValue() {
-			return nil, p.Unexpected("xmlattributes", valueExpected)
-		}
 		var attr ast.XmlAttribute
 		if attr.Value, err = p.StartExpression(); err != nil {
 			return nil, err
@@ -255,7 +252,36 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 }
 
 func (p *Parser) ParseXmlInstruction(left ast.Statement) (ast.Statement, error) {
-	return nil, nil
+	if !p.IsIdent("NAME") {
+		return nil, p.Unexpected("xmlelement", identExpected)
+	}
+	p.Next()
+	if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
+		return nil, p.Unexpected("xmlelement", identExpected)
+	}
+	ident := ast.Identifier{
+		Quoted: p.Is(token.QuotedIdent),
+		Name:   p.GetCurrLiteral(),
+	}
+	name := ast.Name{
+		Position: p.GetCurrPosition(),
+		Parts:    slx.One(ident),
+	}
+	p.Next()
+	xml := ast.XmlPi{
+		Ident: left,
+		Name:  name,
+	}
+	body, err := p.StartExpression()
+	if err != nil {
+		return nil, err
+	}
+	xml.Body = body
+	if !p.Is(token.Rparen) {
+		return nil, p.Unexpected("xmlnamespaces", missingCloseParen)
+	}
+	p.Next()
+	return xml, nil
 }
 
 func (p *Parser) ParseXmlForest(left ast.Statement) (ast.Statement, error) {
@@ -263,30 +289,62 @@ func (p *Parser) ParseXmlForest(left ast.Statement) (ast.Statement, error) {
 }
 
 func (p *Parser) ParseXmlConcat(left ast.Statement) (ast.Statement, error) {
-	return nil, nil
+	p.Next()
+	xml := ast.XmlConcat{
+		Ident: left,
+	}
+	for !p.Done() && !p.Is(token.Rparen) {
+		arg, err := p.StartExpression()
+		if err != nil {
+			return nil, err
+		}
+		if err := p.EnsureEnd("xmlconcat", token.Comma, token.Rparen); err != nil {
+			return nil, err
+		}
+		xml.Args = append(xml.Args, arg)
+	}
+	if !p.Is(token.Rparen) {
+		return nil, p.Unexpected("xmlconcat", missingCloseParen)
+	}
+	p.Next()
+	return xml, nil
 }
 
 func (p *Parser) ParseXmlAgg(left ast.Statement) (ast.Statement, error) {
-	return nil, nil
+	p.Next()
+	xml := ast.XmlAgg{
+		Ident: left,
+	}
+	body, err := p.StartExpression()
+	if err != nil {
+		return nil, err
+	}
+	xml.Body = body
+	if !p.Is(token.Rparen) {
+		return nil, p.Unexpected("xmlagg", missingCloseParen)
+	}
+	p.Next()
+	return xml, nil
 }
 
 func (p *Parser) ParseXmlText(left ast.Statement) (ast.Statement, error) {
 	p.Next()
-	if !p.Curr().IsValue() {
-		return nil, p.Unexpected("xmltext", valueExpected)
+	withAs := p.withAlias
+	p.withAlias = false
+	defer func() {
+		p.withAlias = withAs
+	}()
+	stmt, err := p.StartExpression()
+	if err != nil {
+		return nil, err
 	}
-	text := ast.Value{
-		Literal:  p.GetCurrLiteral(),
-		Position: p.GetCurrPosition(),
-	}
-	p.Next()
 	if !p.Is(token.Rparen) {
 		return nil, p.Unexpected("xmltext", missingCloseParen)
 	}
 	p.Next()
 	xml := ast.XmlText{
 		Ident: left,
-		Text:  text,
+		Text:  stmt,
 	}
 	return xml, nil
 }
