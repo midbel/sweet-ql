@@ -244,3 +244,25 @@ func (r cteColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
 	}
 	return list, nil
 }
+
+type cteName struct {
+	severity Severity
+}
+
+func CteName(level Severity) Rule {
+	return cteName{
+		severity: level,
+	}
+}
+
+func (_ cteName) Name() string {
+	return "cte-name"
+}
+
+func (r cteName) Verify(stmt ast.Statement) ([]Issue, error) {
+	return r.verify(stmt)
+}
+
+func (r cteName) verify(stmt ast.Statement) ([]Issue, error) {
+	return nil, nil
+}
