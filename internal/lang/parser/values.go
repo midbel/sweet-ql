@@ -166,21 +166,26 @@ func (p *Parser) ParseCase() (ast.Statement, error) {
 		return nil, p.Unexpected("case", keywordExpected("END"))
 	}
 	p.Next()
-	return p.ParseAlias(stmt)
+	return stmt, nil
 }
 
 func (p *Parser) ParseCast() (ast.Statement, error) {
 	var (
-		cast ast.Cast
-		err  error
+		cast   ast.Cast
+		err    error
+		withAs = p.withAlias
 	)
+	p.withAlias = false
+	defer func() {
+		p.withAlias = withAs
+	}()
 	cast.Position = p.GetCurrPosition()
 	p.Next()
 	if !p.Is(token.Lparen) {
 		return nil, p.Unexpected("cast", missingOpenParen)
 	}
 	p.Next()
-	cast.Ident, err = p.ParseIdentifier()
+	cast.Ident, err = p.StartExpression()
 	if err != nil {
 		return nil, err
 	}
