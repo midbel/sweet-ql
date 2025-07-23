@@ -162,7 +162,11 @@ func (p *Parser) parse() (ast.Statement, error) {
 func (p *Parser) parseItem(parse ParseFunc) (ast.Statement, error) {
 	var node ast.Node
 	for p.Is(token.Comment) {
-		node.Before = append(node.Before, p.GetCurrLiteral())
+		comment := p.GetCurrLiteral()
+		if len(comment) == 0 {
+			continue
+		}
+		node.Before = append(node.Before, comment)
 		p.Next()
 	}
 	var (
@@ -177,15 +181,6 @@ func (p *Parser) parseItem(parse ParseFunc) (ast.Statement, error) {
 		p.Next()
 	}
 	return node.Get(), err
-}
-
-func (p *Parser) aggrComments() []string {
-	var comments []string
-	for p.Is(token.Comment) {
-		comments = append(comments, p.GetCurrLiteral())
-		p.Next()
-	}
-	return comments
 }
 
 func (p *Parser) skipComments() {

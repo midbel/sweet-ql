@@ -7,6 +7,14 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+// type Expr interface {
+// 	IsExpr() bool
+// }
+
+// type Stmt interface {
+// 	IsStmt() bool
+// }
+
 type Statement interface{}
 
 type Node struct {
