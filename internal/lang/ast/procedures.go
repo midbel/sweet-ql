@@ -15,6 +15,8 @@ type ProcedureParameter struct {
 	Default Node
 }
 
+func (_ ProcedureParameter) Accept(visit Visitor) {}
+
 type CreateProcedureStatement struct {
 	Replace    bool
 	Name       Node
@@ -22,6 +24,8 @@ type CreateProcedureStatement struct {
 	Language   string
 	Body       Node
 }
+
+func (_ CreateProcedureStatement) Accept(visit Visitor) {}
 
 func (s CreateProcedureStatement) Keyword() (string, error) {
 	if s.Replace {

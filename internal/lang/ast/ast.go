@@ -7,21 +7,26 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-// type Expr interface {
-// 	IsExpr() bool
-// }
+type Expr interface {
+	IsExpr() bool
+}
 
-// type Stmt interface {
-// 	IsStmt() bool
-// }
+type Stmt interface {
+	IsStmt() bool
+	Keyword() (string, error)
+}
 
-type Node interface{}
+type Node interface {
+	VisitableNode
+}
 
 type CommentedNode struct {
 	Node
 	Before []string
 	After  string
 }
+
+func (n CommentedNode) Accept(visit Visitor) {}
 
 func (n CommentedNode) Get() Node {
 	if len(n.Before) == 0 && n.After == "" {
@@ -37,12 +42,16 @@ type Limit struct {
 	Offset int
 }
 
+func (_ Limit) Accept(visit Visitor) {}
+
 type Offset struct {
 	token.Position
 
 	Limit
 	Next bool
 }
+
+func (_ Offset) Accept(visit Visitor) {}
 
 type OrderDir uint8
 
@@ -67,10 +76,16 @@ type Join struct {
 	Where Node
 }
 
+func (j Join) Accept(visit Visitor) {
+	visit.VisitJoin(j)
+}
+
 type WindowDefinition struct {
 	Ident  Node
 	Window Node
 }
+
+func (_ WindowDefinition) Accept(visit Visitor) {}
 
 type Window struct {
 	Ident      Node
@@ -78,6 +93,8 @@ type Window struct {
 	Orders     []Node
 	Spec       FrameSpec
 }
+
+func (_ Window) Accept(visit Visitor) {}
 
 type FrameRow int
 
@@ -108,6 +125,8 @@ type BetweenFrameSpec struct {
 	Exclude FrameExclude
 }
 
+func (_ BetweenFrameSpec) Accept(visit Visitor) {}
+
 type MaterializedMode int
 
 const (
@@ -124,12 +143,20 @@ type CteStatement struct {
 	Node
 }
 
+func (s CteStatement) Accept(visit Visitor) {
+	visit.VisitCte(s)
+}
+
 type WithStatement struct {
 	token.Position
 
 	Recursive bool
 	Queries   []Node
 	Node
+}
+
+func (s WithStatement) Accept(visit Visitor) {
+	visit.VisitWith(s)
 }
 
 func (s WithStatement) Keyword() (string, error) {
@@ -151,6 +178,10 @@ type ValuesStatement struct {
 	Limit  Node
 }
 
+func (s ValuesStatement) Accept(visit Visitor) {
+	visit.VisitValues(s)
+}
+
 func (s ValuesStatement) Keyword() (string, error) {
 	return "VALUES", nil
 }
@@ -169,27 +200,16 @@ type SelectStatement struct {
 	Limit    Node
 }
 
-func (s SelectStatement) ColumnsCount() int {
-	return -1
+func (s SelectStatement) Accept(visit Visitor) {
+	visit.VisitSelect(s)
 }
 
 func (s SelectStatement) Keyword() (string, error) {
 	return "SELECT", nil
 }
 
-func getCompoundKeyword(kw string, all, distinct bool) (string, error) {
-	var suffix string
-	switch {
-	default:
-		return kw, nil
-	case all:
-		suffix = "ALL"
-	case distinct:
-		suffix = "DISTINCT"
-	case all && distinct:
-		return "", fmt.Errorf("%s: all and distinct can not be set at the same time", kw)
-	}
-	return fmt.Sprintf("%s %s", kw, suffix), nil
+func (s SelectStatement) ColumnsCount() int {
+	return -1
 }
 
 type UnionStatement struct {
@@ -201,12 +221,16 @@ type UnionStatement struct {
 	Distinct bool
 }
 
-func (s UnionStatement) GetNode() []Node {
-	return slx.Make(s.Left, s.Right)
+func (s UnionStatement) Accept(visit Visitor) {
+	visit.VisitUnion(s)
 }
 
 func (s UnionStatement) Keyword() (string, error) {
 	return getCompoundKeyword("UNION", s.All, s.Distinct)
+}
+
+func (s UnionStatement) GetNode() []Node {
+	return slx.Make(s.Left, s.Right)
 }
 
 type IntersectStatement struct {
@@ -218,12 +242,16 @@ type IntersectStatement struct {
 	Distinct bool
 }
 
-func (s IntersectStatement) GetNode() []Node {
-	return slx.Make(s.Left, s.Right)
+func (s IntersectStatement) Accept(visit Visitor) {
+	visit.VisitIntersect(s)
 }
 
 func (s IntersectStatement) Keyword() (string, error) {
 	return getCompoundKeyword("INTERSECT", s.All, s.Distinct)
+}
+
+func (s IntersectStatement) GetNode() []Node {
+	return slx.Make(s.Left, s.Right)
 }
 
 type ExceptStatement struct {
@@ -235,12 +263,16 @@ type ExceptStatement struct {
 	Distinct bool
 }
 
-func (s ExceptStatement) GetNode() []Node {
-	return slx.Make(s.Left, s.Right)
+func (s ExceptStatement) Accept(visit Visitor) {
+	visit.VisitExcept(s)
 }
 
 func (s ExceptStatement) Keyword() (string, error) {
 	return getCompoundKeyword("EXCEPT", s.All, s.Distinct)
+}
+
+func (s ExceptStatement) GetNode() []Node {
+	return slx.Make(s.Left, s.Right)
 }
 
 type MatchStatement struct {
@@ -250,6 +282,10 @@ type MatchStatement struct {
 	Node
 }
 
+func (s MatchStatement) Accept(visit Visitor) {
+	visit.VisitMatch(s)
+}
+
 type MergeStatement struct {
 	token.Position
 
@@ -257,6 +293,10 @@ type MergeStatement struct {
 	Source  Node
 	Join    Node
 	Actions []Node
+}
+
+func (s MergeStatement) Accept(visit Visitor) {
+	visit.VisitMerge(s)
 }
 
 func (s MergeStatement) Keyword() (string, error) {
@@ -269,10 +309,14 @@ type Upsert struct {
 	Where   Node
 }
 
+func (_ Upsert) Accept(visit Visitor) {}
+
 type Assignment struct {
 	Field Node
 	Value Node
 }
+
+func (_ Assignment) Accept(visit Visitor) {}
 
 type InsertStatement struct {
 	token.Position
@@ -282,6 +326,10 @@ type InsertStatement struct {
 	Values  Node
 	Upsert  Node
 	Return  Node
+}
+
+func (s InsertStatement) Accept(visit Visitor) {
+	visit.VisitInsert(s)
 }
 
 func (s InsertStatement) Keyword() (string, error) {
@@ -298,6 +346,10 @@ type UpdateStatement struct {
 	Return Node
 }
 
+func (s UpdateStatement) Accept(visit Visitor) {
+	visit.VisitUpdate(s)
+}
+
 func (s UpdateStatement) Keyword() (string, error) {
 	return "UPDATE", nil
 }
@@ -306,6 +358,10 @@ type TruncateStatement struct {
 	Tables   []string
 	Cascade  CascadeMode
 	Identity IdentityMode
+}
+
+func (s TruncateStatement) Accept(visit Visitor) {
+	visit.VisitTruncate(s)
 }
 
 func (s TruncateStatement) Keyword() (string, error) {
@@ -320,6 +376,40 @@ type DeleteStatement struct {
 	Return Node
 }
 
+func (s DeleteStatement) Accept(visit Visitor) {
+	visit.VisitDelete(s)
+}
+
 func (s DeleteStatement) Keyword() (string, error) {
 	return "DELETE FROM", nil
+}
+
+type CallStatement struct {
+	token.Position
+	Ident Node
+	Names []string
+	Args  []Node
+}
+
+func (s CallStatement) Accept(visit Visitor) {
+	visit.VisitCall(s)
+}
+
+func (_ CallStatement) Keyword() (string, error) {
+	return "CALL", nil
+}
+
+func getCompoundKeyword(kw string, all, distinct bool) (string, error) {
+	var suffix string
+	switch {
+	default:
+		return kw, nil
+	case all:
+		suffix = "ALL"
+	case distinct:
+		suffix = "DISTINCT"
+	case all && distinct:
+		return "", fmt.Errorf("%s: all and distinct can not be set at the same time", kw)
+	}
+	return fmt.Sprintf("%s %s", kw, suffix), nil
 }

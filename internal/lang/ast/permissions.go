@@ -6,6 +6,8 @@ type GrantStatement struct {
 	Users      []string
 }
 
+func (_ GrantStatement) Accept(visit Visitor) {}
+
 func (s GrantStatement) Keyword() (string, error) {
 	return "GRANT", nil
 }
@@ -15,6 +17,8 @@ type RevokeStatement struct {
 	Privileges []string
 	Users      []string
 }
+
+func (_ RevokeStatement) Accept(visit Visitor) {}
 
 func (s RevokeStatement) Keyword() (string, error) {
 	return "REVOKE", nil

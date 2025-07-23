@@ -21,6 +21,8 @@ type SetTransaction struct {
 	Level TransactionLevel
 }
 
+func (_ SetTransaction) Accept(visit Visitor) {}
+
 func (_ SetTransaction) Keyword() (string, error) {
 	return "SET TRANSACTION", nil
 }
@@ -31,6 +33,8 @@ type StartTransaction struct {
 	End  Node
 }
 
+func (_ StartTransaction) Accept(visit Visitor) {}
+
 func (_ StartTransaction) Keyword() (string, error) {
 	return "START TRANSACTION", nil
 }
@@ -38,6 +42,8 @@ func (_ StartTransaction) Keyword() (string, error) {
 type Savepoint struct {
 	Name string
 }
+
+func (_ Savepoint) Accept(visit Visitor) {}
 
 func (_ Savepoint) Keyword() (string, error) {
 	return "SAVEPOINT", nil
@@ -47,6 +53,8 @@ type ReleaseSavepoint struct {
 	Name string
 }
 
+func (_ ReleaseSavepoint) Accept(visit Visitor) {}
+
 func (_ ReleaseSavepoint) Keyword() (string, error) {
 	return "RELEASE SAVEPOINT", nil
 }
@@ -55,17 +63,23 @@ type RollbackSavepoint struct {
 	Name string
 }
 
+func (_ RollbackSavepoint) Accept(visit Visitor) {}
+
 func (_ RollbackSavepoint) Keyword() (string, error) {
 	return "ROLLBACK TO SAVEPOINT", nil
 }
 
 type Commit struct{}
 
+func (_ Commit) Accept(visit Visitor) {}
+
 func (_ Commit) Keyword() (string, error) {
 	return "COMMIT", nil
 }
 
 type Rollback struct{}
+
+func (_ Rollback) Accept(visit Visitor) {}
 
 func (_ Rollback) Keyword() (string, error) {
 	return "ROLLBACK", nil

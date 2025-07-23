@@ -4,6 +4,8 @@ type PrimaryKeyConstraint struct {
 	Columns []string
 }
 
+func (_ PrimaryKeyConstraint) Accept(visit Visitor) {}
+
 func (_ PrimaryKeyConstraint) Keyword() (string, error) {
 	return "PRIMARY KEY", nil
 }
@@ -16,6 +18,8 @@ type ForeignKeyConstraint struct {
 	OnUpdate Node
 }
 
+func (_ ForeignKeyConstraint) Accept(visit Visitor) {}
+
 func (c ForeignKeyConstraint) Keyword() (string, error) {
 	if len(c.Locals) == 0 {
 		return "REFERENCES", nil
@@ -27,6 +31,8 @@ type NotNullConstraint struct {
 	Column string
 }
 
+func (_ NotNullConstraint) Accept(visit Visitor) {}
+
 func (_ NotNullConstraint) Keyword() (string, error) {
 	return "NOT NULL", nil
 }
@@ -34,6 +40,8 @@ func (_ NotNullConstraint) Keyword() (string, error) {
 type UniqueConstraint struct {
 	Columns []string
 }
+
+func (_ UniqueConstraint) Accept(visit Visitor) {}
 
 func (_ UniqueConstraint) Keyword() (string, error) {
 	return "UNIQUE", nil
@@ -43,6 +51,8 @@ type CheckConstraint struct {
 	Expr Node
 }
 
+func (_ CheckConstraint) Accept(visit Visitor) {}
+
 func (_ CheckConstraint) Keyword() (string, error) {
 	return "CHECK", nil
 }
@@ -51,6 +61,8 @@ type DefaultConstraint struct {
 	Expr Node
 }
 
+func (_ DefaultConstraint) Accept(visit Visitor) {}
+
 func (_ DefaultConstraint) Keyword() (string, error) {
 	return "DEFAULT", nil
 }
@@ -58,6 +70,8 @@ func (_ DefaultConstraint) Keyword() (string, error) {
 type GeneratedConstraint struct {
 	Expr Node
 }
+
+func (_ GeneratedConstraint) Accept(visit Visitor) {}
 
 func (_ GeneratedConstraint) Keyword() (string, error) {
 	return "GENERATED ALWAYS AS", nil

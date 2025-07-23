@@ -12,11 +12,15 @@ type Return struct {
 	Node
 }
 
+func (_ Return) Accept(visit Visitor) {}
+
 type While struct {
 	token.Position
 	Cdt  Node
 	Body Node
 }
+
+func (_ While) Accept(visit Visitor) {}
 
 type If struct {
 	token.Position
@@ -25,6 +29,8 @@ type If struct {
 	Alt Node
 }
 
+func (_ If) Accept(visit Visitor) {}
+
 type Declare struct {
 	token.Position
 	Ident string
@@ -32,12 +38,16 @@ type Declare struct {
 	Value Node
 }
 
+func (_ Declare) Accept(visit Visitor) {}
+
 type Case struct {
 	token.Position
 	Cdt  Node
 	Body []Node
 	Else Node
 }
+
+func (_ Case) Accept(visit Visitor) {}
 
 func (c Case) GetStatement() []Node {
 	all := slx.One(c.Cdt)
@@ -50,6 +60,8 @@ type When struct {
 	Body Node
 }
 
+func (_ When) Accept(visit Visitor) {}
+
 func (w When) GetStatement() []Node {
 	return slx.Make(w.Cdt, w.Body)
 }
@@ -60,13 +72,4 @@ type Set struct {
 	Expr  Node
 }
 
-type CallStatement struct {
-	token.Position
-	Ident Node
-	Names []string
-	Args  []Node
-}
-
-func (_ CallStatement) Keyword() (string, error) {
-	return "CALL", nil
-}
+func (_ Set) Accept(visit Visitor) {}

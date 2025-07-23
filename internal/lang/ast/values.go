@@ -12,6 +12,10 @@ type Group struct {
 	Node
 }
 
+func (g Group) Accept(visit Visitor) {
+	visit.VisitGroup(g)
+}
+
 func (g Group) GetStatement() []Node {
 	return slx.One(g.Node)
 }
@@ -21,6 +25,10 @@ type Cast struct {
 
 	Ident Node
 	Type  Type
+}
+
+func (c Cast) Accept(visit Visitor) {
+	visit.VisitCast(c)
 }
 
 type Type struct {
@@ -36,6 +44,10 @@ type Not struct {
 	Node
 }
 
+func (n Not) Accept(visit Visitor) {
+	visit.VisitNot(n)
+}
+
 func (n Not) GetStatement() []Node {
 	return slx.One(n.Node)
 }
@@ -46,9 +58,15 @@ type Collate struct {
 	Collation string
 }
 
+func (_ Collate) Accept(visit Visitor) {}
+
 type Exists struct {
 	token.Position
 	Node
+}
+
+func (e Exists) Accept(visit Visitor) {
+	visit.VisitExists(e)
 }
 
 func (e Exists) GetStatement() []Node {
@@ -63,6 +81,8 @@ type Call struct {
 	Filter   Node
 	Over     Node
 }
+
+func (_ Call) Accept(visit Visitor) {}
 
 func (c Call) GetStatement() []Node {
 	return c.Args
@@ -81,6 +101,8 @@ type Row struct {
 	Values []Node
 }
 
+func (_ Row) Accept(visit Visitor) {}
+
 func (r Row) GetStatement() []Node {
 	return r.Values
 }
@@ -95,6 +117,10 @@ type Unary struct {
 	Op    string
 }
 
+func (u Unary) Accept(visit Visitor) {
+	visit.VisitUnary(u)
+}
+
 func (u Unary) GetStatement() []Node {
 	return slx.One(u.Right)
 }
@@ -104,6 +130,10 @@ type Binary struct {
 	Left  Node
 	Right Node
 	Op    string
+}
+
+func (b Binary) Accept(visit Visitor) {
+	visit.VisitBinary(b)
 }
 
 func (b Binary) GetStatement() []Node {
@@ -119,6 +149,10 @@ type All struct {
 	Node
 }
 
+func (a All) Accept(visit Visitor) {
+	visit.VisitAll(a)
+}
+
 func (a All) GetStatement() []Node {
 	return slx.One(a.Node)
 }
@@ -126,6 +160,10 @@ func (a All) GetStatement() []Node {
 type Any struct {
 	token.Position
 	Node
+}
+
+func (a Any) Accept(visit Visitor) {
+	visit.VisitAny(a)
 }
 
 func (a Any) GetStatement() []Node {
@@ -138,6 +176,10 @@ type Is struct {
 	Value Node
 }
 
+func (i Is) Accept(visit Visitor) {
+	visit.VisitIs(i)
+}
+
 func (i Is) GetStatement() []Node {
 	return slx.One(i.Value)
 }
@@ -146,6 +188,10 @@ type In struct {
 	token.Position
 	Ident Node
 	Value Node
+}
+
+func (i In) Accept(visit Visitor) {
+	visit.VisitIn(i)
 }
 
 func (i In) GetStatement() []Node {
@@ -160,6 +206,10 @@ type Between struct {
 	Upper Node
 }
 
+func (b Between) Accept(visit Visitor) {
+	visit.VisitBetween(b)
+}
+
 func (b Between) GetStatement() []Node {
 	return slx.Make(b.Lower, b.Upper)
 }
@@ -167,6 +217,8 @@ func (b Between) GetStatement() []Node {
 type List struct {
 	Values []Node
 }
+
+func (i List) Accept(visit Visitor) {}
 
 func (i List) Len() int {
 	return len(i.Values)
@@ -177,9 +229,15 @@ type Placeholder struct {
 	Node
 }
 
+func (_ Placeholder) Accept(visit Visitor) {}
+
 type Value struct {
 	token.Position
 	Literal string
+}
+
+func (v Value) Accept(visit Visitor) {
+	visit.VisitValue(v)
 }
 
 func (v Value) Number() bool {
@@ -209,6 +267,10 @@ type Alias struct {
 	Identifier
 }
 
+func (a Alias) Accept(visit Visitor) {
+	visit.VisitAlias(a)
+}
+
 type Identifier struct {
 	Quoted bool
 	Name   string
@@ -221,6 +283,10 @@ func (i Identifier) Star() bool {
 type Name struct {
 	token.Position
 	Parts []Identifier
+}
+
+func (n Name) Accept(visit Visitor) {
+	visit.VisitName(n)
 }
 
 func (n Name) All() bool {
