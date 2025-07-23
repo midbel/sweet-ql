@@ -21,11 +21,11 @@ func (r setAlias) Name() string {
 	return "set-alias"
 }
 
-func (r setAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r setAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r setAlias) verify(stmt ast.Statement) ([]Issue, error) {
+func (r setAlias) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkAliasForCalculatedFields)
 }
 
@@ -77,11 +77,11 @@ func (_ missingAlias) Name() string {
 	return "missing-alias"
 }
 
-func (r missingAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r missingAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r missingAlias) verify(stmt ast.Statement) ([]Issue, error) {
+func (r missingAlias) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkMissingAlias)
 }
 
@@ -146,11 +146,11 @@ func (_ noAlias) Name() string {
 	return "no-alias"
 }
 
-func (r noAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r noAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r noAlias) verify(stmt ast.Statement) ([]Issue, error) {
+func (r noAlias) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkNoAlias)
 }
 
@@ -199,11 +199,11 @@ func (_ invalidAlias) Name() string {
 	return "invalid-alias"
 }
 
-func (r invalidAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r invalidAlias) verify(stmt ast.Statement) ([]Issue, error) {
+func (r invalidAlias) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkInvalidAlias)
 }
 
@@ -267,11 +267,11 @@ func (_ undefinedAlias) Name() string {
 	return "undefined-alias"
 }
 
-func (r undefinedAlias) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r undefinedAlias) verify(stmt ast.Statement) ([]Issue, error) {
+func (r undefinedAlias) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkUndefinedAlias)
 }
 

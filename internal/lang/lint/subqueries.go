@@ -21,11 +21,11 @@ func (_ subqueryColumnsCount) Name() string {
 	return "subquery-columns-count"
 }
 
-func (r subqueryColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r subqueryColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r subqueryColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
+func (r subqueryColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkColumnsCount)
 }
 
@@ -90,11 +90,11 @@ func (_ subqueryNames) Name() string {
 	return "subquery-name"
 }
 
-func (r subqueryNames) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r subqueryNames) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r subqueryNames) verify(stmt ast.Statement) ([]Issue, error) {
+func (r subqueryNames) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkExportedNames)
 }
 
@@ -132,7 +132,7 @@ func (r subqueryNames) checkExportedNames(q ast.SelectStatement) ([]Issue, error
 	return list, nil
 }
 
-func (r subqueryNames) checkNames(stmt ast.Statement, names [][]string) ([]Issue, error) {
+func (r subqueryNames) checkNames(stmt ast.Node, names [][]string) ([]Issue, error) {
 	var list []Issue
 	for _, n := range getNames2(stmt) {
 		if len(n) == 0 || n[0] != names[0][0] {
@@ -199,11 +199,11 @@ func (_ noSubquery) Name() string {
 	return "no-subquery"
 }
 
-func (r noSubquery) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r noSubquery) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r noSubquery) verify(stmt ast.Statement) ([]Issue, error) {
+func (r noSubquery) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkSubquery)
 }
 

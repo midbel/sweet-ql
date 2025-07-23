@@ -23,11 +23,11 @@ func (_ noCte) Name() string {
 	return "no-cte"
 }
 
-func (r noCte) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r noCte) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r noCte) verify(stmt ast.Statement) ([]Issue, error) {
+func (r noCte) verify(stmt ast.Node) ([]Issue, error) {
 	if w, ok := stmt.(ast.WithStatement); ok {
 		i := Issue{
 			Position: w.Position,
@@ -54,11 +54,11 @@ func (_ cteDuplicate) Name() string {
 	return "cte-duplicate"
 }
 
-func (r cteDuplicate) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteDuplicate) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r cteDuplicate) verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteDuplicate) verify(stmt ast.Node) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
@@ -100,11 +100,11 @@ func (_ cteUnused) Name() string {
 	return "cte-unused"
 }
 
-func (r cteUnused) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r cteUnused) verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteUnused) verify(stmt ast.Node) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
@@ -146,7 +146,7 @@ func (r cteUnused) verify(stmt ast.Statement) ([]Issue, error) {
 	return list, nil
 }
 
-func (r cteUnused) checkTables(q ast.Statement, names map[string]int) {
+func (r cteUnused) checkTables(q ast.Node, names map[string]int) {
 	for _, q := range getQueries(q) {
 		for _, n := range getTables(q) {
 			if _, ok := names[n]; !ok {
@@ -171,11 +171,11 @@ func (_ cteColumns) Name() string {
 	return "cte-columns"
 }
 
-func (r cteColumns) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteColumns) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r cteColumns) verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteColumns) verify(stmt ast.Node) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
@@ -213,23 +213,23 @@ func (_ cteColumnsCount) Name() string {
 	return "cte-columns-count"
 }
 
-func (r cteColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r cteColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
 	q, ok := stmt.(ast.WithStatement)
 	if !ok {
 		return nil, nil
 	}
 	var (
 		list []Issue
-		get  func(ast.Statement) (int, error)
+		get  func(ast.Node) (int, error)
 	)
-	get = func(q ast.Statement) (int, error) {
+	get = func(q ast.Node) (int, error) {
 		var (
-			left  ast.Statement
-			right ast.Statement
+			left  ast.Node
+			right ast.Node
 		)
 		switch c := q.(type) {
 		case ast.SelectStatement:
@@ -289,10 +289,10 @@ func (_ cteName) Name() string {
 	return "cte-name"
 }
 
-func (r cteName) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteName) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r cteName) verify(stmt ast.Statement) ([]Issue, error) {
+func (r cteName) verify(stmt ast.Node) ([]Issue, error) {
 	return nil, nil
 }

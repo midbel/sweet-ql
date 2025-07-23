@@ -22,11 +22,11 @@ func (_ groupbyColumns) Name() string {
 	return "groupby-columns"
 }
 
-func (r groupbyColumns) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r groupbyColumns) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r groupbyColumns) verify(stmt ast.Statement) ([]Issue, error) {
+func (r groupbyColumns) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkGroupBy)
 }
 
@@ -45,10 +45,10 @@ func (r groupbyColumns) checkGroupBy(stmt ast.SelectStatement) ([]Issue, error) 
 
 	var (
 		list []Issue
-		get  func(ast.Statement) ast.Statement
+		get  func(ast.Node) ast.Node
 	)
 
-	get = func(q ast.Statement) ast.Statement {
+	get = func(q ast.Node) ast.Node {
 		switch q := q.(type) {
 		case ast.Name:
 			return q
@@ -108,10 +108,10 @@ func (_ groupbyAggrFunc) Name() string {
 	return "groupby-aggr-function"
 }
 
-func (r groupbyAggrFunc) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r groupbyAggrFunc) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r groupbyAggrFunc) verify(stmt ast.Statement) ([]Issue, error) {
+func (r groupbyAggrFunc) verify(stmt ast.Node) ([]Issue, error) {
 	return nil, nil
 }

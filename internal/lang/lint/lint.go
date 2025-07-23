@@ -59,7 +59,7 @@ func (r RuleOptions) withCheckTables() bool {
 }
 
 type Rule interface {
-	Verify(ast.Statement) ([]Issue, error)
+	Verify(ast.Node) ([]Issue, error)
 	Name() string
 }
 
@@ -147,7 +147,7 @@ func NewLinter(rules []Rule) *Linter {
 	return &i
 }
 
-func (i *Linter) Lint(stmt ast.Statement) ([]Issue, error) {
+func (i *Linter) Lint(stmt ast.Node) ([]Issue, error) {
 	var list []Issue
 	for _, r := range i.rules {
 		issues, err := r.Verify(stmt)
@@ -161,7 +161,7 @@ func (i *Linter) Lint(stmt ast.Statement) ([]Issue, error) {
 
 type checkSelectFunc func(ast.SelectStatement) ([]Issue, error)
 
-func verify(stmt ast.Statement, check checkSelectFunc) ([]Issue, error) {
+func verify(stmt ast.Node, check checkSelectFunc) ([]Issue, error) {
 	switch q := stmt.(type) {
 	case ast.WithStatement:
 		var (
@@ -194,7 +194,7 @@ func verify(stmt ast.Statement, check checkSelectFunc) ([]Issue, error) {
 	}
 }
 
-func verifyList(stmts []ast.Statement, check checkSelectFunc) ([]Issue, error) {
+func verifyList(stmts []ast.Node, check checkSelectFunc) ([]Issue, error) {
 	var list []Issue
 	for _, s := range stmts {
 		issues, err := verify(s, check)
@@ -206,7 +206,7 @@ func verifyList(stmts []ast.Statement, check checkSelectFunc) ([]Issue, error) {
 	return list, nil
 }
 
-func getNames2(q ast.Statement) [][]string {
+func getNames2(q ast.Node) [][]string {
 	switch q := q.(type) {
 	case ast.Name:
 		var parts []string
@@ -230,7 +230,7 @@ func getNames2(q ast.Statement) [][]string {
 	}
 }
 
-func getNames(q ast.Statement) []string {
+func getNames(q ast.Node) []string {
 	switch q := q.(type) {
 	case ast.Name:
 		var parts []string
@@ -254,16 +254,16 @@ func getNames(q ast.Statement) []string {
 	}
 }
 
-func getTables(stmt ast.Statement) []string {
+func getTables(stmt ast.Node) []string {
 	q, ok := stmt.(ast.SelectStatement)
 	if !ok {
 		return nil
 	}
 	var (
-		get   func(ast.Statement) string
+		get   func(ast.Node) string
 		names = make(map[string]struct{})
 	)
-	get = func(stmt ast.Statement) string {
+	get = func(stmt ast.Node) string {
 		switch q := stmt.(type) {
 		case ast.Join:
 			return get(q.Table)
@@ -287,7 +287,7 @@ func getTables(stmt ast.Statement) []string {
 	return slices.Collect(maps.Keys(names))
 }
 
-func getPosition(stmt ast.Statement) token.Position {
+func getPosition(stmt ast.Node) token.Position {
 	var pos token.Position
 	switch q := stmt.(type) {
 	case ast.Name:
@@ -305,11 +305,11 @@ func getPosition(stmt ast.Statement) token.Position {
 	}
 }
 
-func getQueries(stmt ast.Statement) []ast.SelectStatement {
+func getQueries(stmt ast.Node) []ast.SelectStatement {
 	if a, ok := stmt.(ast.Alias); ok {
 		return getQueries(a.Statement)
 	}
-	if gs, ok := stmt.(interface{ GetStatement() []ast.Statement }); ok {
+	if gs, ok := stmt.(interface{ GetStatement() []ast.Node }); ok {
 		var res []ast.SelectStatement
 		for _, s := range gs.GetStatement() {
 			res = slices.Concat(res, getQueries(s))

@@ -22,11 +22,11 @@ func (_ noStar) Name() string {
 	return "no-star"
 }
 
-func (r noStar) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r noStar) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r noStar) verify(stmt ast.Statement) ([]Issue, error) {
+func (r noStar) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkStar)
 }
 
@@ -72,11 +72,11 @@ func (_ duplicateField) Name() string {
 	return "duplicate-field"
 }
 
-func (r duplicateField) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r duplicateField) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r duplicateField) verify(stmt ast.Statement) ([]Issue, error) {
+func (r duplicateField) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkDuplicateFields)
 }
 
@@ -149,11 +149,11 @@ func (_ setColumnsCount) Name() string {
 	return "set-columns-count"
 }
 
-func (r setColumnsCount) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r setColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r setColumnsCount) verify(stmt ast.Statement) ([]Issue, error) {
+func (r setColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
 	switch stmt := stmt.(type) {
 	case ast.WithStatement:
 		var list []Issue
@@ -192,12 +192,12 @@ func (r setColumnsCount) checkIntersectColumnsCount(q ast.IntersectStatement) ([
 	return r.checkColumnsCount(q.Left, q.Right)
 }
 
-func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, error) {
+func (r setColumnsCount) checkColumnsCount(left, right ast.Node) ([]Issue, error) {
 	q1, ok := left.(ast.SelectStatement)
 	if !ok {
 		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
 	}
-	ok = slices.ContainsFunc(q1.Columns, func(c ast.Statement) bool {
+	ok = slices.ContainsFunc(q1.Columns, func(c ast.Node) bool {
 		n, ok := c.(ast.Name)
 		return ok && n.All()
 	})
@@ -215,7 +215,7 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Statement) ([]Issue, 
 	if !ok {
 		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
 	}
-	ok = slices.ContainsFunc(q2.Columns, func(c ast.Statement) bool {
+	ok = slices.ContainsFunc(q2.Columns, func(c ast.Node) bool {
 		n, ok := c.(ast.Name)
 		return ok && n.All()
 	})
@@ -262,11 +262,11 @@ func (_ missingWhere) Name() string {
 	return "missing-where"
 }
 
-func (r missingWhere) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r missingWhere) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r missingWhere) verify(stmt ast.Statement) ([]Issue, error) {
+func (r missingWhere) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkMissingWhere)
 }
 
@@ -300,11 +300,11 @@ func (_ enforceType) Name() string {
 	return "enforce-type"
 }
 
-func (r enforceType) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r enforceType) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r enforceType) verify(stmt ast.Statement) ([]Issue, error) {
+func (r enforceType) verify(stmt ast.Node) ([]Issue, error) {
 	return nil, nil
 }
 
@@ -324,11 +324,11 @@ func (_ noIdentQuoted) Name() string {
 	return "no-ident-quoted"
 }
 
-func (r noIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r noIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r noIdentQuoted) verify(stmt ast.Statement) ([]Issue, error) {
+func (r noIdentQuoted) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkQuotedIdentifiers)
 }
 
@@ -350,9 +350,9 @@ func (r noIdentQuoted) checkQuotedIdentifiers(stmt ast.SelectStatement) ([]Issue
 func (r noIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
 	var (
 		list  []Issue
-		check func(ast.Statement) []Issue
+		check func(ast.Node) []Issue
 	)
-	check = func(q ast.Statement) []Issue {
+	check = func(q ast.Node) []Issue {
 		switch q := q.(type) {
 		case ast.Name:
 			for _, n := range q.Parts {
@@ -381,9 +381,9 @@ func (r noIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
 		case ast.Join:
 			var (
 				list = check(q.Table)
-				all  []ast.Statement
+				all  []ast.Node
 			)
-			if gs, ok := q.Where.(interface{ GetStatement() []ast.Statement }); ok {
+			if gs, ok := q.Where.(interface{ GetStatement() []ast.Node }); ok {
 				all = gs.GetStatement()
 			} else {
 				all = slx.One(q.Where)
@@ -400,8 +400,8 @@ func (r noIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
 		list = slices.Concat(list, check(c))
 	}
 	for _, c := range slx.Make(q.Where, q.Having) {
-		var all []ast.Statement
-		if gs, ok := c.(interface{ GetStatement() []ast.Statement }); ok {
+		var all []ast.Node
+		if gs, ok := c.(interface{ GetStatement() []ast.Node }); ok {
 			all = gs.GetStatement()
 		} else {
 			all = slx.One(c)
@@ -429,11 +429,11 @@ func (_ missingIdentQuoted) Name() string {
 	return "missing-ident-quoted"
 }
 
-func (r missingIdentQuoted) Verify(stmt ast.Statement) ([]Issue, error) {
+func (r missingIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.verify(stmt)
 }
 
-func (r missingIdentQuoted) verify(stmt ast.Statement) ([]Issue, error) {
+func (r missingIdentQuoted) verify(stmt ast.Node) ([]Issue, error) {
 	return verify(stmt, r.checkMissingQuotes)
 }
 
@@ -455,9 +455,9 @@ func (r missingIdentQuoted) checkMissingQuotes(stmt ast.SelectStatement) ([]Issu
 func (r missingIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
 	var (
 		list  []Issue
-		check func(ast.Statement) []Issue
+		check func(ast.Node) []Issue
 	)
-	check = func(q ast.Statement) []Issue {
+	check = func(q ast.Node) []Issue {
 		switch q := q.(type) {
 		case ast.Name:
 			for _, n := range q.Parts {
@@ -486,9 +486,9 @@ func (r missingIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) 
 		case ast.Join:
 			var (
 				list = check(q.Table)
-				all  []ast.Statement
+				all  []ast.Node
 			)
-			if gs, ok := q.Where.(interface{ GetStatement() []ast.Statement }); ok {
+			if gs, ok := q.Where.(interface{ GetStatement() []ast.Node }); ok {
 				all = gs.GetStatement()
 			} else {
 				all = slx.One(q.Where)
@@ -505,8 +505,8 @@ func (r missingIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) 
 		list = slices.Concat(list, check(c))
 	}
 	for _, c := range slx.Make(q.Where, q.Having) {
-		var all []ast.Statement
-		if gs, ok := c.(interface{ GetStatement() []ast.Statement }); ok {
+		var all []ast.Node
+		if gs, ok := c.(interface{ GetStatement() []ast.Node }); ok {
 			all = gs.GetStatement()
 		} else {
 			all = slx.One(c)
