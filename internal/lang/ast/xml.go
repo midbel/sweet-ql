@@ -3,13 +3,13 @@ package ast
 import "github.com/midbel/sweet/internal/token"
 
 type XmlAttribute struct {
-	Name  Statement
-	Value Statement
+	Name  Node
+	Value Node
 }
 
 type XmlNamespace struct {
-	Name Statement
-	Uri  Statement
+	Name Node
+	Uri  Node
 }
 
 func (x XmlNamespace) IsDefault() bool {
@@ -18,52 +18,52 @@ func (x XmlNamespace) IsDefault() bool {
 
 type XmlRoot struct {
 	token.Position
-	Ident      Statement
+	Ident      Node
 	Version    string
 	Standalone string
 }
 
 type XmlPi struct {
-	Ident Statement
-	Name  Statement
-	Body  Statement
+	Ident Node
+	Name  Node
+	Body  Node
 }
 
 type XmlElement struct {
 	token.Position
-	Ident      Statement
-	Name       Statement
-	Attributes []Statement
-	Namespaces []Statement
-	Children   []Statement
+	Ident      Node
+	Name       Node
+	Attributes []Node
+	Namespaces []Node
+	Children   []Node
 }
 
 type XmlText struct {
 	token.Position
-	Ident Statement
-	Text  Statement
+	Ident Node
+	Text  Node
 }
 
 type XmlComment struct {
 	token.Position
-	Ident Statement
-	Text  Statement
+	Ident Node
+	Text  Node
 }
 
 type XmlAgg struct {
 	token.Position
-	Ident Statement
-	Body  Statement
+	Ident Node
+	Body  Node
 }
 
 type XmlForest struct {
 	token.Position
-	Ident Statement
-	Args  []Statement
+	Ident Node
+	Args  []Node
 }
 
 type XmlConcat struct {
 	token.Position
-	Ident Statement
-	Args  []Statement
+	Ident Node
+	Args  []Node
 }

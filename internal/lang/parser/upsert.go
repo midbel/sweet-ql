@@ -79,7 +79,7 @@ func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 		p.Next()
 		stmt = ast.MatchStatement{
 			Condition: cdt,
-			Statement: ast.DeleteStatement{},
+			Node:      ast.DeleteStatement{},
 		}
 	case p.IsKeyword("UPDATE"):
 		p.Next()
@@ -97,7 +97,7 @@ func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 		}
 		stmt = ast.MatchStatement{
 			Condition: cdt,
-			Statement: upd,
+			Node:      upd,
 		}
 	default:
 		err = p.Unexpected("matched", defaultReason)
@@ -129,7 +129,7 @@ func (p *Parser) parseMergeNotMatched(cdt ast.Node) (ast.Node, error) {
 	}
 	stmt := ast.MatchStatement{
 		Condition: cdt,
-		Statement: ins,
+		Node:      ins,
 	}
 	return stmt, nil
 }

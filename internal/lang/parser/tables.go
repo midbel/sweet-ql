@@ -312,25 +312,25 @@ func (p *Parser) parseConstraintWithKeyword(keyword string, required, column boo
 	}
 	switch {
 	case p.IsKeyword("PRIMARY KEY"):
-		cst.Statement, err = p.ParsePrimaryKeyConstraint(column)
+		cst.Node, err = p.ParsePrimaryKeyConstraint(column)
 	case p.IsKeyword("FOREIGN KEY") || p.IsKeyword("REFERENCES"):
-		cst.Statement, err = p.ParseForeignKeyConstraint(column)
+		cst.Node, err = p.ParseForeignKeyConstraint(column)
 	case p.IsKeyword("UNIQUE"):
-		cst.Statement, err = p.ParseUniqueConstraint(column)
+		cst.Node, err = p.ParseUniqueConstraint(column)
 	case p.IsKeyword("NOT"):
 		if !column {
 			return nil, p.Unexpected("constraint", defaultReason)
 		}
-		cst.Statement, err = p.ParseNotNullConstraint()
+		cst.Node, err = p.ParseNotNullConstraint()
 	case p.IsKeyword("CHECK"):
-		cst.Statement, err = p.ParseCheckConstraint()
+		cst.Node, err = p.ParseCheckConstraint()
 	case p.IsKeyword("DEFAULT"):
 		if !column {
 			return nil, p.Unexpected("constraint", defaultReason)
 		}
-		cst.Statement, err = p.ParseDefaultConstraint()
+		cst.Node, err = p.ParseDefaultConstraint()
 	case p.IsKeyword("GENERATED ALWAYS") || p.IsKeyword("AS"):
-		cst.Statement, err = p.ParseGeneratedAlwaysConstraint()
+		cst.Node, err = p.ParseGeneratedAlwaysConstraint()
 	default:
 		return nil, p.Unexpected("constraint", defaultReason)
 	}

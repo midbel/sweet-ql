@@ -225,8 +225,8 @@ func (w *Writer) FormatFrom(list []ast.Node) error {
 	w.WriteKeyword("FROM")
 
 	withComma := func(stmt ast.Node) bool {
-		if n, ok := stmt.(ast.Node); ok {
-			stmt = n.Statement
+		if n, ok := stmt.(ast.CommentedNode); ok {
+			stmt = n.Node
 		}
 		_, ok := stmt.(ast.Join)
 		return !ok
@@ -382,9 +382,9 @@ func (w *Writer) FormatOrderBy(orders []ast.Node) error {
 }
 
 func (w *Writer) formatOrder(order ast.Order) error {
-	n, ok := order.Statement.(ast.Name)
+	n, ok := order.Node.(ast.Name)
 	if !ok {
-		return w.CanNotUse("order by", order.Statement)
+		return w.CanNotUse("order by", order.Node)
 	}
 	w.FormatName(n)
 	switch order.Dir {
@@ -412,8 +412,8 @@ func (w *Writer) FormatLimit(stmt ast.Node) error {
 		return nil
 	}
 	var limit ast.Node
-	if n, ok := stmt.(ast.Node); ok {
-		limit = n.Statement
+	if n, ok := stmt.(ast.CommentedNode); ok {
+		limit = n.Node
 	} else {
 		limit = stmt
 	}
@@ -486,7 +486,7 @@ func (w *Writer) FormatWith(stmt ast.WithStatement) error {
 		w.writeCommentAfter(stmt.Queries[i])
 	}
 	w.WriteNL()
-	return w.FormatStatement(stmt.Statement)
+	return w.FormatStatement(stmt.Node)
 }
 
 func (w *Writer) FormatCte(stmt ast.CteStatement) error {
@@ -524,7 +524,7 @@ func (w *Writer) FormatCte(stmt ast.CteStatement) error {
 
 	w.Enter()
 	defer w.Leave()
-	if err := w.FormatStatement(stmt.Statement); err != nil {
+	if err := w.FormatStatement(stmt.Node); err != nil {
 		return err
 	}
 	if !w.Compact.All() {

@@ -160,7 +160,7 @@ func (p *Parser) parse() (ast.Node, error) {
 }
 
 func (p *Parser) parseItem(parse ParseFunc) (ast.Node, error) {
-	var node ast.Node
+	var node ast.CommentedNode
 	for p.Is(token.Comment) {
 		comment := p.GetCurrLiteral()
 		if len(comment) == 0 {
@@ -173,7 +173,7 @@ func (p *Parser) parseItem(parse ParseFunc) (ast.Node, error) {
 		pos = p.curr.Position
 		err error
 	)
-	if node.Statement, err = parse(); err != nil && !errors.Is(err, errDone) {
+	if node.Node, err = parse(); err != nil && !errors.Is(err, errDone) {
 		return nil, err
 	}
 	if p.Is(token.Comment) && pos.Line == p.curr.Line {

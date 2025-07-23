@@ -122,12 +122,12 @@ func (r cteUnused) verify(stmt ast.Node) ([]Issue, error) {
 		positions[c.Ident] = c.Position
 	}
 	var (
-		all  = slices.Concat(q.Queries, slx.One(q.Statement))
+		all  = slices.Concat(q.Queries, slx.One(q.Node))
 		list []Issue
 	)
 	for _, q := range all {
 		if c, ok := q.(ast.CteStatement); ok {
-			q = c.Statement
+			q = c.Node
 		}
 		r.checkTables(q, names)
 	}
@@ -258,7 +258,7 @@ func (r cteColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
 		if !ok {
 			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
 		}
-		count, err := get(c.Statement)
+		count, err := get(c.Node)
 		if err != nil {
 			return nil, err
 		}

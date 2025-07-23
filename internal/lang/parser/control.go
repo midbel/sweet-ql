@@ -147,6 +147,6 @@ func (p *Parser) parseReturn() (ast.Node, error) {
 	stmt.Position = p.curr.Position
 	p.Next()
 
-	stmt.Statement, err = p.StartExpression()
+	stmt.Node, err = p.StartExpression()
 	return stmt, err
 }

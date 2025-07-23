@@ -8,11 +8,11 @@ import (
 )
 
 func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
-	if name.Statement == nil {
+	if name.Node == nil {
 		w.WriteString("?")
 		return nil
 	}
-	switch stmt := name.Statement.(type) {
+	switch stmt := name.Node.(type) {
 	case ast.Value:
 		w.WriteString("$")
 		w.WriteString(stmt.Literal)
@@ -20,7 +20,7 @@ func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
 		w.WriteString(":")
 		w.FormatName(stmt)
 	default:
-		return w.CanNotUse("placeholder", name.Statement)
+		return w.CanNotUse("placeholder", name.Node)
 	}
 	return nil
 }
@@ -46,7 +46,7 @@ func (w *Writer) FormatName(name ast.Name) error {
 }
 
 func (w *Writer) FormatAlias(alias ast.Alias) error {
-	err := w.FormatExpr(alias.Statement, false)
+	err := w.FormatExpr(alias.Node, false)
 	if err != nil {
 		return err
 	}

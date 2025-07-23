@@ -67,9 +67,9 @@ func (w *Writer) FormatSet(stmt ast.Set) error {
 
 func (w *Writer) FormatReturn(stmt ast.Return) error {
 	w.WriteKeyword("RETURN")
-	if stmt.Statement != nil {
+	if stmt.Node != nil {
 		w.WriteBlank()
-		if err := w.FormatExpr(stmt.Statement, false); err != nil {
+		if err := w.FormatExpr(stmt.Node, false); err != nil {
 			return err
 		}
 	}

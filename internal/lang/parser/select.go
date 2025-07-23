@@ -550,7 +550,7 @@ func (p *Parser) ParseOrderBy() ([]ast.Node, error) {
 			return nil, err
 		}
 		order := ast.Order{
-			Statement: stmt,
+			Node: stmt,
 		}
 
 		if p.IsKeyword("ASC") {

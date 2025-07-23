@@ -160,11 +160,11 @@ func (r subqueryNames) getExportedNames(j ast.Join) ([][]string, error) {
 		return nil, nil
 	}
 
-	g, ok := a.Statement.(ast.Group)
+	g, ok := a.Node.(ast.Group)
 	if !ok {
 		return nil, nil
 	}
-	s, ok := g.Statement.(ast.SelectStatement)
+	s, ok := g.Node.(ast.SelectStatement)
 	if !ok {
 		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
 	}

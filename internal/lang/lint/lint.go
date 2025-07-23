@@ -168,7 +168,7 @@ func verify(stmt ast.Node, check checkSelectFunc) ([]Issue, error) {
 			list []Issue
 			all  = slices.Clone(q.Queries)
 		)
-		all = append(all, q.Statement)
+		all = append(all, q.Node)
 		for _, q := range all {
 			issues, err := verify(q, check)
 			if err != nil {
@@ -178,9 +178,9 @@ func verify(stmt ast.Node, check checkSelectFunc) ([]Issue, error) {
 		}
 		return list, nil
 	case ast.CteStatement:
-		return verify(q.Statement, check)
+		return verify(q.Node, check)
 	case ast.Group:
-		return verify(q.Statement, check)
+		return verify(q.Node, check)
 	case ast.UnionStatement:
 		return verifyList(slx.Make(q.Left, q.Right), check)
 	case ast.IntersectStatement:
@@ -215,7 +215,7 @@ func getNames2(q ast.Node) [][]string {
 		}
 		return slx.One(parts)
 	case ast.Alias:
-		return getNames2(q.Statement)
+		return getNames2(q.Node)
 	case ast.Call:
 		var list [][]string
 		for i := range q.Args {
@@ -239,7 +239,7 @@ func getNames(q ast.Node) []string {
 		}
 		return parts
 	case ast.Alias:
-		return getNames(q.Statement)
+		return getNames(q.Node)
 	case ast.Call:
 		var list []string
 		for i := range q.Args {
@@ -270,9 +270,9 @@ func getTables(stmt ast.Node) []string {
 		case ast.Name:
 			return q.Name()
 		case ast.Alias:
-			return get(q.Statement)
+			return get(q.Node)
 		case ast.Group:
-			return get(q.Statement)
+			return get(q.Node)
 		default:
 			return ""
 		}
@@ -297,7 +297,7 @@ func getPosition(stmt ast.Node) token.Position {
 	case ast.Value:
 		return q.Position
 	case ast.Group:
-		return getPosition(q.Statement)
+		return getPosition(q.Node)
 	case ast.Binary:
 		return q.Position
 	default:
@@ -307,7 +307,7 @@ func getPosition(stmt ast.Node) token.Position {
 
 func getQueries(stmt ast.Node) []ast.SelectStatement {
 	if a, ok := stmt.(ast.Alias); ok {
-		return getQueries(a.Statement)
+		return getQueries(a.Node)
 	}
 	if gs, ok := stmt.(interface{ GetStatement() []ast.Node }); ok {
 		var res []ast.SelectStatement

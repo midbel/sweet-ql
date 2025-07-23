@@ -53,7 +53,7 @@ func (r groupbyColumns) checkGroupBy(stmt ast.SelectStatement) ([]Issue, error) 
 		case ast.Name:
 			return q
 		case ast.Alias:
-			return get(q.Statement)
+			return get(q.Node)
 		case ast.Call:
 			return q
 		default:

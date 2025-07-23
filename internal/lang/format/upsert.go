@@ -43,7 +43,7 @@ func (w *Writer) FormatMerge(stmt ast.MergeStatement) error {
 func (w *Writer) FormatMatch(stmt ast.MatchStatement) error {
 	w.WriteKeyword("WHEN")
 	w.WriteBlank()
-	switch stmt.Statement.(type) {
+	switch stmt.Node.(type) {
 	case ast.DeleteStatement:
 		w.WriteKeyword("MATCHED")
 	case ast.UpdateStatement:
@@ -51,7 +51,7 @@ func (w *Writer) FormatMatch(stmt ast.MatchStatement) error {
 	case ast.InsertStatement:
 		w.WriteKeyword("NOT MATCHED")
 	default:
-		return w.CanNotUse("merge", stmt.Statement)
+		return w.CanNotUse("merge", stmt.Node)
 	}
 	if stmt.Condition != nil {
 		w.WriteBlank()
@@ -65,7 +65,7 @@ func (w *Writer) FormatMatch(stmt ast.MatchStatement) error {
 	w.WriteKeyword("THEN")
 	w.WriteNL()
 
-	switch stmt := stmt.Statement.(type) {
+	switch stmt := stmt.Node.(type) {
 	case ast.DeleteStatement:
 		w.WriteKeyword("DELETE")
 	case ast.UpdateStatement:

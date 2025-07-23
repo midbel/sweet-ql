@@ -18,7 +18,7 @@ func (p *Parser) ParsePlaceholder() (ast.Node, error) {
 		ident := ast.Identifier{
 			Name: p.GetCurrLiteral(),
 		}
-		stmt.Statement = ast.Name{
+		stmt.Node = ast.Name{
 			Parts: slx.One(ident),
 		}
 		p.Next()
@@ -26,7 +26,7 @@ func (p *Parser) ParsePlaceholder() (ast.Node, error) {
 		if _, err := strconv.Atoi(p.GetCurrLiteral()); err != nil {
 			return nil, err
 		}
-		stmt.Statement = ast.Value{
+		stmt.Node = ast.Value{
 			Literal: p.GetCurrLiteral(),
 		}
 		p.Next()
@@ -102,7 +102,7 @@ func (p *Parser) ParseAlias(stmt ast.Node) (ast.Node, error) {
 			Quoted: p.Is(token.QuotedIdent),
 		}
 		stmt = ast.Alias{
-			Statement:  stmt,
+			Node:       stmt,
 			Position:   p.GetCurrPosition(),
 			Identifier: ident,
 		}

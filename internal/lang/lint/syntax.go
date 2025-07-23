@@ -157,7 +157,7 @@ func (r setColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
 	switch stmt := stmt.(type) {
 	case ast.WithStatement:
 		var list []Issue
-		for _, q := range slices.Concat(stmt.Queries, slx.One(stmt.Statement)) {
+		for _, q := range slices.Concat(stmt.Queries, slx.One(stmt.Node)) {
 			issues, err := r.verify(q)
 			if err != nil {
 				return nil, err
@@ -166,7 +166,7 @@ func (r setColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
 		}
 		return list, nil
 	case ast.CteStatement:
-		return r.verify(stmt.Statement)
+		return r.verify(stmt.Node)
 	case ast.SelectStatement:
 		return nil, nil
 	case ast.UnionStatement:
@@ -377,7 +377,7 @@ func (r noIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
 				}
 				list = append(list, i)
 			}
-			list = slices.Concat(list, check(q.Statement))
+			list = slices.Concat(list, check(q.Node))
 		case ast.Join:
 			var (
 				list = check(q.Table)
@@ -482,7 +482,7 @@ func (r missingIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) 
 				}
 				list = append(list, i)
 			}
-			list = slices.Concat(list, check(q.Statement))
+			list = slices.Concat(list, check(q.Node))
 		case ast.Join:
 			var (
 				list = check(q.Table)

@@ -13,7 +13,7 @@ type Formatter interface {
 }
 
 type Parser interface {
-	Parse() (ast.Statement, error)
+	Parse() (ast.Node, error)
 	Query() string
 }
 

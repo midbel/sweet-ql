@@ -37,7 +37,7 @@ func (p *Parser) parseWith() (ast.Node, error) {
 	}
 	p.reset()
 
-	stmt.Statement, err = p.parseItem(p.ParseStatement)
+	stmt.Node, err = p.parseItem(p.ParseStatement)
 	return stmt, err
 }
 
@@ -80,7 +80,7 @@ func (p *Parser) parseSubquery() (ast.Node, error) {
 	}
 	p.Next()
 
-	cte.Statement, err = p.ParseStatement()
+	cte.Node, err = p.ParseStatement()
 	if err != nil {
 		return nil, err
 	}

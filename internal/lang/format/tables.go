@@ -156,7 +156,7 @@ func (w *Writer) formatConstraint(stmt ast.Node, keyword string) error {
 		w.WriteString(cst.Name)
 		w.WriteBlank()
 	}
-	switch stmt := cst.Statement.(type) {
+	switch stmt := cst.Node.(type) {
 	case ast.PrimaryKeyConstraint:
 		return w.FormatPrimaryKeyConstraint(stmt)
 	case ast.ForeignKeyConstraint:
@@ -172,7 +172,7 @@ func (w *Writer) formatConstraint(stmt ast.Node, keyword string) error {
 	case ast.GeneratedConstraint:
 		return w.FormatGeneratedConstraint(stmt)
 	default:
-		return fmt.Errorf("%T: unsupported constraint type", cst.Statement)
+		return fmt.Errorf("%T: unsupported constraint type", cst.Node)
 	}
 }
 

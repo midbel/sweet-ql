@@ -115,7 +115,7 @@ const (
 	NotMaterializedCte
 )
 
-type CteNode struct {
+type CteStatement struct {
 	token.Position
 
 	Ident        string
@@ -124,7 +124,7 @@ type CteNode struct {
 	Node
 }
 
-type WithNode struct {
+type WithStatement struct {
 	token.Position
 
 	Recursive bool
@@ -132,18 +132,18 @@ type WithNode struct {
 	Node
 }
 
-func (s WithNode) Keyword() (string, error) {
+func (s WithStatement) Keyword() (string, error) {
 	return "WITH", nil
 }
 
-func (s WithNode) Get() Node {
+func (s WithStatement) Get() Node {
 	if len(s.Queries) == 0 {
 		return s.Node
 	}
 	return s
 }
 
-type ValuesNode struct {
+type ValuesStatement struct {
 	token.Position
 
 	List   []Node
@@ -151,11 +151,11 @@ type ValuesNode struct {
 	Limit  Node
 }
 
-func (s ValuesNode) Keyword() (string, error) {
+func (s ValuesStatement) Keyword() (string, error) {
 	return "VALUES", nil
 }
 
-type SelectNode struct {
+type SelectStatement struct {
 	token.Position
 
 	Distinct bool
@@ -169,11 +169,11 @@ type SelectNode struct {
 	Limit    Node
 }
 
-func (s SelectNode) ColumnsCount() int {
+func (s SelectStatement) ColumnsCount() int {
 	return -1
 }
 
-func (s SelectNode) Keyword() (string, error) {
+func (s SelectStatement) Keyword() (string, error) {
 	return "SELECT", nil
 }
 
@@ -192,7 +192,7 @@ func getCompoundKeyword(kw string, all, distinct bool) (string, error) {
 	return fmt.Sprintf("%s %s", kw, suffix), nil
 }
 
-type UnionNode struct {
+type UnionStatement struct {
 	token.Position
 
 	Left     Node
@@ -201,15 +201,15 @@ type UnionNode struct {
 	Distinct bool
 }
 
-func (s UnionNode) GetNode() []Node {
+func (s UnionStatement) GetNode() []Node {
 	return slx.Make(s.Left, s.Right)
 }
 
-func (s UnionNode) Keyword() (string, error) {
+func (s UnionStatement) Keyword() (string, error) {
 	return getCompoundKeyword("UNION", s.All, s.Distinct)
 }
 
-type IntersectNode struct {
+type IntersectStatement struct {
 	token.Position
 
 	Left     Node
@@ -218,15 +218,15 @@ type IntersectNode struct {
 	Distinct bool
 }
 
-func (s IntersectNode) GetNode() []Node {
+func (s IntersectStatement) GetNode() []Node {
 	return slx.Make(s.Left, s.Right)
 }
 
-func (s IntersectNode) Keyword() (string, error) {
+func (s IntersectStatement) Keyword() (string, error) {
 	return getCompoundKeyword("INTERSECT", s.All, s.Distinct)
 }
 
-type ExceptNode struct {
+type ExceptStatement struct {
 	token.Position
 
 	Left     Node
@@ -235,22 +235,22 @@ type ExceptNode struct {
 	Distinct bool
 }
 
-func (s ExceptNode) GetNode() []Node {
+func (s ExceptStatement) GetNode() []Node {
 	return slx.Make(s.Left, s.Right)
 }
 
-func (s ExceptNode) Keyword() (string, error) {
+func (s ExceptStatement) Keyword() (string, error) {
 	return getCompoundKeyword("EXCEPT", s.All, s.Distinct)
 }
 
-type MatchNode struct {
+type MatchStatement struct {
 	token.Position
 
 	Condition Node
 	Node
 }
 
-type MergeNode struct {
+type MergeStatement struct {
 	token.Position
 
 	Target  Node
@@ -259,7 +259,7 @@ type MergeNode struct {
 	Actions []Node
 }
 
-func (s MergeNode) Keyword() (string, error) {
+func (s MergeStatement) Keyword() (string, error) {
 	return "MERGE", nil
 }
 
@@ -274,7 +274,7 @@ type Assignment struct {
 	Value Node
 }
 
-type InsertNode struct {
+type InsertStatement struct {
 	token.Position
 
 	Table   Node
@@ -284,11 +284,11 @@ type InsertNode struct {
 	Return  Node
 }
 
-func (s InsertNode) Keyword() (string, error) {
+func (s InsertStatement) Keyword() (string, error) {
 	return "INSERT INTO", nil
 }
 
-type UpdateNode struct {
+type UpdateStatement struct {
 	token.Position
 
 	Table  Node
@@ -298,21 +298,21 @@ type UpdateNode struct {
 	Return Node
 }
 
-func (s UpdateNode) Keyword() (string, error) {
+func (s UpdateStatement) Keyword() (string, error) {
 	return "UPDATE", nil
 }
 
-type TruncateNode struct {
+type TruncateStatement struct {
 	Tables   []string
 	Cascade  CascadeMode
 	Identity IdentityMode
 }
 
-func (s TruncateNode) Keyword() (string, error) {
+func (s TruncateStatement) Keyword() (string, error) {
 	return "TRUNCATE", nil
 }
 
-type DeleteNode struct {
+type DeleteStatement struct {
 	token.Position
 
 	Table  string
@@ -320,6 +320,6 @@ type DeleteNode struct {
 	Return Node
 }
 
-func (s DeleteNode) Keyword() (string, error) {
+func (s DeleteStatement) Keyword() (string, error) {
 	return "DELETE FROM", nil
 }

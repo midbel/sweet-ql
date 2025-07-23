@@ -106,8 +106,8 @@ func (w *Writer) startStatement(stmt ast.Node) error {
 func (w *Writer) FormatStatement(stmt ast.Node) error {
 	var err error
 	switch stmt := stmt.(type) {
-	case ast.Node:
-		err = w.FormatStatement(stmt.Statement)
+	case ast.CommentedNode:
+		err = w.FormatStatement(stmt.Node)
 	case ast.GrantStatement:
 		err = w.FormatGrant(stmt)
 	case ast.RevokeStatement:
@@ -190,7 +190,7 @@ func (w *Writer) writeCommentAfter(stmt ast.Node) bool {
 	if w.Compact.Comment() {
 		return false
 	}
-	n, ok := stmt.(ast.Node)
+	n, ok := stmt.(ast.CommentedNode)
 	if !ok {
 		return false
 	}
@@ -208,7 +208,7 @@ func (w *Writer) writeCommentBefore(stmt ast.Node) {
 	if w.Compact.Comment() {
 		return
 	}
-	n, ok := stmt.(ast.Node)
+	n, ok := stmt.(ast.CommentedNode)
 	if !ok {
 		return
 	}
@@ -237,8 +237,8 @@ func (w *Writer) FormatBody(list ast.List) error {
 func (w *Writer) FormatExpr(stmt ast.Node, nl bool) error {
 	var err error
 	switch stmt := stmt.(type) {
-	case ast.Node:
-		return w.FormatExpr(stmt.Statement, nl)
+	case ast.CommentedNode:
+		return w.FormatExpr(stmt.Node, nl)
 	case ast.XmlElement:
 		return w.FormatXmlElement(stmt)
 	case ast.XmlText:
@@ -296,7 +296,7 @@ func (w *Writer) FormatExpr(stmt ast.Node, nl bool) error {
 }
 
 func (w *Writer) formatNot(stmt ast.Not, _ bool) error {
-	switch stmt := stmt.Statement.(type) {
+	switch stmt := stmt.Node.(type) {
 	case ast.Between:
 		return w.formatBetween(stmt, true, false)
 	case ast.Is:
@@ -314,7 +314,7 @@ func (w *Writer) formatExists(stmt ast.Exists, _ bool) error {
 	w.WriteKeyword("EXISTS")
 	w.WriteString("(")
 	w.WriteNL()
-	if err := w.FormatStatement(stmt.Statement); err != nil {
+	if err := w.FormatStatement(stmt.Node); err != nil {
 		return err
 	}
 	w.WriteNL()
@@ -323,7 +323,7 @@ func (w *Writer) formatExists(stmt ast.Exists, _ bool) error {
 }
 
 func (w *Writer) formatCollate(stmt ast.Collate, _ bool) error {
-	if err := w.FormatExpr(stmt.Statement, false); err != nil {
+	if err := w.FormatExpr(stmt.Node, false); err != nil {
 		return err
 	}
 	w.WriteBlank()
@@ -395,7 +395,7 @@ func (w *Writer) formatAll(stmt ast.All, _ bool) error {
 	w.WriteString("(")
 	defer w.WriteString(")")
 	return w.compact(func() error {
-		return w.FormatExpr(stmt.Statement, false)
+		return w.FormatExpr(stmt.Node, false)
 	})
 }
 
@@ -404,7 +404,7 @@ func (w *Writer) formatAny(stmt ast.Any, _ bool) error {
 	w.WriteString("(")
 	defer w.WriteString(")")
 	return w.compact(func() error {
-		return w.FormatExpr(stmt.Statement, false)
+		return w.FormatExpr(stmt.Node, false)
 	})
 }
 
@@ -437,12 +437,12 @@ func (w *Writer) formatList(stmt ast.List, stacked bool) error {
 }
 
 func (w *Writer) formatGroup(stmt ast.Group) error {
-	if _, ok := stmt.Statement.(ast.SelectStatement); ok {
+	if _, ok := stmt.Node.(ast.SelectStatement); ok {
 		w.WriteString("(")
 		if !w.Compact.All() {
 			w.WriteNL()
 		}
-		if err := w.FormatStatement(stmt.Statement); err != nil {
+		if err := w.FormatStatement(stmt.Node); err != nil {
 			return err
 		}
 		if !w.Compact.All() {
@@ -459,7 +459,7 @@ func (w *Writer) formatGroup(stmt ast.Group) error {
 	w.WriteNL()
 	w.WritePrefix()
 	w.WritePrefix()
-	if err := w.FormatExpr(stmt.Statement, false); err != nil {
+	if err := w.FormatExpr(stmt.Node, false); err != nil {
 		return nil
 	}
 	w.WriteNL()

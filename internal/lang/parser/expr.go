@@ -99,8 +99,8 @@ func (p *Parser) parseIs(ident ast.Node) (ast.Node, error) {
 	stmt.Value = val
 	if not {
 		return ast.Not{
-			Position:  stmt.Position,
-			Statement: stmt,
+			Position: stmt.Position,
+			Node:     stmt,
 		}, nil
 	}
 	return stmt, nil
@@ -131,8 +131,8 @@ func (p *Parser) parseNotNull(ident ast.Node) (ast.Node, error) {
 		Position: val.Position,
 	}
 	not := ast.Not{
-		Statement: stmt,
-		Position:  stmt.Position,
+		Node:     stmt,
+		Position: stmt.Position,
 	}
 	p.Next()
 	return not, nil
@@ -150,7 +150,7 @@ func (p *Parser) parseExists() (ast.Node, error) {
 		return nil, p.Unexpected("exists", missingOpenParen)
 	}
 	p.Next()
-	stmt.Statement, err = p.ParseStatement()
+	stmt.Node, err = p.ParseStatement()
 	if err != nil {
 		return nil, err
 	}
@@ -278,13 +278,13 @@ func (p *Parser) parseAllOrAny() (ast.Node, error) {
 	p.Next()
 	if all {
 		expr = ast.All{
-			Position:  pos,
-			Statement: expr,
+			Position: pos,
+			Node:     expr,
 		}
 	} else {
 		expr = ast.Any{
-			Position:  pos,
-			Statement: expr,
+			Position: pos,
+			Node:     expr,
 		}
 	}
 	return expr, nil
@@ -292,8 +292,8 @@ func (p *Parser) parseAllOrAny() (ast.Node, error) {
 
 func (p *Parser) parseCollateExpr(left ast.Node) (ast.Node, error) {
 	stmt := ast.Collate{
-		Position:  p.GetCurrPosition(),
-		Statement: left,
+		Position: p.GetCurrPosition(),
+		Node:     left,
 	}
 	p.Next()
 	if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
@@ -313,7 +313,7 @@ func (p *Parser) parseKeywordExpr(left ast.Node) (ast.Node, error) {
 				return stmt
 			}
 			return ast.Not{
-				Statement: stmt,
+				Node: stmt,
 			}
 		}
 	}
@@ -437,8 +437,8 @@ func (p *Parser) parseUnary() (ast.Node, error) {
 			return nil, err
 		}
 		stmt = ast.Not{
-			Position:  pos,
-			Statement: stmt,
+			Position: pos,
+			Node:     stmt,
 		}
 	default:
 		err = p.Unexpected("unary", unknownOperator)
@@ -458,7 +458,7 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 		}
 		p.Next()
 		g := ast.Group{
-			Statement: stmt,
+			Node: stmt,
 		}
 		return p.ParseAlias(g)
 	}
@@ -471,7 +471,7 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 	}
 	p.Next()
 	g := ast.Group{
-		Statement: stmt,
+		Node: stmt,
 	}
 	return g, nil
 }

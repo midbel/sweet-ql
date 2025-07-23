@@ -13,7 +13,7 @@ type Group struct {
 }
 
 func (g Group) GetStatement() []Node {
-	return slx.One(g.Statement)
+	return slx.One(g.Node)
 }
 
 type Cast struct {
@@ -37,7 +37,7 @@ type Not struct {
 }
 
 func (n Not) GetStatement() []Node {
-	return slx.One(n.Statement)
+	return slx.One(n.Node)
 }
 
 type Collate struct {
@@ -52,7 +52,7 @@ type Exists struct {
 }
 
 func (e Exists) GetStatement() []Node {
-	return slx.One(e.Statement)
+	return slx.One(e.Node)
 }
 
 type Call struct {
@@ -120,7 +120,7 @@ type All struct {
 }
 
 func (a All) GetStatement() []Node {
-	return slx.One(a.Statement)
+	return slx.One(a.Node)
 }
 
 type Any struct {
@@ -129,7 +129,7 @@ type Any struct {
 }
 
 func (a Any) GetStatement() []Node {
-	return slx.One(a.Statement)
+	return slx.One(a.Node)
 }
 
 type Is struct {
