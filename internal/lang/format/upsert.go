@@ -185,9 +185,9 @@ func (w *Writer) FormatUpdate(stmt ast.UpdateStatement) error {
 
 	if len(stmt.Tables) > 0 {
 		w.WriteBlank()
-		if err := w.FormatFrom(stmt.Tables); err != nil {
-			return err
-		}
+		// if err := w.FormatFrom(stmt.Tables); err != nil {
+		// 	return err
+		// }
 	}
 	if stmt.Where != nil {
 		w.WriteNL()

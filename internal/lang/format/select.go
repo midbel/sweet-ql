@@ -9,6 +9,99 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
+func (w *Writer) VisitSelect(stmt ast.SelectStatement) {
+	w.Enter()
+	defer w.Leave()
+
+	kw, _ := stmt.Keyword()
+	w.WritePrefix()
+	w.WriteKeyword(kw)
+	w.WriteNL()
+
+	w.visitSelectColumns(stmt)
+	w.visitSelectFrom(stmt)
+	w.visitWhere(stmt.Where)
+	if len(stmt.Groups) > 0 {
+
+	}
+	if stmt.Having != nil {
+
+	}
+}
+
+func (w *Writer) VisitJoin(join ast.Join) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	if w.Compact.Keyword() {
+		join.Type = lang.CompactKeyword(join.Type)
+	} else {
+		join.Type = lang.ExpandKeyword(join.Type)
+	}
+	w.WriteKeyword(join.Type)
+	w.WriteBlank()
+	join.Table.Accept(w)
+	w.WriteBlank()
+	switch join.Where.(type) {
+	case ast.Binary:
+		w.WriteKeyword("on")
+	case ast.List:
+		w.WriteKeyword("using")
+	default:
+		return
+	}
+	w.WriteBlank()
+	join.Where.Accept(w)
+}
+
+func (w *Writer) visitSelectFrom(stmt ast.SelectStatement) {
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteKeyword("from")
+	w.WriteBlank()
+	for i, t := range stmt.Tables {
+		if i > 0 {
+			w.WriteNL()
+			w.WritePrefix()
+		}
+		t.Accept(w)
+	}
+}
+
+func (w *Writer) visitSelectColumns(stmt ast.SelectStatement) {
+	w.Enter()
+	defer w.Leave()
+	if stmt.Distinct {
+		w.WritePrefix()
+		w.WriteKeyword("distinct")
+		w.WriteNL()
+	}
+	for i, c := range stmt.Columns {
+		if i > 0 {
+			w.WriteNL()
+		}
+		w.WritePrefix()
+		if i > 0 && w.PrependComma {
+			w.WriteString(",")
+		}
+		c.Accept(w)
+		if i < len(stmt.Columns)-1 && !w.PrependComma {
+			w.WriteString(",")
+		}
+	}
+}
+
+func (w *Writer) visitWhere(where ast.Node) {
+	if where == nil {
+		return
+	}
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteKeyword("where")
+	w.WriteBlank()
+	where.Accept(w)
+}
+
 func (w *Writer) FormatUnion(stmt ast.UnionStatement) error {
 	if err := w.FormatStatement(stmt.Left); err != nil {
 		return err
@@ -100,28 +193,6 @@ func (w *Writer) FormatValues(stmt ast.ValuesStatement) error {
 }
 
 func (w *Writer) FormatSelect(stmt ast.SelectStatement) error {
-	w.Enter()
-	defer w.Leave()
-
-	kw, _ := stmt.Keyword()
-	w.WritePrefix()
-	w.WriteKeyword(kw)
-	w.WriteNL()
-	if err := w.FormatSelectColumns(stmt.Columns); err != nil {
-		return err
-	}
-	w.WriteNL()
-	w.WritePrefix()
-	if err := w.FormatFrom(stmt.Tables); err != nil {
-		return err
-	}
-	if stmt.Where != nil {
-		w.WriteNL()
-		w.WritePrefix()
-		if err := w.FormatWhere(stmt.Where); err != nil {
-			return err
-		}
-	}
 	if len(stmt.Groups) > 0 {
 		w.WriteNL()
 		w.WritePrefix()
@@ -159,97 +230,11 @@ func (w *Writer) FormatSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
-func (w *Writer) FormatSelectColumns(columns []ast.Node) error {
-	w.Enter()
-	defer w.Leave()
-
-	for i := range columns {
-		if i > 0 {
-			w.WriteNL()
-		}
-		w.writeCommentBefore(columns[i])
-		w.WritePrefix()
-		if w.PrependComma && i > 0 {
-			w.WriteString(",")
-		}
-		if err := w.FormatExpr(columns[i], false); err != nil {
-			return err
-		}
-		if !w.PrependComma && i < len(columns)-1 {
-			w.WriteString(",")
-		}
-		w.writeCommentAfter(columns[i])
-	}
+func (w *Writer) FormatWhere(stmt ast.Node) error {
 	return nil
 }
 
-func (w *Writer) FormatWhere(stmt ast.Node) error {
-	if stmt == nil {
-		return nil
-	}
-	w.WriteKeyword("WHERE")
-	w.WriteBlank()
-
-	return w.FormatExpr(stmt, true)
-}
-
 func (w *Writer) formatJoin(join ast.Join) error {
-	if w.Compact.Keyword() {
-		join.Type = lang.CompactKeyword(join.Type)
-	} else {
-		join.Type = lang.ExpandKeyword(join.Type)
-	}
-	w.WriteKeyword(join.Type)
-	w.WriteBlank()
-
-	if err := w.FormatExpr(join.Table, false); err != nil {
-		return err
-	}
-	switch s := join.Where.(type) {
-	case ast.Binary:
-		w.WriteBlank()
-		w.WriteKeyword("ON")
-		w.WriteBlank()
-		return w.formatBinary(s, false)
-	case ast.List:
-		w.WriteBlank()
-		w.WriteKeyword("USING")
-		w.WriteBlank()
-		return w.formatList(s, false)
-	default:
-		return w.CanNotUse("from", s)
-	}
-}
-
-func (w *Writer) FormatFrom(list []ast.Node) error {
-	w.WriteKeyword("FROM")
-
-	withComma := func(stmt ast.Node) bool {
-		if n, ok := stmt.(ast.CommentedNode); ok {
-			stmt = n.Node
-		}
-		_, ok := stmt.(ast.Join)
-		return !ok
-	}
-
-	w.Enter()
-	defer w.Leave()
-
-	w.WriteBlank()
-	for i := range list {
-		if i > 0 {
-			w.WriteNL()
-			w.writeCommentBefore(list[i])
-			w.WritePrefix()
-		}
-		if err := w.FormatStatement(list[i]); err != nil {
-			return err
-		}
-		if i < len(list)-1 && withComma(list[i+1]) {
-			w.WriteString(",")
-		}
-		w.writeCommentAfter(list[i])
-	}
 	return nil
 }
 

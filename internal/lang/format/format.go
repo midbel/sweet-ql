@@ -24,6 +24,7 @@ func GetFormatter() lang.Formatter {
 }
 
 type Writer struct {
+	ast.Visitor
 	inner *bufio.Writer
 
 	UseQuote      bool
@@ -45,10 +46,11 @@ type Writer struct {
 
 func NewWriter(w io.Writer) *Writer {
 	ws := Writer{
+		Visitor:   ast.Visit(),
 		inner:     bufio.NewWriter(w),
 		UseIndent: 4,
 		UseSpace:  true,
-		Formatter: ansiFormatter{},
+		Formatter: GetFormatter(),
 		Upperize:  UpperNone,
 		Compact:   compactNone,
 		Rules:     0,
@@ -81,109 +83,20 @@ func (w *Writer) Format(r io.Reader) error {
 		if stmt, err = w.Rewrite(stmt); err != nil {
 			return err
 		}
-		if err = w.startStatement(stmt); err != nil {
+		if err = w.FormatStatement(stmt); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (w *Writer) startStatement(stmt ast.Node) error {
-	defer w.Flush()
-
-	w.Reset()
-	w.writeCommentBefore(stmt)
-	err := w.FormatStatement(stmt)
-	if err == nil {
-		// w.WriteNL()
-		w.WriteEOL()
-		w.writeCommentAfter(stmt)
-		w.WriteNL()
-	}
-	return err
-}
-
 func (w *Writer) FormatStatement(stmt ast.Node) error {
-	var err error
-	switch stmt := stmt.(type) {
-	case ast.CommentedNode:
-		err = w.FormatStatement(stmt.Node)
-	case ast.GrantStatement:
-		err = w.FormatGrant(stmt)
-	case ast.RevokeStatement:
-		err = w.FormatRevoke(stmt)
-	case ast.CreateTableStatement:
-		err = w.FormatCreateTable(stmt)
-	case ast.AlterTableStatement:
-		err = w.FormatAlterTable(stmt)
-	case ast.CreateViewStatement:
-		err = w.FormatCreateView(stmt)
-	case ast.DropTableStatement:
-		err = w.FormatDropTable(stmt)
-	case ast.DropViewStatement:
-		err = w.FormatDropView(stmt)
-	case ast.CreateProcedureStatement:
-		err = w.FormatCreateProcedure(stmt)
-	case ast.SelectStatement:
-		err = w.FormatSelect(stmt)
-	case ast.ValuesStatement:
-		err = w.FormatValues(stmt)
-	case ast.UnionStatement:
-		err = w.FormatUnion(stmt)
-	case ast.IntersectStatement:
-		err = w.FormatIntersect(stmt)
-	case ast.ExceptStatement:
-		err = w.FormatExcept(stmt)
-	case ast.InsertStatement:
-		err = w.FormatInsert(stmt)
-	case ast.UpdateStatement:
-		err = w.FormatUpdate(stmt)
-	case ast.DeleteStatement:
-		err = w.FormatDelete(stmt)
-	case ast.TruncateStatement:
-		err = w.FormatTruncate(stmt)
-	case ast.MergeStatement:
-		err = w.FormatMerge(stmt)
-	case ast.WithStatement:
-		err = w.FormatWith(stmt)
-	case ast.CteStatement:
-		err = w.FormatCte(stmt)
-	case ast.CallStatement:
-		err = w.FormatCall(stmt)
-	case ast.Commit:
-		err = w.FormatCommit(stmt)
-	case ast.Rollback:
-		err = w.FormatRollback(stmt)
-	case ast.StartTransaction:
-		err = w.FormatStartTransaction(stmt)
-	case ast.SetTransaction:
-		err = w.FormatSetTransaction(stmt)
-	case ast.Savepoint:
-		err = w.FormatSavepoint(stmt)
-	case ast.ReleaseSavepoint:
-		err = w.FormatReleaseSavepoint(stmt)
-	case ast.RollbackSavepoint:
-		err = w.FormatRollbackSavepoint(stmt)
-	case ast.List:
-		err = w.FormatBody(stmt)
-	case ast.Declare:
-		err = w.FormatDeclare(stmt)
-	case ast.Return:
-		err = w.FormatReturn(stmt)
-	case ast.Set:
-		err = w.FormatSet(stmt)
-	case ast.If:
-		err = w.FormatIf(stmt)
-	case ast.While:
-		err = w.FormatWhile(stmt)
-	case ast.Case:
-		err = w.FormatCase(stmt)
-	case ast.Join:
-		err = w.formatJoin(stmt)
-	default:
-		err = w.FormatExpr(stmt, false)
-	}
-	return err
+	defer w.Flush()
+	w.Reset()
+	stmt.Accept(w)
+	w.WriteEOL()
+	w.WriteNL()
+	return nil
 }
 
 func (w *Writer) writeCommentAfter(stmt ast.Node) bool {
@@ -235,64 +148,7 @@ func (w *Writer) FormatBody(list ast.List) error {
 }
 
 func (w *Writer) FormatExpr(stmt ast.Node, nl bool) error {
-	var err error
-	switch stmt := stmt.(type) {
-	case ast.CommentedNode:
-		return w.FormatExpr(stmt.Node, nl)
-	case ast.XmlElement:
-		return w.FormatXmlElement(stmt)
-	case ast.XmlText:
-		return w.FormatXmlText(stmt)
-	case ast.XmlComment:
-		return w.FormatXmlComment(stmt)
-	case ast.Placeholder:
-		w.FormatPlaceholder(stmt)
-	case ast.Name:
-		w.FormatName(stmt)
-	case ast.Value:
-		w.FormatLiteral(stmt.Literal)
-	case ast.Group:
-		err = w.formatGroup(stmt)
-	case ast.Row:
-		err = w.FormatRow(stmt, nl)
-	case ast.Alias:
-		err = w.FormatAlias(stmt)
-	case ast.Call:
-		err = w.formatCall(stmt)
-	case ast.List:
-		err = w.formatList(stmt, false)
-	case ast.Binary:
-		err = w.formatBinary(stmt, nl)
-	case ast.All:
-		err = w.formatAll(stmt, nl)
-	case ast.Any:
-		err = w.formatAny(stmt, nl)
-	case ast.Unary:
-		err = w.formatUnary(stmt, nl)
-	case ast.Between:
-		err = w.formatBetween(stmt, false, nl)
-	case ast.Is:
-		err = w.formatIs(stmt, false, nl)
-	case ast.In:
-		err = w.formatIn(stmt, false, nl)
-	case ast.Collate:
-		err = w.formatCollate(stmt, nl)
-	case ast.Order:
-		err = w.formatOrder(stmt)
-	case ast.Cast:
-		err = w.FormatCast(stmt, nl)
-	case ast.Exists:
-		err = w.formatExists(stmt, nl)
-	case ast.Not:
-		err = w.formatNot(stmt, nl)
-	case ast.Case:
-		err = w.FormatCase(stmt)
-	case ast.When:
-		err = w.FormatWhen(stmt)
-	default:
-		return fmt.Errorf("%T unsupported expression type", stmt)
-	}
-	return err
+	return nil
 }
 
 func (w *Writer) formatNot(stmt ast.Not, _ bool) error {

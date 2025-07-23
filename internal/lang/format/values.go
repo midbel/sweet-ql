@@ -25,31 +25,51 @@ func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
 	return nil
 }
 
-func (w *Writer) FormatName(name ast.Name) error {
+func (w *Writer) VisitValue(value ast.Value) {
+	if value.Constant() {
+		if w.withColor() {
+			w.WriteString(keywordColor)
+		}
+		w.WriteKeyword(value.Literal)
+		if w.withColor() {
+			w.WriteString(resetCode)
+		}
+		return
+	}
+	if value.Number() {
+		if w.withColor() {
+			w.WriteString(numberColor)
+		}
+		w.WriteString(value.Literal)
+		if w.withColor() {
+			w.WriteString(resetCode)
+		}
+		return
+	}
+	w.WriteQuoted(value.Literal)
+}
+
+func (w *Writer) VisitName(name ast.Name) {
 	for i := range name.Parts {
 		if i > 0 {
 			w.WriteString(".")
 		}
 		str := name.Parts[i].Name
-		if str == "" && i == len(name.Parts)-1 {
+		if name.Parts[i].Star() {
 			str = "*"
 		}
 		if w.Upperize.Identifier() || w.Upperize.All() {
 			str = strings.ToUpper(str)
 		}
-		if name.Parts[i].Quoted || (w.UseQuote && str != "*") {
+		if name.Parts[i].Quoted || (w.UseQuote && !name.Parts[i].Star()) {
 			str = w.Quote(str)
 		}
 		w.WriteString(str)
 	}
-	return nil
 }
 
-func (w *Writer) FormatAlias(alias ast.Alias) error {
-	err := w.FormatExpr(alias.Node, false)
-	if err != nil {
-		return err
-	}
+func (w *Writer) VisitAlias(alias ast.Alias) {
+	alias.Node.Accept(w)
 	w.WriteBlank()
 	if !w.Compact.NoAs() {
 		w.WriteKeyword("AS")
@@ -63,41 +83,50 @@ func (w *Writer) FormatAlias(alias ast.Alias) error {
 		str = w.Quote(str)
 	}
 	w.WriteString(str)
+}
+
+func (w *Writer) VisitBinary(bin ast.Binary) {
+	bin.Left.Accept(w)
+	if w.Compact.KeepSpacesAround() {
+		w.WriteBlank()
+	}
+	w.WriteKeyword(bin.Op)
+	if w.Compact.KeepSpacesAround() {
+		w.WriteBlank()
+	}
+	bin.Right.Accept(w)
+}
+
+func (w *Writer) VisitList(list ast.List) {
+	w.WriteString("(")
+	if w.Compact.KeepSpacesAround() {
+		w.WriteBlank()
+	}
+	for i, v := range list.Values {
+		if i > 0 {
+			w.WriteString(",")
+			if w.Compact.KeepSpacesAround() {
+				w.WriteBlank()
+			}
+		}
+		v.Accept(w)
+	}
+	if w.Compact.KeepSpacesAround() {
+		w.WriteBlank()
+	}
+	w.WriteString(")")
+}
+
+func (w *Writer) FormatName(name ast.Name) error {
+	return nil
+}
+
+func (w *Writer) FormatAlias(alias ast.Alias) error {
 	return nil
 }
 
 func (w *Writer) FormatLiteral(literal string) {
-	if literal == "NULL" || literal == "DEFAULT" || literal == "TRUE" || literal == "FALSE" || literal == "*" {
-		if w.withColor() {
-			w.WriteString(keywordColor)
-		}
-		w.WriteKeyword(literal)
-		if w.withColor() {
-			w.WriteString(resetCode)
-		}
-		return
-	}
-	if _, err := strconv.Atoi(literal); err == nil {
-		if w.withColor() {
-			w.WriteString(numberColor)
-		}
-		w.WriteString(literal)
-		if w.withColor() {
-			w.WriteString(resetCode)
-		}
-		return
-	}
-	if _, err := strconv.ParseFloat(literal, 64); err == nil {
-		if w.withColor() {
-			w.WriteString(numberColor)
-		}
-		w.WriteString(literal)
-		if w.withColor() {
-			w.WriteString(resetCode)
-		}
-		return
-	}
-	w.WriteQuoted(literal)
+
 }
 
 func (w *Writer) FormatRow(stmt ast.Row, nl bool) error {

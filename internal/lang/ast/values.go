@@ -218,7 +218,9 @@ type List struct {
 	Values []Node
 }
 
-func (i List) Accept(visit Visitor) {}
+func (i List) Accept(visit Visitor) {
+	visit.VisitList(i)
+}
 
 func (i List) Len() int {
 	return len(i.Values)

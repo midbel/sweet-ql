@@ -26,6 +26,7 @@ type StmtVisitor interface {
 type ExprVisitor interface {
 	VisitBinary(Binary)
 	VisitUnary(Unary)
+	VisitList(List)
 	VisitIn(In)
 	VisitIs(Is)
 	VisitExists(Exists)
@@ -46,9 +47,69 @@ type Visitor interface {
 	ExprVisitor
 }
 
-// type noopVisitor struct{}
+type noopVisitor struct{}
 
-// func Visit() Visitor {
-// 	var noop noopVisitor
-// 	return noop
-// }
+func Visit() Visitor {
+	var noop noopVisitor
+	return noop
+}
+
+func (_ noopVisitor) VisitValues(_ ValuesStatement) {}
+
+func (_ noopVisitor) VisitSelect(_ SelectStatement) {}
+
+func (_ noopVisitor) VisitUnion(_ UnionStatement) {}
+
+func (_ noopVisitor) VisitIntersect(_ IntersectStatement) {}
+
+func (_ noopVisitor) VisitExcept(_ ExceptStatement) {}
+
+func (_ noopVisitor) VisitInsert(_ InsertStatement) {}
+
+func (_ noopVisitor) VisitUpdate(_ UpdateStatement) {}
+
+func (_ noopVisitor) VisitDelete(_ DeleteStatement) {}
+
+func (_ noopVisitor) VisitTruncate(_ TruncateStatement) {}
+
+func (_ noopVisitor) VisitCall(_ CallStatement) {}
+
+func (_ noopVisitor) VisitWith(_ WithStatement) {}
+
+func (_ noopVisitor) VisitCte(_ CteStatement) {}
+
+func (_ noopVisitor) VisitMerge(_ MergeStatement) {}
+
+func (_ noopVisitor) VisitMatch(_ MatchStatement) {}
+
+func (_ noopVisitor) VisitJoin(_ Join) {}
+
+func (_ noopVisitor) VisitBinary(_ Binary) {}
+
+func (_ noopVisitor) VisitUnary(_ Unary) {}
+
+func (_ noopVisitor) VisitList(_ List) {}
+
+func (_ noopVisitor) VisitIn(_ In) {}
+
+func (_ noopVisitor) VisitIs(_ Is) {}
+
+func (_ noopVisitor) VisitExists(_ Exists) {}
+
+func (_ noopVisitor) VisitBetween(_ Between) {}
+
+func (_ noopVisitor) VisitAll(_ All) {}
+
+func (_ noopVisitor) VisitAny(_ Any) {}
+
+func (_ noopVisitor) VisitNot(_ Not) {}
+
+func (_ noopVisitor) VisitCast(_ Cast) {}
+
+func (_ noopVisitor) VisitValue(_ Value) {}
+
+func (_ noopVisitor) VisitAlias(_ Alias) {}
+
+func (_ noopVisitor) VisitName(_ Name) {}
+
+func (_ noopVisitor) VisitGroup(_ Group) {}
