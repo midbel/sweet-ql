@@ -12,8 +12,8 @@ type ForeignKeyConstraint struct {
 	Locals   []string
 	Remotes  []string
 	Table    string
-	OnDelete Statement
-	OnUpdate Statement
+	OnDelete Node
+	OnUpdate Node
 }
 
 func (c ForeignKeyConstraint) Keyword() (string, error) {
@@ -40,7 +40,7 @@ func (_ UniqueConstraint) Keyword() (string, error) {
 }
 
 type CheckConstraint struct {
-	Expr Statement
+	Expr Node
 }
 
 func (_ CheckConstraint) Keyword() (string, error) {
@@ -48,7 +48,7 @@ func (_ CheckConstraint) Keyword() (string, error) {
 }
 
 type DefaultConstraint struct {
-	Expr Statement
+	Expr Node
 }
 
 func (_ DefaultConstraint) Keyword() (string, error) {
@@ -56,7 +56,7 @@ func (_ DefaultConstraint) Keyword() (string, error) {
 }
 
 type GeneratedConstraint struct {
-	Expr Statement
+	Expr Node
 }
 
 func (_ GeneratedConstraint) Keyword() (string, error) {
@@ -65,5 +65,5 @@ func (_ GeneratedConstraint) Keyword() (string, error) {
 
 type Constraint struct {
 	Name string
-	Statement
+	Node
 }

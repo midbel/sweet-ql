@@ -9,17 +9,17 @@ import (
 )
 
 type Group struct {
-	Statement
+	Node
 }
 
-func (g Group) GetStatement() []Statement {
+func (g Group) GetStatement() []Node {
 	return slx.One(g.Statement)
 }
 
 type Cast struct {
 	token.Position
 
-	Ident Statement
+	Ident Node
 	Type  Type
 }
 
@@ -33,38 +33,38 @@ type Type struct {
 
 type Not struct {
 	token.Position
-	Statement
+	Node
 }
 
-func (n Not) GetStatement() []Statement {
+func (n Not) GetStatement() []Node {
 	return slx.One(n.Statement)
 }
 
 type Collate struct {
 	token.Position
-	Statement
+	Node
 	Collation string
 }
 
 type Exists struct {
 	token.Position
-	Statement
+	Node
 }
 
-func (e Exists) GetStatement() []Statement {
+func (e Exists) GetStatement() []Node {
 	return slx.One(e.Statement)
 }
 
 type Call struct {
 	Position token.Position
 	Distinct bool
-	Ident    Statement
-	Args     []Statement
-	Filter   Statement
-	Over     Statement
+	Ident    Node
+	Args     []Node
+	Filter   Node
+	Over     Node
 }
 
-func (c Call) GetStatement() []Statement {
+func (c Call) GetStatement() []Node {
 	return c.Args
 }
 
@@ -78,10 +78,10 @@ func (c Call) GetIdent() string {
 
 type Row struct {
 	token.Position
-	Values []Statement
+	Values []Node
 }
 
-func (r Row) GetStatement() []Statement {
+func (r Row) GetStatement() []Node {
 	return r.Values
 }
 
@@ -91,22 +91,22 @@ func (r Row) Keyword() (string, error) {
 
 type Unary struct {
 	token.Position
-	Right Statement
+	Right Node
 	Op    string
 }
 
-func (u Unary) GetStatement() []Statement {
+func (u Unary) GetStatement() []Node {
 	return slx.One(u.Right)
 }
 
 type Binary struct {
 	token.Position
-	Left  Statement
-	Right Statement
+	Left  Node
+	Right Node
 	Op    string
 }
 
-func (b Binary) GetStatement() []Statement {
+func (b Binary) GetStatement() []Node {
 	return slx.Make(b.Left, b.Right)
 }
 
@@ -116,56 +116,56 @@ func (b Binary) IsRelation() bool {
 
 type All struct {
 	token.Position
-	Statement
+	Node
 }
 
-func (a All) GetStatement() []Statement {
+func (a All) GetStatement() []Node {
 	return slx.One(a.Statement)
 }
 
 type Any struct {
 	token.Position
-	Statement
+	Node
 }
 
-func (a Any) GetStatement() []Statement {
+func (a Any) GetStatement() []Node {
 	return slx.One(a.Statement)
 }
 
 type Is struct {
 	token.Position
-	Ident Statement
-	Value Statement
+	Ident Node
+	Value Node
 }
 
-func (i Is) GetStatement() []Statement {
+func (i Is) GetStatement() []Node {
 	return slx.One(i.Value)
 }
 
 type In struct {
 	token.Position
-	Ident Statement
-	Value Statement
+	Ident Node
+	Value Node
 }
 
-func (i In) GetStatement() []Statement {
+func (i In) GetStatement() []Node {
 	return slx.One(i.Value)
 }
 
 type Between struct {
 	token.Position
 	Not   bool
-	Ident Statement
-	Lower Statement
-	Upper Statement
+	Ident Node
+	Lower Node
+	Upper Node
 }
 
-func (b Between) GetStatement() []Statement {
+func (b Between) GetStatement() []Node {
 	return slx.Make(b.Lower, b.Upper)
 }
 
 type List struct {
-	Values []Statement
+	Values []Node
 }
 
 func (i List) Len() int {
@@ -174,7 +174,7 @@ func (i List) Len() int {
 
 type Placeholder struct {
 	token.Position
-	Statement
+	Node
 }
 
 type Value struct {
@@ -205,7 +205,7 @@ func (v Value) False() bool {
 
 type Alias struct {
 	token.Position
-	Statement
+	Node
 	Identifier
 }
 

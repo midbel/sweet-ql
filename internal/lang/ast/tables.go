@@ -17,7 +17,7 @@ const (
 type ColumnDef struct {
 	Name        string
 	Type        Type
-	Constraints []Statement
+	Constraints []Node
 }
 
 type RenameTableAction struct {
@@ -30,7 +30,7 @@ type RenameColumnAction struct {
 }
 
 type AddColumnAction struct {
-	Def       Statement
+	Def       Node
 	NotExists bool
 }
 
@@ -45,7 +45,7 @@ type DropColumnAction struct {
 }
 
 type AddConstraintAction struct {
-	Constraint Statement
+	Constraint Node
 }
 
 type DropConstraintAction struct {
@@ -60,8 +60,8 @@ type RenameConstraintAction struct {
 }
 
 type AlterTableStatement struct {
-	Name   Statement
-	Action Statement
+	Name   Node
+	Action Node
 }
 
 func (s AlterTableStatement) Keyword() (string, error) {
@@ -69,7 +69,7 @@ func (s AlterTableStatement) Keyword() (string, error) {
 }
 
 type DropViewStatement struct {
-	Names   []Statement
+	Names   []Node
 	Exists  bool
 	Cascade CascadeMode
 }
@@ -79,7 +79,7 @@ func (s DropViewStatement) Keyword() (string, error) {
 }
 
 type DropTableStatement struct {
-	Names   []Statement
+	Names   []Node
 	Exists  bool
 	Cascade CascadeMode
 }
@@ -90,10 +90,10 @@ func (s DropTableStatement) Keyword() (string, error) {
 
 type CreateViewStatement struct {
 	Temp      bool
-	Name      Statement
+	Name      Node
 	NotExists bool
 	Columns   []string
-	Select    Statement
+	Select    Node
 }
 
 func (s CreateViewStatement) Keyword() (string, error) {
@@ -105,10 +105,10 @@ func (s CreateViewStatement) Keyword() (string, error) {
 
 type CreateTableStatement struct {
 	Temp        bool
-	Name        Statement
+	Name        Node
 	NotExists   bool
-	Columns     []Statement
-	Constraints []Statement
+	Columns     []Node
+	Constraints []Node
 }
 
 func (s CreateTableStatement) Keyword() (string, error) {

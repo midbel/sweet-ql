@@ -12,15 +12,15 @@ type ProcedureParameter struct {
 	Mode    ParameterMode
 	Name    string
 	Type    Type
-	Default Statement
+	Default Node
 }
 
 type CreateProcedureStatement struct {
 	Replace    bool
-	Name       Statement
-	Parameters []Statement
+	Name       Node
+	Parameters []Node
 	Language   string
-	Body       Statement
+	Body       Node
 }
 
 func (s CreateProcedureStatement) Keyword() (string, error) {

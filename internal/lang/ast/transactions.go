@@ -27,8 +27,8 @@ func (_ SetTransaction) Keyword() (string, error) {
 
 type StartTransaction struct {
 	Mode TransactionMode
-	Body Statement
-	End  Statement
+	Body Node
+	End  Node
 }
 
 func (_ StartTransaction) Keyword() (string, error) {

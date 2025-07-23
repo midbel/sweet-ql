@@ -15,17 +15,17 @@ import (
 // 	IsStmt() bool
 // }
 
-type Statement interface{}
+type Node interface{}
 
-type Node struct {
-	Statement
+type CommentedNode struct {
+	Node
 	Before []string
 	After  string
 }
 
-func (n Node) Get() Statement {
+func (n CommentedNode) Get() Node {
 	if len(n.Before) == 0 && n.After == "" {
-		return n.Statement
+		return n.Node
 	}
 	return n
 }
@@ -54,7 +54,7 @@ const (
 type Order struct {
 	token.Position
 
-	Statement
+	Node
 	Dir   OrderDir
 	Nulls string
 }
@@ -63,19 +63,19 @@ type Join struct {
 	token.Position
 
 	Type  string
-	Table Statement
-	Where Statement
+	Table Node
+	Where Node
 }
 
 type WindowDefinition struct {
-	Ident  Statement
-	Window Statement
+	Ident  Node
+	Window Node
 }
 
 type Window struct {
-	Ident      Statement
-	Partitions []Statement
-	Orders     []Statement
+	Ident      Node
+	Partitions []Node
+	Orders     []Node
 	Spec       FrameSpec
 }
 
@@ -99,7 +99,7 @@ const (
 
 type FrameSpec struct {
 	Row  FrameRow
-	Expr Statement
+	Expr Node
 }
 
 type BetweenFrameSpec struct {
@@ -115,65 +115,65 @@ const (
 	NotMaterializedCte
 )
 
-type CteStatement struct {
+type CteNode struct {
 	token.Position
 
 	Ident        string
 	Materialized MaterializedMode
 	Columns      []string
-	Statement
+	Node
 }
 
-type WithStatement struct {
+type WithNode struct {
 	token.Position
 
 	Recursive bool
-	Queries   []Statement
-	Statement
+	Queries   []Node
+	Node
 }
 
-func (s WithStatement) Keyword() (string, error) {
+func (s WithNode) Keyword() (string, error) {
 	return "WITH", nil
 }
 
-func (s WithStatement) Get() Statement {
+func (s WithNode) Get() Node {
 	if len(s.Queries) == 0 {
-		return s.Statement
+		return s.Node
 	}
 	return s
 }
 
-type ValuesStatement struct {
+type ValuesNode struct {
 	token.Position
 
-	List   []Statement
-	Orders []Statement
-	Limit  Statement
+	List   []Node
+	Orders []Node
+	Limit  Node
 }
 
-func (s ValuesStatement) Keyword() (string, error) {
+func (s ValuesNode) Keyword() (string, error) {
 	return "VALUES", nil
 }
 
-type SelectStatement struct {
+type SelectNode struct {
 	token.Position
 
 	Distinct bool
-	Columns  []Statement
-	Tables   []Statement
-	Where    Statement
-	Groups   []Statement
-	Having   Statement
-	Windows  []Statement
-	Orders   []Statement
-	Limit    Statement
+	Columns  []Node
+	Tables   []Node
+	Where    Node
+	Groups   []Node
+	Having   Node
+	Windows  []Node
+	Orders   []Node
+	Limit    Node
 }
 
-func (s SelectStatement) ColumnsCount() int {
+func (s SelectNode) ColumnsCount() int {
 	return -1
 }
 
-func (s SelectStatement) Keyword() (string, error) {
+func (s SelectNode) Keyword() (string, error) {
 	return "SELECT", nil
 }
 
@@ -192,134 +192,134 @@ func getCompoundKeyword(kw string, all, distinct bool) (string, error) {
 	return fmt.Sprintf("%s %s", kw, suffix), nil
 }
 
-type UnionStatement struct {
+type UnionNode struct {
 	token.Position
 
-	Left     Statement
-	Right    Statement
+	Left     Node
+	Right    Node
 	All      bool
 	Distinct bool
 }
 
-func (s UnionStatement) GetStatement() []Statement {
+func (s UnionNode) GetNode() []Node {
 	return slx.Make(s.Left, s.Right)
 }
 
-func (s UnionStatement) Keyword() (string, error) {
+func (s UnionNode) Keyword() (string, error) {
 	return getCompoundKeyword("UNION", s.All, s.Distinct)
 }
 
-type IntersectStatement struct {
+type IntersectNode struct {
 	token.Position
 
-	Left     Statement
-	Right    Statement
+	Left     Node
+	Right    Node
 	All      bool
 	Distinct bool
 }
 
-func (s IntersectStatement) GetStatement() []Statement {
+func (s IntersectNode) GetNode() []Node {
 	return slx.Make(s.Left, s.Right)
 }
 
-func (s IntersectStatement) Keyword() (string, error) {
+func (s IntersectNode) Keyword() (string, error) {
 	return getCompoundKeyword("INTERSECT", s.All, s.Distinct)
 }
 
-type ExceptStatement struct {
+type ExceptNode struct {
 	token.Position
 
-	Left     Statement
-	Right    Statement
+	Left     Node
+	Right    Node
 	All      bool
 	Distinct bool
 }
 
-func (s ExceptStatement) GetStatement() []Statement {
+func (s ExceptNode) GetNode() []Node {
 	return slx.Make(s.Left, s.Right)
 }
 
-func (s ExceptStatement) Keyword() (string, error) {
+func (s ExceptNode) Keyword() (string, error) {
 	return getCompoundKeyword("EXCEPT", s.All, s.Distinct)
 }
 
-type MatchStatement struct {
+type MatchNode struct {
 	token.Position
 
-	Condition Statement
-	Statement
+	Condition Node
+	Node
 }
 
-type MergeStatement struct {
+type MergeNode struct {
 	token.Position
 
-	Target  Statement
-	Source  Statement
-	Join    Statement
-	Actions []Statement
+	Target  Node
+	Source  Node
+	Join    Node
+	Actions []Node
 }
 
-func (s MergeStatement) Keyword() (string, error) {
+func (s MergeNode) Keyword() (string, error) {
 	return "MERGE", nil
 }
 
 type Upsert struct {
 	Columns []string
-	List    []Statement
-	Where   Statement
+	List    []Node
+	Where   Node
 }
 
 type Assignment struct {
-	Field Statement
-	Value Statement
+	Field Node
+	Value Node
 }
 
-type InsertStatement struct {
+type InsertNode struct {
 	token.Position
 
-	Table   Statement
+	Table   Node
 	Columns []string
-	Values  Statement
-	Upsert  Statement
-	Return  Statement
+	Values  Node
+	Upsert  Node
+	Return  Node
 }
 
-func (s InsertStatement) Keyword() (string, error) {
+func (s InsertNode) Keyword() (string, error) {
 	return "INSERT INTO", nil
 }
 
-type UpdateStatement struct {
+type UpdateNode struct {
 	token.Position
 
-	Table  Statement
-	List   []Statement
-	Tables []Statement
-	Where  Statement
-	Return Statement
+	Table  Node
+	List   []Node
+	Tables []Node
+	Where  Node
+	Return Node
 }
 
-func (s UpdateStatement) Keyword() (string, error) {
+func (s UpdateNode) Keyword() (string, error) {
 	return "UPDATE", nil
 }
 
-type TruncateStatement struct {
+type TruncateNode struct {
 	Tables   []string
 	Cascade  CascadeMode
 	Identity IdentityMode
 }
 
-func (s TruncateStatement) Keyword() (string, error) {
+func (s TruncateNode) Keyword() (string, error) {
 	return "TRUNCATE", nil
 }
 
-type DeleteStatement struct {
+type DeleteNode struct {
 	token.Position
 
 	Table  string
-	Where  Statement
-	Return Statement
+	Where  Node
+	Return Node
 }
 
-func (s DeleteStatement) Keyword() (string, error) {
+func (s DeleteNode) Keyword() (string, error) {
 	return "DELETE FROM", nil
 }
