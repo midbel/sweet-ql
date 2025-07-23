@@ -45,13 +45,13 @@ func (w *Writer) FormatCreateView(stmt ast.CreateViewStatement) error {
 }
 
 type CreateTableFormatter interface {
-	FormatTableName(ast.Statement) error
-	FormatColumnDef(ConstraintFormatter, ast.Statement, int) error
+	FormatTableName(ast.Node) error
+	FormatColumnDef(ConstraintFormatter, ast.Node, int) error
 	ConstraintFormatter
 }
 
 type ConstraintFormatter interface {
-	FormatConstraint(ast.Statement) error
+	FormatConstraint(ast.Node) error
 
 	FormatPrimaryKeyConstraint(ast.PrimaryKeyConstraint) error
 	FormatForeignKeyConstraint(ast.ForeignKeyConstraint) error
@@ -114,11 +114,11 @@ func (w *Writer) FormatCreateTableWithFormatter(ctf CreateTableFormatter, stmt a
 	return nil
 }
 
-func (w *Writer) FormatTableName(stmt ast.Statement) error {
+func (w *Writer) FormatTableName(stmt ast.Node) error {
 	return w.FormatExpr(stmt, false)
 }
 
-func (w *Writer) FormatColumnDef(ctf ConstraintFormatter, stmt ast.Statement, size int) error {
+func (w *Writer) FormatColumnDef(ctf ConstraintFormatter, stmt ast.Node, size int) error {
 	def, ok := stmt.(ast.ColumnDef)
 	if !ok {
 		return w.CanNotUse("column", stmt)
@@ -141,11 +141,11 @@ func (w *Writer) FormatColumnDef(ctf ConstraintFormatter, stmt ast.Statement, si
 	return nil
 }
 
-func (w *Writer) FormatConstraint(stmt ast.Statement) error {
+func (w *Writer) FormatConstraint(stmt ast.Node) error {
 	return w.formatConstraint(stmt, "CONSTRAINT")
 }
 
-func (w *Writer) formatConstraint(stmt ast.Statement, keyword string) error {
+func (w *Writer) formatConstraint(stmt ast.Node, keyword string) error {
 	cst, ok := stmt.(ast.Constraint)
 	if !ok {
 		return w.CanNotUse("constraint", stmt)

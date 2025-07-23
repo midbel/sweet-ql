@@ -88,7 +88,7 @@ func (w *Writer) Format(r io.Reader) error {
 	return nil
 }
 
-func (w *Writer) startStatement(stmt ast.Statement) error {
+func (w *Writer) startStatement(stmt ast.Node) error {
 	defer w.Flush()
 
 	w.Reset()
@@ -103,7 +103,7 @@ func (w *Writer) startStatement(stmt ast.Statement) error {
 	return err
 }
 
-func (w *Writer) FormatStatement(stmt ast.Statement) error {
+func (w *Writer) FormatStatement(stmt ast.Node) error {
 	var err error
 	switch stmt := stmt.(type) {
 	case ast.Node:
@@ -186,7 +186,7 @@ func (w *Writer) FormatStatement(stmt ast.Statement) error {
 	return err
 }
 
-func (w *Writer) writeCommentAfter(stmt ast.Statement) bool {
+func (w *Writer) writeCommentAfter(stmt ast.Node) bool {
 	if w.Compact.Comment() {
 		return false
 	}
@@ -204,7 +204,7 @@ func (w *Writer) writeCommentAfter(stmt ast.Statement) bool {
 	return true
 }
 
-func (w *Writer) writeCommentBefore(stmt ast.Statement) {
+func (w *Writer) writeCommentBefore(stmt ast.Node) {
 	if w.Compact.Comment() {
 		return
 	}
@@ -222,7 +222,7 @@ func (w *Writer) writeCommentBefore(stmt ast.Statement) {
 }
 
 func (w *Writer) FormatBody(list ast.List) error {
-	doFmt := func(stmt ast.Statement) error {
+	doFmt := func(stmt ast.Node) error {
 		return w.FormatStatement(stmt)
 	}
 	for _, v := range list.Values {
@@ -234,7 +234,7 @@ func (w *Writer) FormatBody(list ast.List) error {
 	return nil
 }
 
-func (w *Writer) FormatExpr(stmt ast.Statement, nl bool) error {
+func (w *Writer) FormatExpr(stmt ast.Node, nl bool) error {
 	var err error
 	switch stmt := stmt.(type) {
 	case ast.Node:
@@ -720,7 +720,7 @@ func (w *Writer) compact(fn func() error) error {
 	return fn()
 }
 
-func (w *Writer) CanNotUse(ctx string, stmt ast.Statement) error {
+func (w *Writer) CanNotUse(ctx string, stmt ast.Node) error {
 	return fmt.Errorf("%T can not be used as statement in %s", stmt, ctx)
 }
 

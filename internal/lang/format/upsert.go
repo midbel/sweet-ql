@@ -270,7 +270,7 @@ func (w *Writer) FormatInsert(stmt ast.InsertStatement) error {
 	return nil
 }
 
-func (w *Writer) FormatInsertValues(values ast.Statement) error {
+func (w *Writer) FormatInsertValues(values ast.Node) error {
 	if values == nil {
 		return nil
 	}
@@ -287,7 +287,7 @@ func (w *Writer) FormatInsertValues(values ast.Statement) error {
 	return err
 }
 
-func (w *Writer) FormatUpsert(stmt ast.Statement) error {
+func (w *Writer) FormatUpsert(stmt ast.Node) error {
 	if stmt == nil {
 		return nil
 	}
@@ -337,7 +337,7 @@ func (w *Writer) FormatUpsert(stmt ast.Statement) error {
 	return nil
 }
 
-func (w *Writer) FormatAssignment(list []ast.Statement) error {
+func (w *Writer) FormatAssignment(list []ast.Node) error {
 	var err error
 	for i, s := range list {
 		if i > 0 {
@@ -384,7 +384,7 @@ func (w *Writer) FormatAssignment(list []ast.Statement) error {
 	return err
 }
 
-func (w *Writer) FormatReturning(stmt ast.Statement) error {
+func (w *Writer) FormatReturning(stmt ast.Node) error {
 	if stmt == nil {
 		return nil
 	}

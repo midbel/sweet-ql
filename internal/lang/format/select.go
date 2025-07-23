@@ -159,7 +159,7 @@ func (w *Writer) FormatSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
-func (w *Writer) FormatSelectColumns(columns []ast.Statement) error {
+func (w *Writer) FormatSelectColumns(columns []ast.Node) error {
 	w.Enter()
 	defer w.Leave()
 
@@ -183,7 +183,7 @@ func (w *Writer) FormatSelectColumns(columns []ast.Statement) error {
 	return nil
 }
 
-func (w *Writer) FormatWhere(stmt ast.Statement) error {
+func (w *Writer) FormatWhere(stmt ast.Node) error {
 	if stmt == nil {
 		return nil
 	}
@@ -221,10 +221,10 @@ func (w *Writer) formatJoin(join ast.Join) error {
 	}
 }
 
-func (w *Writer) FormatFrom(list []ast.Statement) error {
+func (w *Writer) FormatFrom(list []ast.Node) error {
 	w.WriteKeyword("FROM")
 
-	withComma := func(stmt ast.Statement) bool {
+	withComma := func(stmt ast.Node) bool {
 		if n, ok := stmt.(ast.Node); ok {
 			stmt = n.Statement
 		}
@@ -253,7 +253,7 @@ func (w *Writer) FormatFrom(list []ast.Statement) error {
 	return nil
 }
 
-func (w *Writer) FormatGroupBy(groups []ast.Statement) error {
+func (w *Writer) FormatGroupBy(groups []ast.Node) error {
 	if len(groups) == 0 {
 		return nil
 	}
@@ -277,7 +277,7 @@ func (w *Writer) FormatGroupBy(groups []ast.Statement) error {
 	return nil
 }
 
-func (w *Writer) FormatWindows(windows []ast.Statement) error {
+func (w *Writer) FormatWindows(windows []ast.Node) error {
 	w.WriteKeyword("WINDOW")
 
 	if len(windows) > 1 {
@@ -348,7 +348,7 @@ func (w *Writer) FormatWindows(windows []ast.Statement) error {
 	return nil
 }
 
-func (w *Writer) FormatHaving(having ast.Statement) error {
+func (w *Writer) FormatHaving(having ast.Node) error {
 	if having == nil {
 		return nil
 	}
@@ -357,7 +357,7 @@ func (w *Writer) FormatHaving(having ast.Statement) error {
 	return w.FormatExpr(having, true)
 }
 
-func (w *Writer) FormatOrderBy(orders []ast.Statement) error {
+func (w *Writer) FormatOrderBy(orders []ast.Node) error {
 	if len(orders) == 0 {
 		return nil
 	}
@@ -407,11 +407,11 @@ func (w *Writer) formatOrder(order ast.Order) error {
 	return nil
 }
 
-func (w *Writer) FormatLimit(stmt ast.Statement) error {
+func (w *Writer) FormatLimit(stmt ast.Node) error {
 	if stmt == nil {
 		return nil
 	}
-	var limit ast.Statement
+	var limit ast.Node
 	if n, ok := stmt.(ast.Node); ok {
 		limit = n.Statement
 	} else {
@@ -436,7 +436,7 @@ func (w *Writer) FormatLimit(stmt ast.Statement) error {
 	return nil
 }
 
-func (w *Writer) FormatOffset(limit ast.Statement) error {
+func (w *Writer) FormatOffset(limit ast.Node) error {
 	lim, ok := limit.(ast.Offset)
 	if !ok {
 		return w.CanNotUse("fetch", limit)
