@@ -59,9 +59,9 @@ func (s *stack[T]) Get(sym token.Symbol) (T, error) {
 	return s.values[n-1].Get(sym)
 }
 
-type prefixFunc func() (ast.Statement, error)
+type prefixFunc func() (ast.Node, error)
 
-type infixFunc func(ast.Statement) (ast.Statement, error)
+type infixFunc func(ast.Node) (ast.Node, error)
 
 type funcSet[T prefixFunc | infixFunc] struct {
 	disabled bool

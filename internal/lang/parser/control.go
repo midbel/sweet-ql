@@ -5,7 +5,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) parseSet() (ast.Statement, error) {
+func (p *Parser) parseSet() (ast.Node, error) {
 	var (
 		stmt ast.Set
 		err  error
@@ -24,7 +24,7 @@ func (p *Parser) parseSet() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseDeclare() (ast.Statement, error) {
+func (p *Parser) ParseDeclare() (ast.Node, error) {
 
 	var (
 		stmt ast.Declare
@@ -53,7 +53,7 @@ func (p *Parser) ParseDeclare() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseIf() (ast.Statement, error) {
+func (p *Parser) parseIf() (ast.Node, error) {
 	var (
 		stmt ast.If
 		err  error
@@ -93,7 +93,7 @@ func (p *Parser) parseIf() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseWhile() (ast.Statement, error) {
+func (p *Parser) parseWhile() (ast.Node, error) {
 	var (
 		stmt ast.While
 		err  error
@@ -120,7 +120,7 @@ func (p *Parser) parseWhile() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseBody(done func() bool) (ast.Statement, error) {
+func (p *Parser) ParseBody(done func() bool) (ast.Node, error) {
 	var list ast.List
 	for !p.Done() && !done() {
 		stmt, err := p.ParseStatement()
@@ -139,7 +139,7 @@ func (p *Parser) ParseBody(done func() bool) (ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) parseReturn() (ast.Statement, error) {
+func (p *Parser) parseReturn() (ast.Node, error) {
 	var (
 		stmt ast.Return
 		err  error

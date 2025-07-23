@@ -15,7 +15,7 @@ import (
 
 var errDone = errors.New("done")
 
-type ParseFunc func() (ast.Statement, error)
+type ParseFunc func() (ast.Node, error)
 
 type Parser struct {
 	*frame
@@ -29,8 +29,8 @@ type Parser struct {
 
 	withAlias bool
 
-	queries map[string]ast.Statement
-	values  map[string]ast.Statement
+	queries map[string]ast.Node
+	values  map[string]ast.Node
 }
 
 func NewParser(r io.Reader) (lang.Parser, error) {
@@ -49,8 +49,8 @@ func ParseWithScanner(scan *scanner.Scanner) (*Parser, error) {
 	}
 	var p Parser
 	p.frame = f
-	p.queries = make(map[string]ast.Statement)
-	p.values = make(map[string]ast.Statement)
+	p.queries = make(map[string]ast.Node)
+	p.values = make(map[string]ast.Node)
 	p.infix = emptyStack[infixFunc]()
 	p.prefix = emptyStack[prefixFunc]()
 
@@ -61,7 +61,7 @@ func ParseWithScanner(scan *scanner.Scanner) (*Parser, error) {
 	return &p, nil
 }
 
-func (p *Parser) Parse() (ast.Statement, error) {
+func (p *Parser) Parse() (ast.Node, error) {
 	if p.Done() {
 		return nil, io.EOF
 	}
@@ -70,7 +70,7 @@ func (p *Parser) Parse() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseStatement() (ast.Statement, error) {
+func (p *Parser) ParseStatement() (ast.Node, error) {
 	p.Enter()
 	defer p.Leave()
 
@@ -145,8 +145,8 @@ func (p *Parser) restore() {
 	}
 }
 
-func (p *Parser) parse() (ast.Statement, error) {
-	return p.parseItem(func() (ast.Statement, error) {
+func (p *Parser) parse() (ast.Node, error) {
+	return p.parseItem(func() (ast.Node, error) {
 		stmt, err := p.ParseStatement()
 		if err != nil {
 			return nil, err
@@ -159,7 +159,7 @@ func (p *Parser) parse() (ast.Statement, error) {
 	})
 }
 
-func (p *Parser) parseItem(parse ParseFunc) (ast.Statement, error) {
+func (p *Parser) parseItem(parse ParseFunc) (ast.Node, error) {
 	var node ast.Node
 	for p.Is(token.Comment) {
 		comment := p.GetCurrLiteral()
@@ -189,7 +189,7 @@ func (p *Parser) skipComments() {
 	}
 }
 
-func (p *Parser) RegisterParseFunc(kw string, fn func() (ast.Statement, error)) {
+func (p *Parser) RegisterParseFunc(kw string, fn func() (ast.Node, error)) {
 	kw = strings.ToUpper(kw)
 	p.keywords[kw] = fn
 }

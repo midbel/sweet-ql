@@ -5,7 +5,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) parseWith() (ast.Statement, error) {
+func (p *Parser) parseWith() (ast.Node, error) {
 	var (
 		stmt ast.WithStatement
 		err  error
@@ -41,7 +41,7 @@ func (p *Parser) parseWith() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseSubquery() (ast.Statement, error) {
+func (p *Parser) parseSubquery() (ast.Node, error) {
 	p.Enter()
 	defer p.Leave()
 

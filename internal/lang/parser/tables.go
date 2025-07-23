@@ -6,12 +6,12 @@ import (
 )
 
 type CreateTableParser interface {
-	ParseTableName() (ast.Statement, error)
-	ParseConstraint(bool) (ast.Statement, error)
-	ParseColumnDef(CreateTableParser) (ast.Statement, error)
+	ParseTableName() (ast.Node, error)
+	ParseConstraint(bool) (ast.Node, error)
+	ParseColumnDef(CreateTableParser) (ast.Node, error)
 }
 
-func (p *Parser) ParseDropTable() (ast.Statement, error) {
+func (p *Parser) ParseDropTable() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.DropTableStatement
@@ -43,7 +43,7 @@ func (p *Parser) ParseDropTable() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseDropView() (ast.Statement, error) {
+func (p *Parser) ParseDropView() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.DropViewStatement
@@ -75,7 +75,7 @@ func (p *Parser) ParseDropView() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseAlterTable() (ast.Statement, error) {
+func (p *Parser) ParseAlterTable() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.AlterTableStatement
@@ -196,11 +196,11 @@ func (p *Parser) ParseAlterTable() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseCreateTable() (ast.Statement, error) {
+func (p *Parser) ParseCreateTable() (ast.Node, error) {
 	return p.ParseCreateTableStatement(p)
 }
 
-func (p *Parser) ParseCreateTableStatement(ctp CreateTableParser) (ast.Statement, error) {
+func (p *Parser) ParseCreateTableStatement(ctp CreateTableParser) (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.CreateTableStatement
@@ -239,7 +239,7 @@ func (p *Parser) ParseCreateTableStatement(ctp CreateTableParser) (ast.Statement
 	return stmt, p.Expect("create table", token.Rparen)
 }
 
-func (p *Parser) ParseCreateView() (ast.Statement, error) {
+func (p *Parser) ParseCreateView() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.CreateViewStatement
@@ -267,11 +267,11 @@ func (p *Parser) ParseCreateView() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseTableName() (ast.Statement, error) {
+func (p *Parser) ParseTableName() (ast.Node, error) {
 	return p.ParseIdentifier()
 }
 
-func (p *Parser) ParseColumnDef(ctp CreateTableParser) (ast.Statement, error) {
+func (p *Parser) ParseColumnDef(ctp CreateTableParser) (ast.Node, error) {
 	var (
 		def ast.ColumnDef
 		err error
@@ -294,11 +294,11 @@ func (p *Parser) ParseColumnDef(ctp CreateTableParser) (ast.Statement, error) {
 	return def, err
 }
 
-func (p *Parser) ParseConstraint(column bool) (ast.Statement, error) {
+func (p *Parser) ParseConstraint(column bool) (ast.Node, error) {
 	return p.parseConstraintWithKeyword("CONSTRAINT", false, column)
 }
 
-func (p *Parser) parseConstraintWithKeyword(keyword string, required, column bool) (ast.Statement, error) {
+func (p *Parser) parseConstraintWithKeyword(keyword string, required, column bool) (ast.Node, error) {
 	var (
 		cst ast.Constraint
 		err error
@@ -337,7 +337,7 @@ func (p *Parser) parseConstraintWithKeyword(keyword string, required, column boo
 	return cst, err
 }
 
-func (p *Parser) ParsePrimaryKeyConstraint(short bool) (ast.Statement, error) {
+func (p *Parser) ParsePrimaryKeyConstraint(short bool) (ast.Node, error) {
 	p.Next()
 	var cst ast.PrimaryKeyConstraint
 	if short {
@@ -359,7 +359,7 @@ func (p *Parser) ParsePrimaryKeyConstraint(short bool) (ast.Statement, error) {
 	return cst, p.Expect("primary key", token.Rparen)
 }
 
-func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Statement, error) {
+func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Node, error) {
 	var cst ast.ForeignKeyConstraint
 	if p.IsKeyword("FOREIGN KEY") {
 		p.Next()
@@ -405,7 +405,7 @@ func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Statement, error) {
 	return cst, p.Expect("foreign key", token.Rparen)
 }
 
-func (p *Parser) ParseUniqueConstraint(short bool) (ast.Statement, error) {
+func (p *Parser) ParseUniqueConstraint(short bool) (ast.Node, error) {
 	p.Next()
 	var cst ast.UniqueConstraint
 	if short {
@@ -427,7 +427,7 @@ func (p *Parser) ParseUniqueConstraint(short bool) (ast.Statement, error) {
 	return cst, p.Expect("unique", token.Rparen)
 }
 
-func (p *Parser) ParseNotNullConstraint() (ast.Statement, error) {
+func (p *Parser) ParseNotNullConstraint() (ast.Node, error) {
 	p.Next()
 	var cst ast.NotNullConstraint
 	if !p.IsKeyword("NULL") {
@@ -437,7 +437,7 @@ func (p *Parser) ParseNotNullConstraint() (ast.Statement, error) {
 	return cst, nil
 }
 
-func (p *Parser) ParseCheckConstraint() (ast.Statement, error) {
+func (p *Parser) ParseCheckConstraint() (ast.Node, error) {
 	p.Next()
 	var (
 		cst ast.CheckConstraint
@@ -447,7 +447,7 @@ func (p *Parser) ParseCheckConstraint() (ast.Statement, error) {
 	return cst, err
 }
 
-func (p *Parser) ParseDefaultConstraint() (ast.Statement, error) {
+func (p *Parser) ParseDefaultConstraint() (ast.Node, error) {
 	p.Next()
 	var (
 		cst ast.DefaultConstraint
@@ -457,7 +457,7 @@ func (p *Parser) ParseDefaultConstraint() (ast.Statement, error) {
 	return cst, err
 }
 
-func (p *Parser) ParseGeneratedAlwaysConstraint() (ast.Statement, error) {
+func (p *Parser) ParseGeneratedAlwaysConstraint() (ast.Node, error) {
 	if p.IsKeyword("GENERATED ALWAYS") {
 		p.Next()
 		if !p.IsKeyword("AS") {

@@ -5,7 +5,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseMerge() (ast.Statement, error) {
+func (p *Parser) ParseMerge() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.MergeStatement
@@ -37,8 +37,8 @@ func (p *Parser) ParseMerge() (ast.Statement, error) {
 	}
 	for !p.QueryEnds() && !p.Done() {
 		var (
-			parseAction func(ast.Statement) (ast.Statement, error)
-			cdt         ast.Statement
+			parseAction func(ast.Node) (ast.Node, error)
+			cdt         ast.Node
 			err         error
 		)
 		switch {
@@ -69,9 +69,9 @@ func (p *Parser) ParseMerge() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseMergeMatched(cdt ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 	var (
-		stmt ast.Statement
+		stmt ast.Node
 		err  error
 	)
 	switch {
@@ -105,7 +105,7 @@ func (p *Parser) parseMergeMatched(cdt ast.Statement) (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseMergeNotMatched(cdt ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseMergeNotMatched(cdt ast.Node) (ast.Node, error) {
 	if !p.IsKeyword("INSERT") {
 		return nil, p.Unexpected("match", keywordExpected("INSERT"))
 	}
@@ -134,7 +134,7 @@ func (p *Parser) parseMergeNotMatched(cdt ast.Statement) (ast.Statement, error) 
 	return stmt, nil
 }
 
-func (p *Parser) ParseDelete() (ast.Statement, error) {
+func (p *Parser) ParseDelete() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.DeleteStatement
@@ -155,7 +155,7 @@ func (p *Parser) ParseDelete() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseTruncate() (ast.Statement, error) {
+func (p *Parser) ParseTruncate() (ast.Node, error) {
 	p.Next()
 	var stmt ast.TruncateStatement
 	if p.Is(token.Star) {
@@ -195,7 +195,7 @@ func (p *Parser) ParseTruncate() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseReturning() (ast.Statement, error) {
+func (p *Parser) ParseReturning() (ast.Node, error) {
 	if !p.IsKeyword("RETURNING") {
 		return nil, nil
 	}
@@ -222,7 +222,7 @@ func (p *Parser) ParseReturning() (ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseUpdate() (ast.Statement, error) {
+func (p *Parser) ParseUpdate() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.UpdateStatement
@@ -255,8 +255,8 @@ func (p *Parser) ParseUpdate() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseUpdateSet() ([]ast.Statement, error) {
-	var list []ast.Statement
+func (p *Parser) ParseUpdateSet() ([]ast.Node, error) {
+	var list []ast.Node
 	for !p.Done() && !p.Is(token.EOL) && !p.IsKeyword("WHERE") && !p.IsKeyword("FROM") && !p.IsKeyword("RETURNING") {
 		stmt, err := p.parseAssignment()
 		if err != nil {
@@ -273,7 +273,7 @@ func (p *Parser) ParseUpdateSet() ([]ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) parseAssignment() (ast.Statement, error) {
+func (p *Parser) parseAssignment() (ast.Node, error) {
 	var (
 		ass ast.Assignment
 		err error
@@ -336,7 +336,7 @@ func (p *Parser) parseAssignment() (ast.Statement, error) {
 	return ass, nil
 }
 
-func (p *Parser) ParseInsert() (ast.Statement, error) {
+func (p *Parser) ParseInsert() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.InsertStatement
@@ -370,7 +370,7 @@ func (p *Parser) ParseInsert() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseUpsert() (ast.Statement, error) {
+func (p *Parser) ParseUpsert() (ast.Node, error) {
 	if !p.IsKeyword("ON CONFLICT") {
 		return nil, nil
 	}
@@ -410,8 +410,8 @@ func (p *Parser) ParseUpsert() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseUpsertList() ([]ast.Statement, error) {
-	var list []ast.Statement
+func (p *Parser) ParseUpsertList() ([]ast.Node, error) {
+	var list []ast.Node
 	for !p.Done() && !p.Is(token.EOL) && !p.IsKeyword("WHERE") && !p.IsKeyword("RETURNING") {
 		stmt, err := p.parseAssignment()
 		if err != nil {

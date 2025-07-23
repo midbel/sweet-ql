@@ -5,7 +5,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseCreateProcedure() (ast.Statement, error) {
+func (p *Parser) ParseCreateProcedure() (ast.Node, error) {
 	var (
 		stmt ast.CreateProcedureStatement
 		err  error
@@ -29,7 +29,7 @@ func (p *Parser) ParseCreateProcedure() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseProcedureName() (ast.Statement, error) {
+func (p *Parser) ParseProcedureName() (ast.Node, error) {
 	return p.ParseIdentifier()
 }
 
@@ -43,7 +43,7 @@ func (p *Parser) ParseProcedureLanguage() (string, error) {
 	return lang, nil
 }
 
-func (p *Parser) ParseProcedureBody() (ast.Statement, error) {
+func (p *Parser) ParseProcedureBody() (ast.Node, error) {
 	if !p.IsKeyword("BEGIN") {
 		return nil, p.Unexpected("procedure", keywordExpected("BEGIN"))
 	}
@@ -58,11 +58,11 @@ func (p *Parser) ParseProcedureBody() (ast.Statement, error) {
 	return body, err
 }
 
-func (p *Parser) ParseProcedureParameters() ([]ast.Statement, error) {
+func (p *Parser) ParseProcedureParameters() ([]ast.Node, error) {
 	if err := p.Expect("procedure", token.Lparen); err != nil {
 		return nil, err
 	}
-	var list []ast.Statement
+	var list []ast.Node
 	for !p.Done() && !p.Is(token.Rparen) {
 		stmt, err := p.ParseProcedureParameter()
 		if err != nil {
@@ -76,7 +76,7 @@ func (p *Parser) ParseProcedureParameters() ([]ast.Statement, error) {
 	return list, p.Expect("procedure", token.Rparen)
 }
 
-func (p *Parser) ParseProcedureParameter() (ast.Statement, error) {
+func (p *Parser) ParseProcedureParameter() (ast.Node, error) {
 	var (
 		param ast.ProcedureParameter
 		err   error

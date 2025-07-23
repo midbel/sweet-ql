@@ -7,7 +7,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) StartExpression() (ast.Statement, error) {
+func (p *Parser) StartExpression() (ast.Node, error) {
 	expr, err := p.parseExpression(powLowest)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (p *Parser) stopExpression(pow int) bool {
 	return p.currBinding() <= pow
 }
 
-func (p *Parser) parseExpression(pow int) (ast.Statement, error) {
+func (p *Parser) parseExpression(pow int) (ast.Node, error) {
 	fn, err := p.getPrefixExpr()
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (p *Parser) parseExpression(pow int) (ast.Statement, error) {
 	return left, nil
 }
 
-func (p *Parser) parseRelational(ident ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseRelational(ident ast.Node) (ast.Node, error) {
 	stmt := ast.Binary{
 		Left:     ident,
 		Op:       p.GetCurrLiteral(),
@@ -67,7 +67,7 @@ func (p *Parser) parseRelational(ident ast.Statement) (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseLike(ident ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseLike(ident ast.Node) (ast.Node, error) {
 	stmt := ast.Binary{
 		Left:     ident,
 		Op:       p.GetCurrLiteral(),
@@ -82,7 +82,7 @@ func (p *Parser) parseLike(ident ast.Statement) (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseIs(ident ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseIs(ident ast.Node) (ast.Node, error) {
 	stmt := ast.Is{
 		Ident:    ident,
 		Position: p.GetCurrPosition(),
@@ -106,7 +106,7 @@ func (p *Parser) parseIs(ident ast.Statement) (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseIsNull(ident ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseIsNull(ident ast.Node) (ast.Node, error) {
 	val := ast.Value{
 		Position: p.GetCurrPosition(),
 		Literal:  token.Null,
@@ -120,7 +120,7 @@ func (p *Parser) parseIsNull(ident ast.Statement) (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseNotNull(ident ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseNotNull(ident ast.Node) (ast.Node, error) {
 	val := ast.Value{
 		Literal:  token.Null,
 		Position: p.GetCurrPosition(),
@@ -138,7 +138,7 @@ func (p *Parser) parseNotNull(ident ast.Statement) (ast.Statement, error) {
 	return not, nil
 }
 
-func (p *Parser) parseExists() (ast.Statement, error) {
+func (p *Parser) parseExists() (ast.Node, error) {
 	var (
 		stmt ast.Exists
 		err  error
@@ -161,7 +161,7 @@ func (p *Parser) parseExists() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseBetween(ident ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseBetween(ident ast.Node) (ast.Node, error) {
 	stmt := ast.Between{
 		Ident:    ident,
 		Position: p.GetCurrPosition(),
@@ -184,7 +184,7 @@ func (p *Parser) parseBetween(ident ast.Statement) (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseIn(ident ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseIn(ident ast.Node) (ast.Node, error) {
 	in := ast.In{
 		Ident:    ident,
 		Position: p.GetCurrPosition(),
@@ -197,7 +197,7 @@ func (p *Parser) parseIn(ident ast.Statement) (ast.Statement, error) {
 		p.Next()
 		var (
 			list ast.List
-			val  ast.Statement
+			val  ast.Node
 		)
 		for !p.Done() && !p.Is(token.Rparen) {
 			val, err = p.parseExpression(powLowest)
@@ -235,7 +235,7 @@ func (p *Parser) getInfixExpr() (infixFunc, error) {
 	return p.infix.Get(p.Curr().AsSymbol())
 }
 
-func (p *Parser) parseInfixExpr(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseInfixExpr(left ast.Node) (ast.Node, error) {
 	stmt := ast.Binary{
 		Left:     left,
 		Position: p.GetCurrPosition(),
@@ -257,9 +257,9 @@ func (p *Parser) parseInfixExpr(left ast.Statement) (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseAllOrAny() (ast.Statement, error) {
+func (p *Parser) parseAllOrAny() (ast.Node, error) {
 	var (
-		expr ast.Statement
+		expr ast.Node
 		err  error
 		all  = p.IsKeyword("ALL")
 		pos  = p.GetCurrPosition()
@@ -290,7 +290,7 @@ func (p *Parser) parseAllOrAny() (ast.Statement, error) {
 	return expr, nil
 }
 
-func (p *Parser) parseCollateExpr(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseCollateExpr(left ast.Node) (ast.Node, error) {
 	stmt := ast.Collate{
 		Position:  p.GetCurrPosition(),
 		Statement: left,
@@ -304,11 +304,11 @@ func (p *Parser) parseCollateExpr(left ast.Statement) (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseKeywordExpr(left ast.Statement) (ast.Statement, error) {
-	reverse := func(stmt ast.Statement) ast.Statement { return stmt }
+func (p *Parser) parseKeywordExpr(left ast.Node) (ast.Node, error) {
+	reverse := func(stmt ast.Node) ast.Node { return stmt }
 	if p.GetCurrLiteral() == "NOT" && p.Is(token.Keyword) {
 		p.Next()
-		reverse = func(stmt ast.Statement) ast.Statement {
+		reverse = func(stmt ast.Node) ast.Node {
 			if stmt == nil {
 				return stmt
 			}
@@ -318,7 +318,7 @@ func (p *Parser) parseKeywordExpr(left ast.Statement) (ast.Statement, error) {
 		}
 	}
 	var (
-		stmt ast.Statement
+		stmt ast.Node
 		err  error
 	)
 	switch p.GetCurrLiteral() {
@@ -343,7 +343,7 @@ func (p *Parser) parseKeywordExpr(left ast.Statement) (ast.Statement, error) {
 	return reverse(stmt), err
 }
 
-func (p *Parser) parseCallExpr(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseCallExpr(left ast.Node) (ast.Node, error) {
 	n, ok := left.(ast.Name)
 	if !ok {
 		return nil, p.Unexpected("function", identExpected)
@@ -401,7 +401,7 @@ func (p *Parser) parseCallExpr(left ast.Statement) (ast.Statement, error) {
 	return p.ParseAlias(stmt)
 }
 
-func (p *Parser) parseOver() (ast.Statement, error) {
+func (p *Parser) parseOver() (ast.Node, error) {
 	if !p.IsKeyword("OVER") {
 		return nil, nil
 	}
@@ -412,9 +412,9 @@ func (p *Parser) parseOver() (ast.Statement, error) {
 	return p.ParseWindow()
 }
 
-func (p *Parser) parseUnary() (ast.Statement, error) {
+func (p *Parser) parseUnary() (ast.Node, error) {
 	var (
-		stmt ast.Statement
+		stmt ast.Node
 		err  error
 		pos  = p.GetCurrPosition()
 	)
@@ -446,7 +446,7 @@ func (p *Parser) parseUnary() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) parseGroupExpr() (ast.Statement, error) {
+func (p *Parser) parseGroupExpr() (ast.Node, error) {
 	p.Next()
 	if p.IsKeyword("SELECT") || p.IsKeyword("VALUES") {
 		stmt, err := p.ParseStatement()

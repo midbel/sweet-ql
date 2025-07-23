@@ -9,13 +9,13 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseXML(name ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXML(name ast.Node) (ast.Node, error) {
 	n, ok := name.(ast.Name)
 	if !ok {
 		return nil, p.Unexpected("xml", defaultReason)
 	}
 	var (
-		stmt ast.Statement
+		stmt ast.Node
 		err  error
 	)
 	switch strings.ToUpper(n.Name()) {
@@ -41,11 +41,11 @@ func (p *Parser) ParseXML(name ast.Statement) (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) ParseXmlRoot(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlRoot(left ast.Node) (ast.Node, error) {
 	return nil, nil
 }
 
-func (p *Parser) ParseXmlElement(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlElement(left ast.Node) (ast.Node, error) {
 	p.Next()
 	if !p.IsIdent("NAME") {
 		return nil, p.Unexpected("xmlelement", identExpected)
@@ -102,7 +102,7 @@ func (p *Parser) ParseXmlElement(left ast.Statement) (ast.Statement, error) {
 	return xml, nil
 }
 
-func (p *Parser) ParseXmlAttributes() ([]ast.Statement, error) {
+func (p *Parser) ParseXmlAttributes() ([]ast.Node, error) {
 	if !p.PeekIdent("XMLATTRIBUTES") {
 		return nil, nil
 	}
@@ -116,7 +116,7 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Statement, error) {
 	}
 	p.Next()
 	var (
-		list      []ast.Statement
+		list      []ast.Node
 		withAlias = p.withAlias
 	)
 	defer func() {
@@ -165,7 +165,7 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
+func (p *Parser) ParseXmlNamespaces() ([]ast.Node, error) {
 	if !p.PeekIdent("XMLNAMESPACES") {
 		return nil, nil
 	}
@@ -179,7 +179,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 	}
 	p.Next()
 	var (
-		list   []ast.Statement
+		list   []ast.Node
 		count  int
 		withAs = p.withAlias
 	)
@@ -251,7 +251,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseXmlInstruction(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlInstruction(left ast.Node) (ast.Node, error) {
 	if !p.IsIdent("NAME") {
 		return nil, p.Unexpected("xmlelement", identExpected)
 	}
@@ -284,11 +284,11 @@ func (p *Parser) ParseXmlInstruction(left ast.Statement) (ast.Statement, error) 
 	return xml, nil
 }
 
-func (p *Parser) ParseXmlForest(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlForest(left ast.Node) (ast.Node, error) {
 	return nil, nil
 }
 
-func (p *Parser) ParseXmlConcat(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlConcat(left ast.Node) (ast.Node, error) {
 	p.Next()
 	xml := ast.XmlConcat{
 		Ident: left,
@@ -310,7 +310,7 @@ func (p *Parser) ParseXmlConcat(left ast.Statement) (ast.Statement, error) {
 	return xml, nil
 }
 
-func (p *Parser) ParseXmlAgg(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlAgg(left ast.Node) (ast.Node, error) {
 	p.Next()
 	xml := ast.XmlAgg{
 		Ident: left,
@@ -327,7 +327,7 @@ func (p *Parser) ParseXmlAgg(left ast.Statement) (ast.Statement, error) {
 	return xml, nil
 }
 
-func (p *Parser) ParseXmlText(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlText(left ast.Node) (ast.Node, error) {
 	p.Next()
 	withAs := p.withAlias
 	p.withAlias = false
@@ -349,7 +349,7 @@ func (p *Parser) ParseXmlText(left ast.Statement) (ast.Statement, error) {
 	return xml, nil
 }
 
-func (p *Parser) ParseXmlComment(left ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseXmlComment(left ast.Node) (ast.Node, error) {
 	p.Next()
 	if !p.Curr().IsValue() {
 		return nil, p.Unexpected("xmlcomment", valueExpected)

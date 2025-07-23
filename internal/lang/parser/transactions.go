@@ -5,7 +5,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseBegin() (ast.Statement, error) {
+func (p *Parser) ParseBegin() (ast.Node, error) {
 	p.Next()
 	stmt, err := p.ParseBody(func() bool {
 		return p.Done() || p.IsKeyword("END")
@@ -16,7 +16,7 @@ func (p *Parser) ParseBegin() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseSetTransaction() (ast.Statement, error) {
+func (p *Parser) parseSetTransaction() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.SetTransaction
@@ -52,7 +52,7 @@ func (p *Parser) parseSetTransaction() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseStartTransaction() (ast.Statement, error) {
+func (p *Parser) parseStartTransaction() (ast.Node, error) {
 	p.Next()
 
 	var (
@@ -91,7 +91,7 @@ func (p *Parser) parseStartTransaction() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseSavepoint() (ast.Statement, error) {
+func (p *Parser) parseSavepoint() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.Savepoint
@@ -104,7 +104,7 @@ func (p *Parser) parseSavepoint() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseReleaseSavepoint() (ast.Statement, error) {
+func (p *Parser) parseReleaseSavepoint() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.ReleaseSavepoint
@@ -118,7 +118,7 @@ func (p *Parser) parseReleaseSavepoint() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseRollbackSavepoint() (ast.Statement, error) {
+func (p *Parser) parseRollbackSavepoint() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.RollbackSavepoint
@@ -132,12 +132,12 @@ func (p *Parser) parseRollbackSavepoint() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseCommit() (ast.Statement, error) {
+func (p *Parser) parseCommit() (ast.Node, error) {
 	p.Next()
 	return ast.Commit{}, nil
 }
 
-func (p *Parser) parseRollback() (ast.Statement, error) {
+func (p *Parser) parseRollback() (ast.Node, error) {
 	p.Next()
 	return ast.Rollback{}, nil
 }

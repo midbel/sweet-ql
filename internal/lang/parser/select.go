@@ -8,7 +8,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseValues() (ast.Statement, error) {
+func (p *Parser) ParseValues() (ast.Node, error) {
 	var (
 		stmt ast.ValuesStatement
 		err  error
@@ -65,7 +65,7 @@ func (p *Parser) ParseValues() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseCompound(stmt ast.Statement) (ast.Statement, error) {
+func (p *Parser) parseCompound(stmt ast.Node) (ast.Node, error) {
 	allDistinct := func() (bool, bool) {
 		p.Next()
 		var (
@@ -105,7 +105,7 @@ func (p *Parser) parseCompound(stmt ast.Statement) (ast.Statement, error) {
 	}
 }
 
-func (p *Parser) ParseSelect() (ast.Statement, error) {
+func (p *Parser) ParseSelect() (ast.Node, error) {
 	var (
 		stmt ast.SelectStatement
 		err  error
@@ -151,8 +151,8 @@ func (p *Parser) ParseSelect() (ast.Statement, error) {
 	return p.parseCompound(stmt)
 }
 
-func (p *Parser) ParseColumns() ([]ast.Statement, error) {
-	get := func() (ast.Statement, error) {
+func (p *Parser) ParseColumns() ([]ast.Node, error) {
+	get := func() (ast.Node, error) {
 		if p.Is(token.Comma) {
 			p.Next()
 		}
@@ -175,7 +175,7 @@ func (p *Parser) ParseColumns() ([]ast.Statement, error) {
 	}
 
 	var (
-		list   []ast.Statement
+		list   []ast.Node
 		withAs = p.withAlias
 	)
 	defer func() {
@@ -201,7 +201,7 @@ func (p *Parser) ParseColumns() ([]ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseFrom() ([]ast.Statement, error) {
+func (p *Parser) ParseFrom() ([]ast.Node, error) {
 	if !p.IsKeyword("FROM") {
 		return nil, p.Unexpected("FROM", keywordExpected("FROM"))
 	}
@@ -211,12 +211,12 @@ func (p *Parser) ParseFrom() ([]ast.Statement, error) {
 	defer p.unsetFuncSet()
 
 	var (
-		list []ast.Statement
+		list []ast.Node
 		err  error
 		get  ParseFunc
 	)
 
-	get = func() (ast.Statement, error) {
+	get = func() (ast.Node, error) {
 		stmt, err := p.StartExpression()
 		if err != nil {
 			return nil, err
@@ -251,7 +251,7 @@ func (p *Parser) ParseFrom() ([]ast.Statement, error) {
 		}
 	}
 
-	get = func() (ast.Statement, error) {
+	get = func() (ast.Node, error) {
 		stmt := ast.Join{
 			Type: p.GetCurrLiteral(),
 		}
@@ -281,7 +281,7 @@ func (p *Parser) ParseFrom() ([]ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseJoinOn() (ast.Statement, error) {
+func (p *Parser) ParseJoinOn() (ast.Node, error) {
 	p.Next()
 	p.setDefaultFuncSet()
 	p.UnregisterInfix("AS", token.Keyword)
@@ -289,7 +289,7 @@ func (p *Parser) ParseJoinOn() (ast.Statement, error) {
 	return p.StartExpression()
 }
 
-func (p *Parser) ParseJoinUsing() (ast.Statement, error) {
+func (p *Parser) ParseJoinUsing() (ast.Node, error) {
 	p.Next()
 	if !p.Is(token.Lparen) {
 		return nil, p.Unexpected("using", missingOpenParen)
@@ -314,7 +314,7 @@ func (p *Parser) ParseJoinUsing() (ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseWhere() (ast.Statement, error) {
+func (p *Parser) ParseWhere() (ast.Node, error) {
 	if !p.IsKeyword("WHERE") {
 		return nil, nil
 	}
@@ -328,12 +328,12 @@ func (p *Parser) ParseWhere() (ast.Statement, error) {
 	return p.StartExpression()
 }
 
-func (p *Parser) ParseGroupBy() ([]ast.Statement, error) {
+func (p *Parser) ParseGroupBy() ([]ast.Node, error) {
 	if !p.IsKeyword("GROUP BY") {
 		return nil, nil
 	}
 
-	get := func() (ast.Statement, error) {
+	get := func() (ast.Node, error) {
 		stmt, err := p.ParseIdentifier()
 		if err != nil {
 			return nil, err
@@ -356,7 +356,7 @@ func (p *Parser) ParseGroupBy() ([]ast.Statement, error) {
 
 	p.Next()
 	var (
-		list   []ast.Statement
+		list   []ast.Node
 		withAs = p.withAlias
 	)
 	defer func() {
@@ -373,7 +373,7 @@ func (p *Parser) ParseGroupBy() ([]ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseHaving() (ast.Statement, error) {
+func (p *Parser) ParseHaving() (ast.Node, error) {
 	if !p.IsKeyword("HAVING") {
 		return nil, nil
 	}
@@ -386,13 +386,13 @@ func (p *Parser) ParseHaving() (ast.Statement, error) {
 	return p.StartExpression()
 }
 
-func (p *Parser) ParseWindows() ([]ast.Statement, error) {
+func (p *Parser) ParseWindows() ([]ast.Node, error) {
 	if !p.IsKeyword("WINDOW") {
 		return nil, nil
 	}
 	p.Next()
 	var (
-		list []ast.Statement
+		list []ast.Node
 		err  error
 	)
 	for !p.Done() && !p.QueryEnds() {
@@ -419,7 +419,7 @@ func (p *Parser) ParseWindows() ([]ast.Statement, error) {
 	return list, err
 }
 
-func (p *Parser) ParseWindow() (ast.Statement, error) {
+func (p *Parser) ParseWindow() (ast.Node, error) {
 	var (
 		stmt ast.Window
 		err  error
@@ -467,7 +467,7 @@ func (p *Parser) ParseWindow() (ast.Statement, error) {
 	return stmt, err
 }
 
-func (p *Parser) parseFrameSpec() (ast.Statement, error) {
+func (p *Parser) parseFrameSpec() (ast.Node, error) {
 	switch {
 	case p.IsKeyword("RANGE"):
 	case p.IsKeyword("ROWS"):
@@ -539,12 +539,12 @@ func (p *Parser) parseFrameSpec() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseOrderBy() ([]ast.Statement, error) {
+func (p *Parser) ParseOrderBy() ([]ast.Node, error) {
 	if !p.IsKeyword("ORDER BY") {
 		return nil, nil
 	}
 
-	get := func() (ast.Statement, error) {
+	get := func() (ast.Node, error) {
 		stmt, err := p.ParseIdentifier()
 		if err != nil {
 			return nil, err
@@ -586,7 +586,7 @@ func (p *Parser) ParseOrderBy() ([]ast.Statement, error) {
 
 	p.Next()
 	var (
-		list   []ast.Statement
+		list   []ast.Node
 		withAs = p.withAlias
 	)
 	defer func() {
@@ -602,8 +602,8 @@ func (p *Parser) ParseOrderBy() ([]ast.Statement, error) {
 	return list, nil
 }
 
-func (p *Parser) ParseLimit() (ast.Statement, error) {
-	getLimit := func() (ast.Statement, error) {
+func (p *Parser) ParseLimit() (ast.Node, error) {
+	getLimit := func() (ast.Node, error) {
 		var (
 			stmt ast.Limit
 			err  error
@@ -643,8 +643,8 @@ func (p *Parser) ParseLimit() (ast.Statement, error) {
 	}
 }
 
-func (p *Parser) ParseFetch() (ast.Statement, error) {
-	return p.parseItem(func() (ast.Statement, error) {
+func (p *Parser) ParseFetch() (ast.Node, error) {
+	return p.parseItem(func() (ast.Node, error) {
 		var (
 			stmt ast.Offset
 			err  error

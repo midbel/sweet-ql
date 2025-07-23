@@ -8,7 +8,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParsePlaceholder() (ast.Statement, error) {
+func (p *Parser) ParsePlaceholder() (ast.Node, error) {
 	var stmt ast.Placeholder
 	stmt.Position = p.GetCurrPosition()
 	switch {
@@ -36,7 +36,7 @@ func (p *Parser) ParsePlaceholder() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseLiteral() (ast.Statement, error) {
+func (p *Parser) ParseLiteral() (ast.Node, error) {
 	stmt := ast.Value{
 		Literal:  p.GetCurrLiteral(),
 		Position: p.GetCurrPosition(),
@@ -45,7 +45,7 @@ func (p *Parser) ParseLiteral() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseConstant() (ast.Statement, error) {
+func (p *Parser) ParseConstant() (ast.Node, error) {
 	if !p.Is(token.Keyword) {
 		return nil, p.Unexpected("constant", "expected predefined SQL constant")
 	}
@@ -57,7 +57,7 @@ func (p *Parser) ParseConstant() (ast.Statement, error) {
 	return p.ParseLiteral()
 }
 
-func (p *Parser) ParseIdentifier() (ast.Statement, error) {
+func (p *Parser) ParseIdentifier() (ast.Node, error) {
 	name := ast.Name{
 		Position: p.GetCurrPosition(),
 	}
@@ -82,7 +82,7 @@ func (p *Parser) ParseIdentifier() (ast.Statement, error) {
 	return name, nil
 }
 
-func (p *Parser) ParseIdent() (ast.Statement, error) {
+func (p *Parser) ParseIdent() (ast.Node, error) {
 	stmt, err := p.ParseIdentifier()
 	if err == nil {
 		stmt, err = p.ParseAlias(stmt)
@@ -90,7 +90,7 @@ func (p *Parser) ParseIdent() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseAlias(stmt ast.Statement) (ast.Statement, error) {
+func (p *Parser) ParseAlias(stmt ast.Node) (ast.Node, error) {
 	mandatory := p.IsKeyword("AS")
 	if mandatory {
 		p.Next()
@@ -115,7 +115,7 @@ func (p *Parser) ParseAlias(stmt ast.Statement) (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseCase() (ast.Statement, error) {
+func (p *Parser) ParseCase() (ast.Node, error) {
 	var (
 		stmt ast.Case
 		err  error
@@ -169,7 +169,7 @@ func (p *Parser) ParseCase() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseCast() (ast.Statement, error) {
+func (p *Parser) ParseCast() (ast.Node, error) {
 	var (
 		cast   ast.Cast
 		err    error
@@ -236,7 +236,7 @@ func (p *Parser) ParseType() (ast.Type, error) {
 	return t, nil
 }
 
-func (p *Parser) ParseRow() (ast.Statement, error) {
+func (p *Parser) ParseRow() (ast.Node, error) {
 	var row ast.Row
 	row.Position = p.GetCurrPosition()
 

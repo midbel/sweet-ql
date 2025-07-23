@@ -5,7 +5,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseGrant() (ast.Statement, error) {
+func (p *Parser) ParseGrant() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.GrantStatement
@@ -33,7 +33,7 @@ func (p *Parser) ParseGrant() (ast.Statement, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseRevoke() (ast.Statement, error) {
+func (p *Parser) ParseRevoke() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.RevokeStatement

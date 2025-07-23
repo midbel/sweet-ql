@@ -5,7 +5,7 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseCall() (ast.Statement, error) {
+func (p *Parser) ParseCall() (ast.Node, error) {
 	p.Next()
 	var (
 		stmt ast.CallStatement
