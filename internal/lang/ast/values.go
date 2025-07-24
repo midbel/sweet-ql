@@ -82,7 +82,9 @@ type Call struct {
 	Over     Node
 }
 
-func (_ Call) Accept(visit Visitor) {}
+func (c Call) Accept(visit Visitor) {
+	visit.VisitCall(c)
+}
 
 func (c Call) GetStatement() []Node {
 	return c.Args

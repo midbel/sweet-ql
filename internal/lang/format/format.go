@@ -159,38 +159,6 @@ func (w *Writer) formatList(stmt ast.List, stacked bool) error {
 	return nil
 }
 
-func (w *Writer) formatGroup(stmt ast.Group) error {
-	if _, ok := stmt.Node.(ast.SelectStatement); ok {
-		w.WriteString("(")
-		if !w.Compact.All() {
-			w.WriteNL()
-		}
-		if err := w.FormatStatement(stmt.Node); err != nil {
-			return err
-		}
-		if !w.Compact.All() {
-			w.WriteNL()
-			w.WritePrefix()
-		}
-		w.WriteString(")")
-		return nil
-	}
-	w.Enter()
-	defer w.Leave()
-
-	w.WriteString("(")
-	w.WriteNL()
-	w.WritePrefix()
-	w.WritePrefix()
-	if err := w.FormatExpr(stmt.Node, false); err != nil {
-		return nil
-	}
-	w.WriteNL()
-	w.WritePrefix()
-	w.WriteString(")")
-	return nil
-}
-
 func (w *Writer) formatCall(call ast.Call) error {
 	n, ok := call.Ident.(ast.Name)
 	if !ok {
@@ -358,7 +326,7 @@ func (w *Writer) WriteNL() {
 
 func (w *Writer) WriteComma() {
 	w.inner.WriteRune(',')
-	if w.Compact.KeepSpacesAround() {
+	if w.Compact.KeepSpacesAround() && !w.Compact.All() {
 		w.WriteBlank()
 	}
 }

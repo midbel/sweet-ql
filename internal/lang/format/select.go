@@ -307,6 +307,8 @@ func (w *Writer) visitWhere(where ast.Node) {
 	w.WritePrefix()
 	w.WriteKeyword("where")
 	w.WriteBlank()
+	w.Enter()
+	defer w.Leave()
 	where.Accept(w)
 }
 

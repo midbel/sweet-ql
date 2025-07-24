@@ -9,9 +9,13 @@ import (
 
 func (w *Writer) VisitGroup(group ast.Group) {
 	w.WriteString("(")
-	w.WriteNL()
+	if !w.Compact.All() {
+		w.WriteNL()
+	}
 	group.Node.Accept(w)
-	w.WriteNL()
+	if !w.Compact.All() {
+		w.WriteNL()
+	}
 	w.WritePrefix()
 	w.WriteString(")")
 }
@@ -102,8 +106,7 @@ func (w *Writer) VisitBinary(bin ast.Binary) {
 	if bin.IsRelation() {
 		w.WriteNL()
 		w.WritePrefix()
-	}
-	if w.Compact.KeepSpacesAround() || bin.IsRelation() {
+	} else if w.Compact.KeepSpacesAround() && !bin.IsRelation() {
 		w.WriteBlank()
 	}
 	w.WriteKeyword(bin.Op)
