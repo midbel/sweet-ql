@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -293,13 +294,20 @@ func (p *Parser) parseAllOrAny() (ast.Node, error) {
 func (p *Parser) parseCollateExpr(left ast.Node) (ast.Node, error) {
 	stmt := ast.Collate{
 		Position: p.GetCurrPosition(),
-		Node:     left,
+		Ident:    left,
 	}
 	p.Next()
 	if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 		return nil, p.Unexpected("collate", identExpected)
 	}
-	stmt.Collation = p.GetCurrLiteral()
+	ident := ast.Identifier{
+		Name:   p.GetCurrLiteral(),
+		Quoted: p.Is(token.QuotedIdent),
+	}
+	stmt.Value = ast.Name{
+		Position: p.GetCurrPosition(),
+		Parts:    slx.One(ident),
+	}
 	p.Next()
 	return stmt, nil
 }

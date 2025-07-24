@@ -47,7 +47,9 @@ type Case struct {
 	Else Node
 }
 
-func (_ Case) Accept(visit Visitor) {}
+func (c Case) Accept(visit Visitor) {
+	visit.VisitCase(c)
+}
 
 func (c Case) GetStatement() []Node {
 	all := slx.One(c.Cdt)
@@ -60,7 +62,9 @@ type When struct {
 	Body Node
 }
 
-func (_ When) Accept(visit Visitor) {}
+func (w When) Accept(visit Visitor) {
+	visit.VisitWhen(w)
+}
 
 func (w When) GetStatement() []Node {
 	return slx.Make(w.Cdt, w.Body)

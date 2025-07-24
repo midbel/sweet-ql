@@ -185,7 +185,7 @@ func (p *Parser) ParseCast() (ast.Node, error) {
 		return nil, p.Unexpected("cast", missingOpenParen)
 	}
 	p.Next()
-	cast.Ident, err = p.StartExpression()
+	cast.Node, err = p.StartExpression()
 	if err != nil {
 		return nil, err
 	}

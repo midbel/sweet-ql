@@ -517,3 +517,98 @@ func (r missingIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) 
 	}
 	return list, nil
 }
+
+// avoid using literal value in join predicate
+type noLiteralJoin struct {
+	severity Severity
+}
+
+func NoLiteralInJoin(level Severity) Rule {
+	return noLiteralJoin{
+		severity: level,
+	}
+}
+
+func (_ noLiteralJoin) Name() string {
+	return "no-literal-join"
+}
+
+func (r noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
+	return nil, nil
+}
+
+// prefer using offset fetch syntax over limit offset
+type offsetFetch struct {
+	severity Severity
+}
+
+func OffsetFetch(level Severity) Rule {
+	return offsetFetch{
+		severity: level,
+	}
+}
+
+func (_ offsetFetch) Name() string {
+	return "offset-and-fetch"
+}
+
+func (r offsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
+	return nil, nil
+}
+
+// when using order by clause, specify offset fetch clause
+type orderOffsetFetch struct {
+	severity Severity
+}
+
+func OrderWithOffset(level Severity) Rule {
+	return orderOffsetFetch{
+		severity: level,
+	}
+}
+
+func (_ orderOffsetFetch) Name() string {
+	return "order-with-offset"
+}
+
+func (r orderOffsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
+	return nil, nil
+}
+
+// check that only the second select in union/except/intersect has the order by clause
+type setOrderLast struct {
+	severity Severity
+}
+
+func SetOrderLast(level Severity) Rule {
+	return setOrderLast{
+		severity: level,
+	}
+}
+
+func (_ setOrderLast) Name() string {
+	return "set-order-last"
+}
+
+func (r setOrderLast) Verify(stmt ast.Node) ([]Issue, error) {
+	return nil, nil
+}
+
+// check that only the second select in union/except/intersect has the offset/fetch clause
+type setOffsetFetchLast struct {
+	severity Severity
+}
+
+func SetOffsetFetchLast(level Severity) Rule {
+	return setOrderLast{
+		severity: level,
+	}
+}
+
+func (_ setOffsetFetchLast) Name() string {
+	return "set-offset-fetch-last"
+}
+
+func (r setOffsetFetchLast) Verify(stmt ast.Node) ([]Issue, error) {
+	return nil, nil
+}

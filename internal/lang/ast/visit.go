@@ -14,19 +14,22 @@ type StmtVisitor interface {
 	VisitUpdate(UpdateStatement)
 	VisitDelete(DeleteStatement)
 	VisitTruncate(TruncateStatement)
-	VisitCall(CallStatement)
 	VisitWith(WithStatement)
 	VisitCte(CteStatement)
 	VisitMerge(MergeStatement)
 
 	VisitMatch(MatchStatement)
 	VisitJoin(Join)
+	VisitOrder(Order)
+	VisitLimit(Limit)
+	VisitOffset(Offset)
 }
 
 type ExprVisitor interface {
 	VisitBinary(Binary)
 	VisitUnary(Unary)
 	VisitList(List)
+	VisitCollate(Collate)
 	VisitIn(In)
 	VisitIs(Is)
 	VisitExists(Exists)
@@ -35,16 +38,22 @@ type ExprVisitor interface {
 	VisitAny(Any)
 	VisitNot(Not)
 	VisitCast(Cast)
+	VisitCall(Call)
 
 	VisitValue(Value)
 	VisitAlias(Alias)
 	VisitName(Name)
 	VisitGroup(Group)
+	VisitCase(Case)
+	VisitWhen(When)
 }
+
+type XmlVisitor interface{}
 
 type Visitor interface {
 	StmtVisitor
 	ExprVisitor
+	XmlVisitor
 }
 
 type noopVisitor struct{}
@@ -72,8 +81,6 @@ func (_ noopVisitor) VisitDelete(_ DeleteStatement) {}
 
 func (_ noopVisitor) VisitTruncate(_ TruncateStatement) {}
 
-func (_ noopVisitor) VisitCall(_ CallStatement) {}
-
 func (_ noopVisitor) VisitWith(_ WithStatement) {}
 
 func (_ noopVisitor) VisitCte(_ CteStatement) {}
@@ -84,11 +91,21 @@ func (_ noopVisitor) VisitMatch(_ MatchStatement) {}
 
 func (_ noopVisitor) VisitJoin(_ Join) {}
 
+func (_ noopVisitor) VisitOrder(_ Order) {}
+
+func (_ noopVisitor) VisitLimit(_ Limit) {}
+
+func (_ noopVisitor) VisitOffset(_ Offset) {}
+
 func (_ noopVisitor) VisitBinary(_ Binary) {}
 
 func (_ noopVisitor) VisitUnary(_ Unary) {}
 
+func (_ noopVisitor) VisitCall(_ Call) {}
+
 func (_ noopVisitor) VisitList(_ List) {}
+
+func (_ noopVisitor) VisitCollate(_ Collate) {}
 
 func (_ noopVisitor) VisitIn(_ In) {}
 
@@ -113,3 +130,7 @@ func (_ noopVisitor) VisitAlias(_ Alias) {}
 func (_ noopVisitor) VisitName(_ Name) {}
 
 func (_ noopVisitor) VisitGroup(_ Group) {}
+
+func (_ noopVisitor) VisitCase(_ Case) {}
+
+func (_ noopVisitor) VisitWhen(_ When) {}

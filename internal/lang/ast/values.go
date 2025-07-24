@@ -23,8 +23,8 @@ func (g Group) GetStatement() []Node {
 type Cast struct {
 	token.Position
 
-	Ident Node
-	Type  Type
+	Node
+	Type Type
 }
 
 func (c Cast) Accept(visit Visitor) {
@@ -54,8 +54,8 @@ func (n Not) GetStatement() []Node {
 
 type Collate struct {
 	token.Position
-	Node
-	Collation string
+	Ident Node
+	Value Node
 }
 
 func (_ Collate) Accept(visit Visitor) {}
@@ -200,7 +200,6 @@ func (i In) GetStatement() []Node {
 
 type Between struct {
 	token.Position
-	Not   bool
 	Ident Node
 	Lower Node
 	Upper Node

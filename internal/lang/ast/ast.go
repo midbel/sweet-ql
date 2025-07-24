@@ -38,20 +38,25 @@ func (n CommentedNode) Get() Node {
 type Limit struct {
 	token.Position
 
-	Count  int
-	Offset int
+	Count  Node
+	Offset Node
 }
 
-func (_ Limit) Accept(visit Visitor) {}
+func (i Limit) Accept(visit Visitor) {
+	visit.VisitLimit(i)
+}
 
 type Offset struct {
 	token.Position
 
-	Limit
-	Next bool
+	Count  Node
+	Offset Node
+	Next   bool
 }
 
-func (_ Offset) Accept(visit Visitor) {}
+func (o Offset) Accept(visit Visitor) {
+	visit.VisitOffset(o)
+}
 
 type OrderDir uint8
 
@@ -66,6 +71,10 @@ type Order struct {
 	Node
 	Dir   OrderDir
 	Nulls string
+}
+
+func (o Order) Accept(visit Visitor) {
+	visit.VisitOrder(o)
 }
 
 type Join struct {
@@ -391,9 +400,7 @@ type CallStatement struct {
 	Args  []Node
 }
 
-func (s CallStatement) Accept(visit Visitor) {
-	visit.VisitCall(s)
-}
+func (s CallStatement) Accept(visit Visitor) {}
 
 func (_ CallStatement) Keyword() (string, error) {
 	return "CALL", nil

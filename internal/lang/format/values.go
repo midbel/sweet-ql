@@ -7,22 +7,13 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) FormatPlaceholder(name ast.Placeholder) error {
-	if name.Node == nil {
-		w.WriteString("?")
-		return nil
-	}
-	switch stmt := name.Node.(type) {
-	case ast.Value:
-		w.WriteString("$")
-		w.WriteString(stmt.Literal)
-	case ast.Name:
-		w.WriteString(":")
-		w.FormatName(stmt)
-	default:
-		return w.CanNotUse("placeholder", name.Node)
-	}
-	return nil
+func (w *Writer) VisitGroup(group ast.Group) {
+	w.WriteString("(")
+	w.WriteNL()
+	group.Node.Accept(w)
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteString(")")
 }
 
 func (w *Writer) VisitValue(value ast.Value) {
@@ -49,6 +40,30 @@ func (w *Writer) VisitValue(value ast.Value) {
 	w.WriteQuoted(value.Literal)
 }
 
+func (w *Writer) VisitCollate(collate ast.Collate) {
+	collate.Ident.Accept(w)
+	w.WriteBlank()
+	w.WriteKeyword("collate")
+	w.WriteBlank()
+	collate.Value.Accept(w)
+}
+
+func (w *Writer) VisitCall(call ast.Call) {
+	call.Ident.Accept(w)
+	w.WriteString("(")
+	if call.Distinct {
+		w.WriteKeyword("distinct")
+		w.WriteBlank()
+	}
+	for i := range call.Args {
+		if i > 0 {
+			w.WriteComma()
+		}
+		call.Args[i].Accept(w)
+	}
+	w.WriteString(")")
+}
+
 func (w *Writer) VisitName(name ast.Name) {
 	for i := range name.Parts {
 		if i > 0 {
@@ -72,49 +87,191 @@ func (w *Writer) VisitAlias(alias ast.Alias) {
 	alias.Node.Accept(w)
 	w.WriteBlank()
 	if !w.Compact.NoAs() {
-		w.WriteKeyword("AS")
+		w.WriteKeyword("as")
 		w.WriteBlank()
 	}
 	str := alias.Name
-	if w.Upperize.Identifier() || w.Upperize.All() {
-		str = strings.ToUpper(str)
-	}
 	if w.UseQuote || alias.Quoted {
 		str = w.Quote(str)
 	}
-	w.WriteString(str)
+	w.WriteIdent(str)
 }
 
 func (w *Writer) VisitBinary(bin ast.Binary) {
 	bin.Left.Accept(w)
-	if w.Compact.KeepSpacesAround() {
+	if bin.IsRelation() {
+		w.WriteNL()
+		w.WritePrefix()
+	}
+	if w.Compact.KeepSpacesAround() || bin.IsRelation() {
 		w.WriteBlank()
 	}
 	w.WriteKeyword(bin.Op)
-	if w.Compact.KeepSpacesAround() {
+	if w.Compact.KeepSpacesAround() || bin.IsRelation() {
 		w.WriteBlank()
 	}
 	bin.Right.Accept(w)
 }
 
+func (w *Writer) VisitUnary(una ast.Unary) {
+	w.WriteKeyword(una.Op)
+	una.Right.Accept(w)
+}
+
 func (w *Writer) VisitList(list ast.List) {
 	w.WriteString("(")
-	if w.Compact.KeepSpacesAround() {
-		w.WriteBlank()
-	}
 	for i, v := range list.Values {
 		if i > 0 {
-			w.WriteString(",")
-			if w.Compact.KeepSpacesAround() {
-				w.WriteBlank()
-			}
+			w.WriteComma()
 		}
 		v.Accept(w)
 	}
-	if w.Compact.KeepSpacesAround() {
-		w.WriteBlank()
-	}
 	w.WriteString(")")
+}
+
+func (w *Writer) VisitCase(cas ast.Case) {
+	w.WriteKeyword("case")
+	if cas.Cdt != nil {
+		w.WriteBlank()
+		cas.Cdt.Accept(w)
+	}
+	w.WriteNL()
+	for _, n := range cas.Body {
+		w.WritePrefix()
+		n.Accept(w)
+		w.WriteNL()
+	}
+	if cas.Else != nil {
+		w.WritePrefix()
+		w.WriteKeyword("else")
+		w.WriteBlank()
+		cas.Else.Accept(w)
+	}
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteKeyword("end")
+}
+
+func (w *Writer) VisitWhen(when ast.When) {
+	w.WriteKeyword("when")
+	w.WriteBlank()
+	when.Cdt.Accept(w)
+	w.WriteBlank()
+	w.WriteKeyword("then")
+	w.WriteBlank()
+	when.Body.Accept(w)
+}
+
+func (w *Writer) VisitCast(cast ast.Cast) {
+	w.WriteKeyword("cast")
+	w.WriteString("(")
+	cast.Node.Accept(w)
+	w.WriteBlank()
+	w.WriteKeyword("as")
+	w.WriteBlank()
+	w.visitType(cast.Type)
+	w.WriteString(")")
+}
+
+func (w *Writer) visitType(typ ast.Type) {
+	if w.Upperize.All() || w.Upperize.Type() {
+		typ.Name = strings.ToUpper(typ.Name)
+	}
+	w.WriteString(typ.Name)
+	if typ.Length > 0 {
+		w.WriteString("(")
+		w.WriteString(strconv.Itoa(typ.Length))
+		if typ.Precision > 0 {
+			w.WriteComma()
+			w.WriteString(strconv.Itoa(typ.Length))
+		}
+		w.WriteString(")")
+	}
+}
+
+func (w *Writer) VisitExists(exists ast.Exists) {
+	w.WriteKeyword("exists")
+	w.WriteString("(")
+	exists.Node.Accept(w)
+	w.WriteString(")")
+}
+
+func (w *Writer) VisitBetween(between ast.Between) {
+	w.visitBetween(between, false)
+}
+
+func (w *Writer) VisitAll(all ast.All) {
+	w.WriteKeyword("all")
+	w.WriteString("(")
+	all.Node.Accept(w)
+	w.WriteString(")")
+}
+
+func (w *Writer) VisitAny(any ast.Any) {
+	w.WriteKeyword("any")
+	w.WriteString("(")
+	any.Node.Accept(w)
+	w.WriteString(")")
+}
+
+func (w *Writer) VisitIs(is ast.Is) {
+	w.visitIs(is, false)
+}
+
+func (w *Writer) VisitIn(in ast.In) {
+	w.visitIn(in, false)
+}
+
+func (w *Writer) VisitNot(not ast.Not) {
+	switch n := not.Node.(type) {
+	case ast.Is:
+		w.visitIs(n, true)
+	case ast.In:
+		w.visitIn(n, true)
+	case ast.Between:
+		w.visitBetween(n, true)
+	default:
+	}
+}
+
+func (w *Writer) visitIs(is ast.Is, not bool) {
+	is.Ident.Accept(w)
+	w.WriteBlank()
+	w.WriteKeyword("is")
+	if not {
+		w.WriteBlank()
+		w.WriteKeyword("not")
+	}
+	w.WriteBlank()
+	is.Value.Accept(w)
+}
+
+func (w *Writer) visitIn(in ast.In, not bool) {
+	in.Ident.Accept(w)
+	if not {
+		w.WriteBlank()
+		w.WriteKeyword("not")
+	}
+	w.WriteBlank()
+	w.WriteKeyword("in")
+	w.WriteBlank()
+	in.Value.Accept(w)
+}
+
+func (w *Writer) visitBetween(between ast.Between, not bool) {
+	between.Ident.Accept(w)
+	if not {
+		w.WriteBlank()
+		w.WriteKeyword("not")
+	}
+	w.WriteBlank()
+	w.WriteKeyword("between")
+	w.WriteBlank()
+	between.Lower.Accept(w)
+	w.WriteBlank()
+	w.WriteKeyword("and")
+	w.WriteBlank()
+	between.Upper.Accept(w)
 }
 
 func (w *Writer) FormatName(name ast.Name) error {
@@ -152,87 +309,10 @@ func (w *Writer) FormatRow(stmt ast.Row, nl bool) error {
 	return nil
 }
 
-func (w *Writer) FormatCase(stmt ast.Case) error {
-	w.WriteKeyword("CASE")
-	if stmt.Cdt != nil {
-		w.WriteBlank()
-		w.FormatExpr(stmt.Cdt, false)
-	}
-	for _, s := range stmt.Body {
-		w.WriteNL()
-		if err := w.FormatExpr(s, false); err != nil {
-			return err
-		}
-	}
-	if stmt.Else != nil {
-		w.WriteNL()
-		w.Enter()
-		w.WritePrefix()
-		w.WriteKeyword("ELSE")
-		w.WriteBlank()
-
-		if err := w.FormatExpr(stmt.Else, false); err != nil {
-			return err
-		}
-		w.Leave()
-	}
-	w.WriteNL()
-	w.WritePrefix()
-	w.WriteKeyword("END")
-	return nil
-}
-
-func (w *Writer) FormatWhen(stmt ast.When) error {
-	w.Enter()
-	defer w.Leave()
-	w.WritePrefix()
-	w.WriteKeyword("WHEN")
-	w.WriteBlank()
-
-	err := w.compact(func() error {
-		return w.FormatExpr(stmt.Cdt, false)
-	})
-	if err != nil {
-		return err
-	}
-	w.WriteBlank()
-	w.WriteKeyword("THEN")
-	w.WriteBlank()
-
-	return w.FormatExpr(stmt.Body, false)
-}
-
 func (w *Writer) FormatCast(stmt ast.Cast, _ bool) error {
-	w.WriteKeyword("CAST")
-	w.WriteString("(")
-	if err := w.FormatExpr(stmt.Ident, false); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	w.WriteKeyword("AS")
-	w.WriteBlank()
-	if err := w.FormatType(stmt.Type); err != nil {
-		return err
-	}
-	w.WriteString(")")
 	return nil
 }
 
 func (w *Writer) FormatType(dt ast.Type) error {
-	if w.Upperize.Type() || w.Upperize.All() {
-		dt.Name = strings.ToUpper(dt.Name)
-	}
-	w.WriteString(dt.Name)
-	if dt.Length <= 0 {
-		return nil
-	}
-	w.WriteString("(")
-	w.WriteString(strconv.Itoa(dt.Length))
-	if dt.Precision > 0 {
-		w.WriteString(",")
-		w.WriteBlank()
-		w.WriteString(strconv.Itoa(dt.Precision))
-	}
-	w.WriteString(")")
 	return nil
 }

@@ -2,31 +2,121 @@ package format
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
+func (w *Writer) VisitUnion(stmt ast.UnionStatement) {
+	stmt.Left.Accept(w)
+	w.WriteNL()
+	w.WriteKeyword("union")
+	if stmt.All {
+		w.WriteBlank()
+		w.WriteKeyword("all")
+	}
+	if stmt.Distinct {
+		w.WriteBlank()
+		w.WriteKeyword("distinct")
+	}
+	w.WriteNL()
+	stmt.Right.Accept(w)
+}
+
+func (w *Writer) VisitIntersect(stmt ast.IntersectStatement) {
+	stmt.Left.Accept(w)
+	w.WriteNL()
+	w.WriteKeyword("intersect")
+	if stmt.All {
+		w.WriteBlank()
+		w.WriteKeyword("all")
+	}
+	if stmt.Distinct {
+		w.WriteBlank()
+		w.WriteKeyword("distinct")
+	}
+	w.WriteNL()
+	stmt.Right.Accept(w)
+}
+
+func (w *Writer) VisitExcept(stmt ast.ExceptStatement) {
+	stmt.Left.Accept(w)
+	w.WriteNL()
+	w.WriteKeyword("except")
+	if stmt.All {
+		w.WriteBlank()
+		w.WriteKeyword("all")
+	}
+	if stmt.Distinct {
+		w.WriteBlank()
+		w.WriteKeyword("distinct")
+	}
+	w.WriteNL()
+	stmt.Right.Accept(w)
+}
+
+func (w *Writer) VisitWith(stmt ast.WithStatement) {
+	w.Enter()
+
+	w.WritePrefix()
+	w.WriteKeyword("with")
+	w.WriteBlank()
+	for i, q := range stmt.Queries {
+		if i > 0 {
+			w.WriteComma()
+		}
+		q.Accept(w)
+	}
+	w.WriteNL()
+	w.Leave()
+	stmt.Node.Accept(w)
+}
+
+func (w *Writer) VisitCte(stmt ast.CteStatement) {
+	if w.Upperize.Identifier() {
+		stmt.Ident = strings.ToUpper(stmt.Ident)
+	}
+	w.WriteString(stmt.Ident)
+	if len(stmt.Columns) > 0 {
+		w.WriteBlank()
+		w.WriteString("(")
+		for i, c := range stmt.Columns {
+			if i > 0 {
+				w.WriteComma()
+			}
+			if w.Upperize.All() || w.Upperize.Identifier() {
+				c = strings.ToUpper(c)
+			}
+			w.WriteString(c)
+		}
+		w.WriteString(")")
+	}
+	w.WriteBlank()
+	w.WriteKeyword("as")
+	w.WriteBlank()
+	w.WriteString("(")
+	w.WriteNL()
+	stmt.Node.Accept(w)
+	w.WriteNL()
+	w.WriteString(")")
+}
+
 func (w *Writer) VisitSelect(stmt ast.SelectStatement) {
 	w.Enter()
 	defer w.Leave()
 
-	kw, _ := stmt.Keyword()
 	w.WritePrefix()
-	w.WriteKeyword(kw)
+	w.WriteKeyword("select")
 	w.WriteNL()
 
 	w.visitSelectColumns(stmt)
 	w.visitSelectFrom(stmt)
 	w.visitWhere(stmt.Where)
-	if len(stmt.Groups) > 0 {
-
-	}
-	if stmt.Having != nil {
-
-	}
+	w.visitSelectGroupBy(stmt)
+	w.visitSelectHaving(stmt)
+	w.visitSelectOrderBy(stmt)
+	w.visitSelectLimit(stmt)
 }
 
 func (w *Writer) VisitJoin(join ast.Join) {
@@ -52,6 +142,72 @@ func (w *Writer) VisitJoin(join ast.Join) {
 	}
 	w.WriteBlank()
 	join.Where.Accept(w)
+}
+
+func (w *Writer) VisitOrder(order ast.Order) {
+	order.Node.Accept(w)
+	if order.Dir > 0 {
+		w.WriteBlank()
+	}
+	switch order.Dir {
+	case ast.AscOrder:
+		w.WriteKeyword("asc")
+	case ast.DescOrder:
+		w.WriteKeyword("desc")
+	default:
+	}
+}
+
+func (w *Writer) VisitLimit(limit ast.Limit) {
+	parts := []struct {
+		Keyword string
+		ast.Node
+	}{
+		{
+			Keyword: "limit",
+			Node:    limit.Count,
+		},
+		{
+			Keyword: "offset",
+			Node:    limit.Offset,
+		},
+	}
+	for i, p := range parts {
+		if i > 0 {
+			w.WriteBlank()
+		}
+		w.WriteKeyword(p.Keyword)
+		w.WriteBlank()
+		p.Node.Accept(w)
+	}
+}
+
+func (w *Writer) VisitOffset(offset ast.Offset) {
+	if offset.Offset != nil {
+		w.WriteKeyword("offset")
+		w.WriteBlank()
+		offset.Offset.Accept(w)
+		w.WriteBlank()
+		w.WriteKeyword("rows")
+	}
+	if offset.Count != nil {
+		if offset.Offset != nil {
+			w.WriteBlank()
+		}
+		w.WriteKeyword("fetch")
+		w.WriteBlank()
+		if offset.Next {
+			w.WriteKeyword("next")
+		} else {
+			w.WriteKeyword("first")
+		}
+		w.WriteBlank()
+		offset.Count.Accept(w)
+		w.WriteBlank()
+		w.WriteKeyword("rows")
+		w.WriteBlank()
+		w.WriteKeyword("only")
+	}
 }
 
 func (w *Writer) visitSelectFrom(stmt ast.SelectStatement) {
@@ -82,13 +238,65 @@ func (w *Writer) visitSelectColumns(stmt ast.SelectStatement) {
 		}
 		w.WritePrefix()
 		if i > 0 && w.PrependComma {
-			w.WriteString(",")
+			w.WriteComma()
 		}
 		c.Accept(w)
 		if i < len(stmt.Columns)-1 && !w.PrependComma {
-			w.WriteString(",")
+			w.WriteComma()
 		}
 	}
+}
+
+func (w *Writer) visitSelectGroupBy(stmt ast.SelectStatement) {
+	if len(stmt.Groups) == 0 {
+		return
+	}
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteKeyword("group by")
+	w.WriteBlank()
+	for i, g := range stmt.Groups {
+		if i > 0 {
+			w.WriteComma()
+		}
+		g.Accept(w)
+	}
+}
+
+func (w *Writer) visitSelectHaving(stmt ast.SelectStatement) {
+	if stmt.Having == nil {
+		return
+	}
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteKeyword("having")
+	w.WriteBlank()
+	stmt.Having.Accept(w)
+}
+
+func (w *Writer) visitSelectOrderBy(stmt ast.SelectStatement) {
+	if len(stmt.Orders) == 0 {
+		return
+	}
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteKeyword("order by")
+	w.WriteBlank()
+	for i, g := range stmt.Orders {
+		if i > 0 {
+			w.WriteComma()
+		}
+		g.Accept(w)
+	}
+}
+
+func (w *Writer) visitSelectLimit(stmt ast.SelectStatement) {
+	if stmt.Limit == nil {
+		return
+	}
+	w.WriteNL()
+	w.WritePrefix()
+	stmt.Limit.Accept(w)
 }
 
 func (w *Writer) visitWhere(where ast.Node) {
@@ -100,69 +308,6 @@ func (w *Writer) visitWhere(where ast.Node) {
 	w.WriteKeyword("where")
 	w.WriteBlank()
 	where.Accept(w)
-}
-
-func (w *Writer) FormatUnion(stmt ast.UnionStatement) error {
-	if err := w.FormatStatement(stmt.Left); err != nil {
-		return err
-	}
-	w.WriteNL()
-	w.Enter()
-	w.WritePrefix()
-	w.WriteKeyword("UNION")
-	if stmt.All {
-		w.WriteBlank()
-		w.WriteKeyword("ALL")
-	}
-	if stmt.Distinct {
-		w.WriteBlank()
-		w.WriteKeyword("DISTINCT")
-	}
-	w.WriteNL()
-	w.Leave()
-	return w.FormatStatement(stmt.Right)
-}
-
-func (w *Writer) FormatExcept(stmt ast.ExceptStatement) error {
-	if err := w.FormatStatement(stmt.Left); err != nil {
-		return err
-	}
-	w.WriteNL()
-	w.Enter()
-	w.WritePrefix()
-	w.WriteKeyword("EXCEPT")
-	if stmt.All {
-		w.WriteBlank()
-		w.WriteKeyword("ALL")
-	}
-	if stmt.Distinct {
-		w.WriteBlank()
-		w.WriteKeyword("DISTINCT")
-	}
-	w.WriteNL()
-	w.Leave()
-	return w.FormatStatement(stmt.Right)
-}
-
-func (w *Writer) FormatIntersect(stmt ast.IntersectStatement) error {
-	if err := w.FormatStatement(stmt.Left); err != nil {
-		return err
-	}
-	w.WriteNL()
-	w.Enter()
-	w.WritePrefix()
-	w.WriteKeyword("INTERSECT")
-	if stmt.All {
-		w.WriteBlank()
-		w.WriteKeyword("ALL")
-	}
-	if stmt.Distinct {
-		w.WriteBlank()
-		w.WriteKeyword("DISTINCT")
-	}
-	w.WriteNL()
-	w.Leave()
-	return w.FormatStatement(stmt.Right)
 }
 
 func (w *Writer) FormatValues(stmt ast.ValuesStatement) error {
@@ -193,40 +338,6 @@ func (w *Writer) FormatValues(stmt ast.ValuesStatement) error {
 }
 
 func (w *Writer) FormatSelect(stmt ast.SelectStatement) error {
-	if len(stmt.Groups) > 0 {
-		w.WriteNL()
-		w.WritePrefix()
-		if err := w.FormatGroupBy(stmt.Groups); err != nil {
-			return err
-		}
-	}
-	if stmt.Having != nil {
-		w.WriteNL()
-		if err := w.FormatHaving(stmt.Having); err != nil {
-			return err
-		}
-	}
-	if len(stmt.Windows) > 0 {
-		w.WriteNL()
-		w.WritePrefix()
-		if err := w.FormatWindows(stmt.Windows); err != nil {
-			return err
-		}
-	}
-	if len(stmt.Orders) > 0 {
-		w.WriteNL()
-		w.WritePrefix()
-		if err := w.FormatOrderBy(stmt.Orders); err != nil {
-			return err
-		}
-	}
-	if stmt.Limit != nil {
-		w.WriteNL()
-		w.WritePrefix()
-		if err := w.FormatLimit(stmt.Limit); err != nil {
-			return nil
-		}
-	}
 	return nil
 }
 
@@ -239,26 +350,6 @@ func (w *Writer) formatJoin(join ast.Join) error {
 }
 
 func (w *Writer) FormatGroupBy(groups []ast.Node) error {
-	if len(groups) == 0 {
-		return nil
-	}
-	w.WriteKeyword("GROUP BY")
-
-	w.Enter()
-	defer w.Leave()
-
-	for i := range groups {
-		w.WriteNL()
-		w.writeCommentBefore(groups[i])
-		w.WritePrefix()
-		if err := w.FormatExpr(groups[i], false); err != nil {
-			return err
-		}
-		if i < len(groups)-1 {
-			w.WriteString(",")
-		}
-		w.writeCommentAfter(groups[i])
-	}
 	return nil
 }
 
@@ -333,188 +424,6 @@ func (w *Writer) FormatWindows(windows []ast.Node) error {
 	return nil
 }
 
-func (w *Writer) FormatHaving(having ast.Node) error {
-	if having == nil {
-		return nil
-	}
-	w.WriteKeyword("HAVING")
-	w.WriteBlank()
-	return w.FormatExpr(having, true)
-}
-
-func (w *Writer) FormatOrderBy(orders []ast.Node) error {
-	if len(orders) == 0 {
-		return nil
-	}
-	w.Enter()
-	defer w.Leave()
-
-	w.WriteKeyword("ORDER BY")
-	for i := range orders {
-		w.WriteNL()
-		w.writeCommentBefore(orders[i])
-
-		w.WritePrefix()
-		if err := w.FormatExpr(orders[i], false); err != nil {
-			return err
-		}
-		if i < len(orders)-1 {
-			w.WriteString(",")
-		}
-		w.writeCommentAfter(orders[i])
-	}
-	return nil
-}
-
 func (w *Writer) formatOrder(order ast.Order) error {
-	n, ok := order.Node.(ast.Name)
-	if !ok {
-		return w.CanNotUse("order by", order.Node)
-	}
-	w.FormatName(n)
-	switch order.Dir {
-	case 0:
-	case ast.AscOrder:
-		w.WriteBlank()
-		w.WriteKeyword("ASC")
-	case ast.DescOrder:
-		w.WriteBlank()
-		w.WriteKeyword("DESC")
-	default:
-		return fmt.Errorf("invalid order direction")
-	}
-	if order.Nulls != "" {
-		w.WriteBlank()
-		w.WriteKeyword("NULLS")
-		w.WriteBlank()
-		w.WriteKeyword(order.Nulls)
-	}
-	return nil
-}
-
-func (w *Writer) FormatLimit(stmt ast.Node) error {
-	if stmt == nil {
-		return nil
-	}
-	var limit ast.Node
-	if n, ok := stmt.(ast.CommentedNode); ok {
-		limit = n.Node
-	} else {
-		limit = stmt
-	}
-	lim, ok := limit.(ast.Limit)
-	if !ok {
-		return w.FormatOffset(stmt)
-	}
-	w.writeCommentBefore(stmt)
-	w.WriteKeyword("LIMIT")
-	w.WriteBlank()
-	w.WriteString(strconv.Itoa(lim.Count))
-	if lim.Offset > 0 {
-		w.WriteNL()
-		w.WritePrefix()
-		w.WriteKeyword("OFFSET")
-		w.WriteBlank()
-		w.WriteString(strconv.Itoa(lim.Offset))
-	}
-	w.writeCommentAfter(stmt)
-	return nil
-}
-
-func (w *Writer) FormatOffset(limit ast.Node) error {
-	lim, ok := limit.(ast.Offset)
-	if !ok {
-		return w.CanNotUse("fetch", limit)
-	}
-	if lim.Offset > 0 {
-		w.WriteKeyword("OFFSET")
-		w.WriteBlank()
-		w.WriteString(strconv.Itoa(lim.Offset))
-		w.WriteBlank()
-		w.WriteKeyword("ROWS")
-		w.WriteBlank()
-	}
-	w.WriteKeyword("FETCH")
-	w.WriteBlank()
-	if lim.Next {
-		w.WriteKeyword("NEXT")
-	} else {
-		w.WriteKeyword("FIRST")
-	}
-	w.WriteBlank()
-	w.WriteString(strconv.Itoa(lim.Count))
-	w.WriteBlank()
-	w.WriteKeyword("ROWS ONLY")
-	return nil
-}
-
-func (w *Writer) FormatWith(stmt ast.WithStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	if stmt.Recursive {
-		w.WriteBlank()
-		w.WriteString("RECURSIVE")
-	}
-	w.WriteNL()
-
-	for i, q := range stmt.Queries {
-		if i > 0 {
-			w.WriteNL()
-		}
-		w.writeCommentBefore(stmt.Queries[i])
-		if err := w.FormatStatement(q); err != nil {
-			return err
-		}
-		if i < len(stmt.Queries)-1 {
-			w.WriteString(",")
-		}
-		w.writeCommentAfter(stmt.Queries[i])
-	}
-	w.WriteNL()
-	return w.FormatStatement(stmt.Node)
-}
-
-func (w *Writer) FormatCte(stmt ast.CteStatement) error {
-	ident := stmt.Ident
-	if w.Upperize.Identifier() {
-		ident = strings.ToUpper(ident)
-	}
-	w.WriteString(ident)
-	if !w.Compact.Cte() && len(stmt.Columns) > 0 {
-		w.WriteString("(")
-		for i, s := range stmt.Columns {
-			if i > 0 {
-				w.WriteString(",")
-				if !w.Compact.All() {
-					w.WriteBlank()
-				}
-			}
-			if w.Upperize.Identifier() {
-				s = strings.ToUpper(s)
-			}
-			if w.UseQuote {
-				s = w.Quote(s)
-			}
-			w.WriteString(s)
-		}
-		w.WriteString(")")
-	}
-	w.WriteBlank()
-	w.WriteKeyword("AS")
-	w.WriteBlank()
-	w.WriteString("(")
-	if !w.Compact.All() {
-		w.WriteNL()
-	}
-
-	w.Enter()
-	defer w.Leave()
-	if err := w.FormatStatement(stmt.Node); err != nil {
-		return err
-	}
-	if !w.Compact.All() {
-		w.WriteNL()
-	}
-	w.WriteString(")")
 	return nil
 }

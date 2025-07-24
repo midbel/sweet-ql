@@ -151,144 +151,11 @@ func (w *Writer) FormatExpr(stmt ast.Node, nl bool) error {
 	return nil
 }
 
-func (w *Writer) formatNot(stmt ast.Not, _ bool) error {
-	switch stmt := stmt.Node.(type) {
-	case ast.Between:
-		return w.formatBetween(stmt, true, false)
-	case ast.Is:
-		return w.formatIs(stmt, true, false)
-	case ast.In:
-		return w.formatIn(stmt, true, false)
-	default:
-		w.WriteKeyword("NOT")
-		w.WriteBlank()
-		return w.FormatExpr(stmt, false)
-	}
-}
-
-func (w *Writer) formatExists(stmt ast.Exists, _ bool) error {
-	w.WriteKeyword("EXISTS")
-	w.WriteString("(")
-	w.WriteNL()
-	if err := w.FormatStatement(stmt.Node); err != nil {
-		return err
-	}
-	w.WriteNL()
-	w.WriteString(")")
-	return nil
-}
-
-func (w *Writer) formatCollate(stmt ast.Collate, _ bool) error {
-	if err := w.FormatExpr(stmt.Node, false); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	w.WriteKeyword("COLLATE")
-	w.WriteBlank()
-	w.WriteString("\"")
-	w.WriteString(stmt.Collation)
-	w.WriteString("\"")
-	return nil
-}
-
-func (w *Writer) formatIs(stmt ast.Is, not, nl bool) error {
-	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	w.WriteKeyword("IS")
-	w.WriteBlank()
-	if not {
-		w.WriteKeyword("NOT")
-		w.WriteBlank()
-	}
-	return w.FormatExpr(stmt.Value, false)
-}
-
-func (w *Writer) formatIn(stmt ast.In, not, nl bool) error {
-	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	if not {
-		w.WriteKeyword("NOT")
-		w.WriteBlank()
-	}
-	w.WriteKeyword("IN")
-	if !w.Compact.All() {
-		w.WriteBlank()
-	}
-	if stmt, ok := stmt.Value.(ast.Group); ok {
-		return w.compact(func() error {
-			return w.formatGroup(stmt)
-		})
-	}
-	return w.FormatExpr(stmt.Value, false)
-}
-
 func (w *Writer) formatBetween(stmt ast.Between, not, nl bool) error {
-	if err := w.FormatExpr(stmt.Ident, nl); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	if not {
-		w.WriteKeyword("NOT")
-		w.WriteBlank()
-	}
-	w.WriteKeyword("BETWEEN")
-	w.WriteBlank()
-	if err := w.FormatExpr(stmt.Lower, false); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	w.WriteKeyword("AND")
-	w.WriteBlank()
-	return w.FormatExpr(stmt.Upper, false)
-}
-
-func (w *Writer) formatAll(stmt ast.All, _ bool) error {
-	w.WriteKeyword("ALL")
-	w.WriteString("(")
-	defer w.WriteString(")")
-	return w.compact(func() error {
-		return w.FormatExpr(stmt.Node, false)
-	})
-}
-
-func (w *Writer) formatAny(stmt ast.Any, _ bool) error {
-	w.WriteKeyword("ANY")
-	w.WriteString("(")
-	defer w.WriteString(")")
-	return w.compact(func() error {
-		return w.FormatExpr(stmt.Node, false)
-	})
+	return nil
 }
 
 func (w *Writer) formatList(stmt ast.List, stacked bool) error {
-	w.WriteString("(")
-	if stacked {
-		w.WriteNL()
-	}
-	for i, v := range stmt.Values {
-		if i > 0 {
-			w.WriteString(",")
-			if !stacked && w.Compact.KeepSpacesAround() {
-				w.WriteBlank()
-			} else if stacked {
-				w.WriteNL()
-			}
-		}
-		if stacked {
-			w.WritePrefix()
-		}
-		if err := w.FormatExpr(v, false); err != nil {
-			return err
-		}
-	}
-	if stacked {
-		w.WriteNL()
-	}
-	w.WriteString(")")
 	return nil
 }
 
@@ -322,45 +189,6 @@ func (w *Writer) formatGroup(stmt ast.Group) error {
 	w.WritePrefix()
 	w.WriteString(")")
 	return nil
-}
-
-func (w *Writer) formatUnary(stmt ast.Unary, nl bool) error {
-	w.WriteString(stmt.Op)
-	w.WriteBlank()
-	return w.FormatExpr(stmt.Right, nl)
-}
-
-func (w *Writer) formatBinary(stmt ast.Binary, nl bool) error {
-	if stmt.IsRelation() {
-		return w.formatRelation(stmt, nl)
-	}
-	if err := w.FormatExpr(stmt.Left, nl); err != nil {
-		return err
-	}
-	if w.Compact.KeepSpacesAround() {
-		w.WriteBlank()
-	}
-	w.WriteKeyword(stmt.Op)
-	if w.Compact.KeepSpacesAround() {
-		w.WriteBlank()
-	}
-	if err := w.FormatExpr(stmt.Right, nl); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (w *Writer) formatRelation(stmt ast.Binary, nl bool) error {
-	if err := w.FormatExpr(stmt.Left, false); err != nil {
-		return err
-	}
-	w.WriteNL()
-	w.Enter()
-	w.WritePrefix()
-	w.WriteKeyword(stmt.Op)
-	w.WriteBlank()
-	w.Leave()
-	return w.FormatExpr(stmt.Right, false)
 }
 
 func (w *Writer) formatCall(call ast.Call) error {
@@ -449,6 +277,21 @@ func (w *Writer) formatCall(call ast.Call) error {
 	return nil
 }
 
+func (w *Writer) WriteKeyword(kw string) {
+	if w.Upperize.Keyword() || w.Upperize.All() {
+		kw = strings.ToUpper(kw)
+	} else {
+		kw = strings.ToLower(kw)
+	}
+	if w.withColor() {
+		w.WriteString(keywordColor)
+	}
+	w.WriteString(kw)
+	if w.withColor() {
+		w.WriteString(resetCode)
+	}
+}
+
 func (w *Writer) WriteCall(call string) {
 	if w.withColor() {
 		w.WriteString(callColor)
@@ -460,6 +303,13 @@ func (w *Writer) WriteCall(call string) {
 	if w.withColor() {
 		w.WriteString(resetCode)
 	}
+}
+
+func (w *Writer) WriteIdent(ident string) {
+	if w.Upperize.Keyword() || w.Upperize.All() {
+		ident = strings.ToUpper(ident)
+	}
+	w.WriteString(ident)
 }
 
 func (w *Writer) WriteString(str string) {
@@ -506,23 +356,15 @@ func (w *Writer) WriteNL() {
 	w.inner.WriteRune('\n')
 }
 
-func (w *Writer) WriteBlank() {
-	w.inner.WriteRune(' ')
+func (w *Writer) WriteComma() {
+	w.inner.WriteRune(',')
+	if w.Compact.KeepSpacesAround() {
+		w.WriteBlank()
+	}
 }
 
-func (w *Writer) WriteKeyword(kw string) {
-	if w.Upperize.Keyword() || w.Upperize.All() {
-		kw = strings.ToUpper(kw)
-	} else {
-		kw = strings.ToLower(kw)
-	}
-	if w.withColor() {
-		w.WriteString(keywordColor)
-	}
-	w.WriteString(kw)
-	if w.withColor() {
-		w.WriteString(resetCode)
-	}
+func (w *Writer) WriteBlank() {
+	w.inner.WriteRune(' ')
 }
 
 func (w *Writer) WritePrefix() {

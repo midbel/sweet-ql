@@ -2,7 +2,6 @@ package parser
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/token"
@@ -604,20 +603,17 @@ func (p *Parser) ParseOrderBy() ([]ast.Node, error) {
 
 func (p *Parser) ParseLimit() (ast.Node, error) {
 	getLimit := func() (ast.Node, error) {
-		var (
-			stmt ast.Limit
-			err  error
-		)
-		stmt.Count, err = strconv.Atoi(p.GetCurrLiteral())
-		if err != nil {
-			return nil, p.Unexpected("LIMIT", "expected number in LIMIT clause")
+		var stmt ast.Limit
+		stmt.Count = ast.Value{
+			Position: p.GetCurrPosition(),
+			Literal:  p.GetCurrLiteral(),
 		}
 		p.Next()
 		if p.Is(token.Comma) || p.IsKeyword("OFFSET") {
 			p.Next()
-			stmt.Offset, err = strconv.Atoi(p.GetCurrLiteral())
-			if err != nil {
-				return nil, p.Unexpected("OFFSET", "expected number in OFFSET clause")
+			stmt.Offset = ast.Value{
+				Position: p.GetCurrPosition(),
+				Literal:  p.GetCurrLiteral(),
 			}
 			p.Next()
 		}
@@ -651,9 +647,9 @@ func (p *Parser) ParseFetch() (ast.Node, error) {
 		)
 		if p.IsKeyword("OFFSET") {
 			p.Next()
-			stmt.Offset, err = strconv.Atoi(p.GetCurrLiteral())
-			if err != nil {
-				return nil, p.Unexpected("fetch", "expected number in OFFSET clause")
+			stmt.Offset = ast.Value{
+				Position: p.GetCurrPosition(),
+				Literal:  p.GetCurrLiteral(),
 			}
 			p.Next()
 			if !p.IsKeyword("ROW") && !p.IsKeyword("ROWS") {
@@ -673,9 +669,9 @@ func (p *Parser) ParseFetch() (ast.Node, error) {
 			return nil, p.Unexpected("fetch", defaultReason)
 		}
 		p.Next()
-		stmt.Count, err = strconv.Atoi(p.GetCurrLiteral())
-		if err != nil {
-			return nil, p.Unexpected("fetch", "expected number in OFFSET clausse")
+		stmt.Count = ast.Value{
+			Position: p.GetCurrPosition(),
+			Literal:  p.GetCurrLiteral(),
 		}
 		p.Next()
 		if !p.IsKeyword("ROW") && !p.IsKeyword("ROWS") {
