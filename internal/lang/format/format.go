@@ -99,19 +99,6 @@ func (w *Writer) FormatStatement(stmt ast.Node) error {
 	return nil
 }
 
-func (w *Writer) FormatBody(list ast.List) error {
-	doFmt := func(stmt ast.Node) error {
-		return w.FormatStatement(stmt)
-	}
-	for _, v := range list.Values {
-		if err := doFmt(v); err != nil {
-			return err
-		}
-		w.WriteEOL()
-	}
-	return nil
-}
-
 func (w *Writer) FormatExpr(stmt ast.Node, nl bool) error {
 	return nil
 }

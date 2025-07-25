@@ -6,6 +6,26 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
+func (w *Writer) VisitInsert(stmt ast.InsertStatement) {
+
+}
+
+func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) {
+
+}
+
+func (w *Writer) VisitDelete(stmt ast.DeleteStatement) {
+
+}
+
+func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) {
+
+}
+
+func (w *Writer) VisitMerge(stmt ast.MergeStatement) {
+
+}
+
 func (w *Writer) FormatMerge(stmt ast.MergeStatement) error {
 	kw, _ := stmt.Keyword()
 	w.WriteKeyword(kw)

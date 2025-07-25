@@ -113,7 +113,7 @@ func (w *Writer) VisitBinary(bin ast.Binary) {
 	if bin.IsRelation() {
 		w.WriteNL()
 		w.WritePrefix()
-	} else if w.Compact.KeepSpacesAround() && !bin.IsRelation() {
+	} else if (w.Compact.KeepSpacesAround() && !bin.IsRelation()) || w.Compact.Expression() {
 		w.WriteBlank()
 	}
 	w.WriteKeyword(bin.Op)
@@ -145,20 +145,36 @@ func (w *Writer) VisitCase(cas ast.Case) {
 		w.WriteBlank()
 		cas.Cdt.Accept(w)
 	}
-	w.WriteNL()
-	for _, n := range cas.Body {
-		w.WritePrefix()
-		n.Accept(w)
+	if w.Compact.Expression() {
+		w.WriteBlank()
+	} else {
 		w.WriteNL()
 	}
+	for _, n := range cas.Body {
+		if !w.Compact.Expression() {
+			w.WritePrefix()
+		}
+		n.Accept(w)
+		if w.Compact.Expression() {
+			w.WriteBlank()
+		} else {
+			w.WriteNL()
+		}
+	}
 	if cas.Else != nil {
-		w.WritePrefix()
+		if !w.Compact.Expression() {
+			w.WritePrefix()
+		}
 		w.WriteKeyword("else")
 		w.WriteBlank()
 		cas.Else.Accept(w)
 	}
-	w.WriteNL()
-	w.WritePrefix()
+	if w.Compact.Expression() {
+		w.WriteBlank()
+	} else {
+		w.WriteNL()
+		w.WritePrefix()
+	}
 	w.WriteKeyword("end")
 }
 

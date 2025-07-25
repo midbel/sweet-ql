@@ -77,8 +77,9 @@ const (
 	CompactAs
 	CompactComment
 	CompactSubq
+	CompactExpr
 
-	compactAll  = CompactAs | CompactComment | CompactNL | CompactColumns | CompactValues | CompactJoin | CompactKw | CompactCte | CompactSubq
+	compactAll  = CompactAs | CompactComment | CompactNL | CompactColumns | CompactExpr | CompactValues | CompactJoin | CompactKw | CompactCte | CompactSubq
 	compactNone = 0
 )
 
@@ -109,6 +110,8 @@ func GetCompactMode(mode string) CompactMode {
 		compact = CompactAs
 	case "subquery", "subqueries":
 		compact = CompactSubq
+	case "expr", "expression":
+		compact = CompactExpr
 	default:
 	}
 	return compact
@@ -136,6 +139,10 @@ func (c CompactMode) ColumnsStacked() bool {
 
 func (c CompactMode) Subqueries() bool {
 	return c&CompactSubq != 0
+}
+
+func (c CompactMode) Expression() bool {
+	return c&CompactExpr != 0
 }
 
 func (c CompactMode) Keyword() bool {
