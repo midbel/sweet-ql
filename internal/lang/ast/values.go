@@ -268,6 +268,7 @@ type Alias struct {
 	token.Position
 	Node
 	Identifier
+	Columns []Node
 }
 
 func (a Alias) Accept(visit Visitor) {

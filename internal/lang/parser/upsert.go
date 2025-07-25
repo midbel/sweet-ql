@@ -18,14 +18,7 @@ func (p *Parser) ParseMerge() (ast.Node, error) {
 		return nil, p.Unexpected("merge", keywordExpected("USING"))
 	}
 	p.Next()
-	switch {
-	case p.Is(token.Lparen):
-	case p.Is(token.Ident):
-		stmt.Source, err = p.ParseIdent()
-	default:
-		err = p.Unexpected("merge", defaultReason)
-	}
-	if err != nil {
+	if stmt.Source, err = p.StartExpression(); err != nil {
 		return nil, err
 	}
 	if !p.IsKeyword("ON") {

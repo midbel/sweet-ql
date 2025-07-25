@@ -95,13 +95,14 @@ func (p *Parser) ParseAlias(stmt ast.Node) (ast.Node, error) {
 	if mandatory {
 		p.Next()
 	}
+	var alias ast.Alias
 	switch p.curr.Type {
 	case token.Ident, token.QuotedIdent, token.Literal, token.Number:
 		ident := ast.Identifier{
 			Name:   p.GetCurrLiteral(),
 			Quoted: p.Is(token.QuotedIdent),
 		}
-		stmt = ast.Alias{
+		alias = ast.Alias{
 			Node:       stmt,
 			Position:   p.GetCurrPosition(),
 			Identifier: ident,
@@ -111,6 +112,24 @@ func (p *Parser) ParseAlias(stmt ast.Node) (ast.Node, error) {
 		if mandatory {
 			return nil, p.Unexpected("alias", identExpected)
 		}
+	}
+	if p.Is(token.Lparen) {
+		p.Next()
+		for !p.Done() && !p.Is(token.Rparen) {
+			c, err := p.ParseIdentifier()
+			if err != nil {
+				return nil, err
+			}
+			if err := p.EnsureEnd("alias", token.Comma, token.Rparen); err != nil {
+				return nil, err
+			}
+			alias.Columns = append(alias.Columns, c)
+		}
+		if !p.Is(token.Rparen) {
+			return nil, p.Unexpected("alias", missingCloseParen)
+		}
+		p.Next()
+		return alias, nil
 	}
 	return stmt, nil
 }

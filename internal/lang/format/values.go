@@ -106,6 +106,16 @@ func (w *Writer) VisitAlias(alias ast.Alias) {
 		str = w.Quote(str)
 	}
 	w.WriteIdent(str)
+	if len(alias.Columns) > 0 {
+		w.WriteString("(")
+		for i, c := range alias.Columns {
+			if i > 0 {
+				w.WriteComma()
+			}
+			c.Accept(w)
+		}
+		w.WriteString(")")
+	}
 }
 
 func (w *Writer) VisitBinary(bin ast.Binary) {
