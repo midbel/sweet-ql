@@ -134,10 +134,6 @@ func (c CompactMode) ColumnsStacked() bool {
 	return c&CompactColumns == 0
 }
 
-func (c CompactMode) ValuesStacked() bool {
-	return c&CompactValues == 0
-}
-
 func (c CompactMode) Subqueries() bool {
 	return c&CompactSubq != 0
 }
@@ -148,10 +144,6 @@ func (c CompactMode) Keyword() bool {
 
 func (c CompactMode) Comment() bool {
 	return c&CompactComment == CompactComment
-}
-
-func (c CompactMode) Join() bool {
-	return c&CompactJoin == CompactJoin
 }
 
 func (c CompactMode) Cte() bool {

@@ -97,18 +97,18 @@ func (w *Writer) FormatMatch(stmt ast.MatchStatement) error {
 			w.WriteString(")")
 			w.WriteBlank()
 		}
-		values, ok := stmt.Values.(ast.ValuesStatement)
-		if !ok {
-			return w.CanNotUse("merge", stmt.Values)
-		}
+		// values, ok := stmt.Values.(ast.ValuesStatement)
+		// if !ok {
+		// 	return w.CanNotUse("merge", stmt.Values)
+		// }
 		compact := w.Compact
 		w.Compact = GetCompactMode("")
 		defer func() {
 			w.Compact = compact
 		}()
-		if err := w.FormatValues(values); err != nil {
-			return err
-		}
+		// if err := w.FormatValues(values); err != nil {
+		// 	return err
+		// }
 	default:
 		return w.CanNotUse("merge", stmt)
 	}
@@ -140,9 +140,6 @@ func (w *Writer) FormatDelete(stmt ast.DeleteStatement) error {
 	w.WriteString(stmt.Table)
 	if stmt.Where != nil {
 		w.WriteNL()
-		if err := w.FormatWhere(stmt.Where); err != nil {
-			return err
-		}
 	}
 	if stmt.Return != nil {
 		w.WriteNL()
@@ -190,10 +187,10 @@ func (w *Writer) FormatUpdate(stmt ast.UpdateStatement) error {
 		// }
 	}
 	if stmt.Where != nil {
-		w.WriteNL()
-		if err := w.FormatWhere(stmt.Where); err != nil {
-			return err
-		}
+		// w.WriteNL()
+		// if err := w.FormatWhere(stmt.Where); err != nil {
+		// 	return err
+		// }
 	}
 	if stmt.Return != nil {
 		w.WriteBlank()
@@ -271,20 +268,7 @@ func (w *Writer) FormatInsert(stmt ast.InsertStatement) error {
 }
 
 func (w *Writer) FormatInsertValues(values ast.Node) error {
-	if values == nil {
-		return nil
-	}
-	var err error
-	switch stmt := values.(type) {
-	case ast.ValuesStatement:
-		err = w.FormatValues(stmt)
-	case ast.SelectStatement:
-		w.WriteNL()
-		err = w.FormatSelect(stmt)
-	default:
-		err = w.CanNotUse("values", values)
-	}
-	return err
+	return nil
 }
 
 func (w *Writer) FormatUpsert(stmt ast.Node) error {
@@ -332,7 +316,6 @@ func (w *Writer) FormatUpsert(stmt ast.Node) error {
 	if upsert.Where != nil {
 		w.WriteNL()
 		w.WritePrefix()
-		return w.FormatWhere(upsert.Where)
 	}
 	return nil
 }
@@ -342,11 +325,11 @@ func (w *Writer) FormatAssignment(list []ast.Node) error {
 	for i, s := range list {
 		if i > 0 {
 			w.WriteString(",")
-			if w.Compact.ValuesStacked() {
-				w.WriteNL()
-			} else {
-				w.WriteBlank()
-			}
+			// if w.Compact.ValuesStacked() {
+			// 	w.WriteNL()
+			// } else {
+			// 	w.WriteBlank()
+			// }
 		}
 		ass, ok := s.(ast.Assignment)
 		if !ok {
@@ -357,7 +340,7 @@ func (w *Writer) FormatAssignment(list []ast.Node) error {
 			w.WritePrefix()
 			w.FormatName(field)
 		case ast.List:
-			err = w.formatList(field, w.Compact.ColumnsStacked())
+			// err = w.formatList(field, w.Compact.ColumnsStacked())
 		default:
 			return w.CanNotUse("assignment", s)
 		}
@@ -373,7 +356,7 @@ func (w *Writer) FormatAssignment(list []ast.Node) error {
 		}
 		switch value := ass.Value.(type) {
 		case ast.List:
-			err = w.formatList(value, w.Compact.ValuesStacked())
+			// err = w.formatList(value, w.Compact.ValuesStacked())
 		default:
 			err = w.FormatExpr(value, false)
 		}

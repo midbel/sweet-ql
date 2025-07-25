@@ -8,6 +8,13 @@ import (
 )
 
 func (w *Writer) VisitGroup(group ast.Group) {
+	if _, ok := group.Node.(ast.SelectStatement); ok && w.Compact.Subqueries() {
+		compact := w.Compact
+		w.Compact = compactAll
+		defer func() {
+			w.Compact = compact
+		}()
+	}
 	w.WriteString("(")
 	if !w.Compact.All() {
 		w.WriteNL()

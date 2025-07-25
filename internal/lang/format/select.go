@@ -1,7 +1,6 @@
 package format
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/midbel/sweet/internal/lang"
@@ -312,120 +311,26 @@ func (w *Writer) visitWhere(where ast.Node) {
 	where.Accept(w)
 }
 
-func (w *Writer) FormatValues(stmt ast.ValuesStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	if len(stmt.List) > 1 && w.Compact.ValuesStacked() {
-		w.WriteNL()
-	} else {
-		w.WriteBlank()
-	}
-	for i := range stmt.List {
+func (w *Writer) VisitValues(stmt ast.ValuesStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("values")
+	w.WriteBlank()
+
+	w.Enter()
+	defer w.Leave()
+	for i, v := range stmt.List {
 		if i > 0 {
-			w.WriteString(",")
-			if w.Compact.ValuesStacked() {
-				w.WriteNL()
-			} else {
-				w.WriteBlank()
-			}
-		}
-		if len(stmt.List) > 1 && w.Compact.ValuesStacked() {
+			w.WriteNL()
 			w.WritePrefix()
 		}
-		if err := w.FormatExpr(stmt.List[i], false); err != nil {
-			return err
+		if i > 0 && w.PrependComma {
+			w.WriteComma()
+		}
+		v.Accept(w)
+		if i < len(stmt.List)-1 && !w.PrependComma {
+			w.WriteComma()
 		}
 	}
-	return nil
-}
-
-func (w *Writer) FormatSelect(stmt ast.SelectStatement) error {
-	return nil
-}
-
-func (w *Writer) FormatWhere(stmt ast.Node) error {
-	return nil
-}
-
-func (w *Writer) formatJoin(join ast.Join) error {
-	return nil
-}
-
-func (w *Writer) FormatGroupBy(groups []ast.Node) error {
-	return nil
-}
-
-func (w *Writer) FormatWindows(windows []ast.Node) error {
-	w.WriteKeyword("WINDOW")
-
-	if len(windows) > 1 {
-		w.WriteNL()
-	} else {
-		w.WriteBlank()
-	}
-
-	for i, c := range windows {
-		def, ok := c.(ast.WindowDefinition)
-		if !ok {
-			return fmt.Errorf("window: unexpected statement type %T", c)
-		}
-		if i > 0 {
-			w.WriteString(",")
-			w.WriteNL()
-		}
-		if err := w.FormatExpr(def.Ident, false); err != nil {
-			return err
-		}
-		w.WriteBlank()
-		w.WriteKeyword("AS")
-		w.WriteBlank()
-		w.WriteString("(")
-		win, ok := def.Window.(ast.Window)
-		if !ok {
-			return fmt.Errorf("window: unexpected statement type %T", def.Window)
-		}
-		if win.Ident != nil {
-			if err := w.FormatExpr(win.Ident, false); err != nil {
-				return err
-			}
-			w.WriteBlank()
-		}
-		if win.Ident == nil && len(win.Partitions) > 0 {
-			w.WriteKeyword("PARTITION BY")
-			w.WriteBlank()
-			for i, p := range win.Partitions {
-				if err := w.FormatExpr(p, false); err != nil {
-					return err
-				}
-				if i < len(win.Partitions)-1 {
-					w.WriteString(",")
-					w.WriteBlank()
-				}
-			}
-		}
-		if len(win.Orders) > 0 {
-			w.WriteBlank()
-			w.WriteKeyword("ORDER BY")
-			w.WriteBlank()
-			for i, s := range win.Orders {
-				if i > 0 {
-					w.WriteString(",")
-					w.WriteBlank()
-				}
-				order, ok := s.(ast.Order)
-				if !ok {
-					return w.CanNotUse("order by", s)
-				}
-				if err := w.formatOrder(order); err != nil {
-					return err
-				}
-			}
-		}
-		w.WriteString(")")
-	}
-	return nil
-}
-
-func (w *Writer) formatOrder(order ast.Order) error {
-	return nil
 }
