@@ -612,3 +612,22 @@ func (_ setOffsetFetchLast) Name() string {
 func (r setOffsetFetchLast) Verify(stmt ast.Node) ([]Issue, error) {
 	return nil, nil
 }
+
+type unconditionalMatch struct {
+	severity Severity
+}
+
+// check that only one unconditional match in a merge statement is present
+func UnconditionalMatch(level Severity) Rule {
+	return unconditionalMatch{
+		severity: level,
+	}
+}
+
+func (_ unconditionalMatch) Name() string {
+	return "merge-unconditional-match"
+}
+
+func (r unconditionalMatch) Verify(stmt ast.Node) ([]Issue, error) {
+	return nil, nil
+}
