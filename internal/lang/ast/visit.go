@@ -17,8 +17,17 @@ type StmtVisitor interface {
 	VisitWith(WithStatement)
 	VisitCte(CteStatement)
 	VisitMerge(MergeStatement)
+
 	VisitGrant(GrantStatement)
 	VisitRevoke(RevokeStatement)
+
+	VisitCommit(Commit)
+	VisitRollback(Rollback)
+	VisitSetTransaction(SetTransaction)
+	VisitStartTransaction(StartTransaction)
+	VisitSavepoint(Savepoint)
+	VisitReleaseSavepoint(ReleaseSavepoint)
+	VisitRollbackSavepoint(RollbackSavepoint)
 
 	VisitMatch(MatchStatement)
 	VisitJoin(Join)
@@ -32,6 +41,7 @@ type ExprVisitor interface {
 	VisitBinary(Binary)
 	VisitUnary(Unary)
 	VisitList(List)
+	VisitBody(Body)
 	VisitCollate(Collate)
 	VisitIn(In)
 	VisitIs(Is)
@@ -97,6 +107,20 @@ func (_ noopVisitor) VisitGrant(_ GrantStatement) {}
 
 func (_ noopVisitor) VisitRevoke(_ RevokeStatement) {}
 
+func (_ noopVisitor) VisitCommit(_ Commit) {}
+
+func (_ noopVisitor) VisitRollback(_ Rollback) {}
+
+func (_ noopVisitor) VisitSetTransaction(_ SetTransaction) {}
+
+func (_ noopVisitor) VisitStartTransaction(_ StartTransaction) {}
+
+func (_ noopVisitor) VisitSavepoint(_ Savepoint) {}
+
+func (_ noopVisitor) VisitReleaseSavepoint(_ ReleaseSavepoint) {}
+
+func (_ noopVisitor) VisitRollbackSavepoint(_ RollbackSavepoint) {}
+
 func (_ noopVisitor) VisitJoin(_ Join) {}
 
 func (_ noopVisitor) VisitOrder(_ Order) {}
@@ -112,6 +136,8 @@ func (_ noopVisitor) VisitUnary(_ Unary) {}
 func (_ noopVisitor) VisitCall(_ Call) {}
 
 func (_ noopVisitor) VisitList(_ List) {}
+
+func (_ noopVisitor) VisitBody(_ Body) {}
 
 func (_ noopVisitor) VisitCollate(_ Collate) {}
 

@@ -149,6 +149,14 @@ func (w *Writer) VisitList(list ast.List) {
 	w.WriteString(")")
 }
 
+func (w *Writer) VisitBody(body ast.Body) {
+	for _, v := range body.Values {
+		v.Accept(w)
+		w.WriteEOL()
+		w.WriteNL()
+	}
+}
+
 func (w *Writer) VisitCase(cas ast.Case) {
 	w.WriteKeyword("case")
 	if cas.Cdt != nil {
@@ -310,43 +318,16 @@ func (w *Writer) visitBetween(between ast.Between, not bool) {
 	between.Upper.Accept(w)
 }
 
-func (w *Writer) FormatName(name ast.Name) error {
-	return nil
-}
-
-func (w *Writer) FormatAlias(alias ast.Alias) error {
-	return nil
-}
-
-func (w *Writer) FormatLiteral(literal string) {
-
-}
-
-func (w *Writer) FormatRow(stmt ast.Row, nl bool) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitRow(stmt ast.Row) {
+	w.WriteKeyword("row")
 	w.WriteString("(")
 	for i, v := range stmt.Values {
 		if i > 0 {
-			w.WriteString(",")
-			w.WriteBlank()
+			w.WriteComma()
 		}
-		if nl {
-			w.WriteNL()
-		}
-		if err := w.FormatExpr(v, false); err != nil {
-			return err
-		}
-	}
-	if nl {
-		w.WriteNL()
+		v.Accept(w)
 	}
 	w.WriteString(")")
-	return nil
-}
-
-func (w *Writer) FormatCast(stmt ast.Cast, _ bool) error {
-	return nil
 }
 
 func (w *Writer) FormatType(dt ast.Type) error {

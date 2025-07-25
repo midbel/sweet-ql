@@ -97,9 +97,11 @@ func (p *Parser) parseSavepoint() (ast.Node, error) {
 		stmt ast.Savepoint
 		err  error
 	)
-	if p.Is(token.Ident) {
-		stmt.Name = p.GetCurrLiteral()
-		p.Next()
+	if p.Is(token.Ident) || p.Is(token.QuotedIdent) {
+		stmt.Name, err = p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return stmt, err
 }
@@ -110,11 +112,10 @@ func (p *Parser) parseReleaseSavepoint() (ast.Node, error) {
 		stmt ast.ReleaseSavepoint
 		err  error
 	)
-	if !p.Is(token.Ident) {
-		return nil, p.Unexpected("release savepoint", identExpected)
+	stmt.Name, err = p.ParseIdentifier()
+	if err != nil {
+		return nil, err
 	}
-	stmt.Name = p.GetCurrLiteral()
-	p.Next()
 	return stmt, err
 }
 
@@ -124,11 +125,10 @@ func (p *Parser) parseRollbackSavepoint() (ast.Node, error) {
 		stmt ast.RollbackSavepoint
 		err  error
 	)
-	if !p.Is(token.Ident) {
-		return nil, p.Unexpected("rollback savepoint", identExpected)
+	stmt.Name, err = p.ParseIdentifier()
+	if err != nil {
+		return nil, err
 	}
-	stmt.Name = p.GetCurrLiteral()
-	p.Next()
 	return stmt, err
 }
 

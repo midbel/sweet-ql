@@ -167,6 +167,7 @@ var ansi = [][]string{
 	{"repeatable", "read"},
 	{"read", "committed"},
 	{"read", "uncommitted"},
+	{"serializable"},
 	{"isolation", "level"},
 	{"start", "transaction"},
 	{"set", "transaction"},

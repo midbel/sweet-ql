@@ -121,7 +121,7 @@ func (p *Parser) parseWhile() (ast.Node, error) {
 }
 
 func (p *Parser) ParseBody(done func() bool) (ast.Node, error) {
-	var list ast.List
+	var list ast.Body
 	for !p.Done() && !done() {
 		stmt, err := p.ParseStatement()
 		if err != nil {

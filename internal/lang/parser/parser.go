@@ -354,6 +354,8 @@ func (p *Parser) setParseFunc() {
 	p.RegisterParseFunc("SAVEPOINT", p.parseSavepoint)
 	p.RegisterParseFunc("RELEASE SAVEPOINT", p.parseReleaseSavepoint)
 	p.RegisterParseFunc("ROLLBACK TO SAVEPOINT", p.parseRollbackSavepoint)
+	p.RegisterParseFunc("COMMIT", p.parseCommit)
+	p.RegisterParseFunc("ROLLBACK", p.parseRollback)
 	p.RegisterParseFunc("CREATE VIEW", p.ParseCreateView)
 	p.RegisterParseFunc("CREATE TEMP VIEW", p.ParseCreateView)
 	p.RegisterParseFunc("CREATE TEMPORARY VIEW", p.ParseCreateView)

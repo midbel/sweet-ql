@@ -21,10 +21,8 @@ type SetTransaction struct {
 	Level TransactionLevel
 }
 
-func (_ SetTransaction) Accept(visit Visitor) {}
-
-func (_ SetTransaction) Keyword() (string, error) {
-	return "SET TRANSACTION", nil
+func (s SetTransaction) Accept(visit Visitor) {
+	visit.VisitSetTransaction(s)
 }
 
 type StartTransaction struct {
@@ -33,54 +31,42 @@ type StartTransaction struct {
 	End  Node
 }
 
-func (_ StartTransaction) Accept(visit Visitor) {}
-
-func (_ StartTransaction) Keyword() (string, error) {
-	return "START TRANSACTION", nil
+func (s StartTransaction) Accept(visit Visitor) {
+	visit.VisitStartTransaction(s)
 }
 
 type Savepoint struct {
-	Name string
+	Name Node
 }
 
-func (_ Savepoint) Accept(visit Visitor) {}
-
-func (_ Savepoint) Keyword() (string, error) {
-	return "SAVEPOINT", nil
+func (s Savepoint) Accept(visit Visitor) {
+	visit.VisitSavepoint(s)
 }
 
 type ReleaseSavepoint struct {
-	Name string
+	Name Node
 }
 
-func (_ ReleaseSavepoint) Accept(visit Visitor) {}
-
-func (_ ReleaseSavepoint) Keyword() (string, error) {
-	return "RELEASE SAVEPOINT", nil
+func (r ReleaseSavepoint) Accept(visit Visitor) {
+	visit.VisitReleaseSavepoint(r)
 }
 
 type RollbackSavepoint struct {
-	Name string
+	Name Node
 }
 
-func (_ RollbackSavepoint) Accept(visit Visitor) {}
-
-func (_ RollbackSavepoint) Keyword() (string, error) {
-	return "ROLLBACK TO SAVEPOINT", nil
+func (r RollbackSavepoint) Accept(visit Visitor) {
+	visit.VisitRollbackSavepoint(r)
 }
 
 type Commit struct{}
 
-func (_ Commit) Accept(visit Visitor) {}
-
-func (_ Commit) Keyword() (string, error) {
-	return "COMMIT", nil
+func (c Commit) Accept(visit Visitor) {
+	visit.VisitCommit(c)
 }
 
 type Rollback struct{}
 
-func (_ Rollback) Accept(visit Visitor) {}
-
-func (_ Rollback) Keyword() (string, error) {
-	return "ROLLBACK", nil
+func (r Rollback) Accept(visit Visitor) {
+	visit.VisitRollback(r)
 }

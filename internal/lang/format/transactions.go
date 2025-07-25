@@ -1,98 +1,116 @@
 package format
 
 import (
-	"fmt"
-
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) FormatStartTransaction(stmt ast.StartTransaction) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitStartTransaction(stmt ast.StartTransaction) {
+	w.Enter()
+	// defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("start")
+	w.WriteBlank()
+	w.WriteKeyword("transaction")
 	if stmt.Mode > 0 {
 		w.WriteBlank()
 		switch stmt.Mode {
 		case ast.ModeReadWrite:
-			w.WriteKeyword("READ WRITE")
+			w.WriteKeyword("read")
+			w.WriteBlank()
+			w.WriteKeyword("write")
 		case ast.ModeReadOnly:
-			w.WriteKeyword("READ ONLY")
+			w.WriteKeyword("read")
+			w.WriteBlank()
+			w.WriteKeyword("only")
 		default:
-			return fmt.Errorf("unknown transaction mode")
 		}
 	}
 	if stmt.Body != nil {
 		w.WriteNL()
-		if err := w.FormatStatement(stmt.Body); err != nil {
-			return err
-		}
+		stmt.Body.Accept(w)
 	}
-	if stmt.End == nil {
-		return nil
+	w.Leave()
+	if stmt.End != nil {
+		stmt.End.Accept(w)
 	}
-	return w.FormatStatement(stmt.End)
 }
 
-func (w *Writer) FormatSetTransaction(stmt ast.SetTransaction) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitSetTransaction(stmt ast.SetTransaction) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("set")
+	w.WriteBlank()
+	w.WriteKeyword("transaction")
 	if stmt.Level > 0 {
 		w.WriteBlank()
-		w.WriteKeyword("ISOLATION LEVEL")
+		w.WriteKeyword("isolation")
 		w.WriteBlank()
+		w.WriteKeyword("level")
 	}
 	if stmt.Mode > 0 {
 		w.WriteBlank()
 		switch stmt.Mode {
 		case ast.ModeReadWrite:
-			w.WriteKeyword("READ WRITE")
+			w.WriteKeyword("read")
+			w.WriteBlank()
+			w.WriteKeyword("write")
 		case ast.ModeReadOnly:
-			w.WriteKeyword("READ ONLY")
+			w.WriteKeyword("read")
+			w.WriteBlank()
+			w.WriteKeyword("only")
 		default:
-			return fmt.Errorf("unknown transaction mode")
 		}
 	}
+}
+
+func (w *Writer) VisitSavepoint(stmt ast.Savepoint) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("savepoint")
+	if stmt.Name != nil {
+		w.WriteBlank()
+		stmt.Name.Accept(w)
+	}
+}
+
+func (w *Writer) VisitReleaseSavepoint(stmt ast.ReleaseSavepoint) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("release")
 	w.WriteBlank()
-	return nil
-}
-
-func (w *Writer) FormatSavepoint(stmt ast.Savepoint) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	if stmt.Name != "" {
+	w.WriteKeyword("savepoint")
+	if stmt.Name != nil {
 		w.WriteBlank()
-		w.WriteString(stmt.Name)
+		stmt.Name.Accept(w)
 	}
-	return nil
 }
 
-func (w *Writer) FormatReleaseSavepoint(stmt ast.ReleaseSavepoint) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	if stmt.Name != "" {
+func (w *Writer) VisitRollbackSavepoint(stmt ast.RollbackSavepoint) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("rollback")
+	w.WriteBlank()
+	w.WriteKeyword("savepoint")
+	if stmt.Name != nil {
 		w.WriteBlank()
-		w.WriteString(stmt.Name)
+		stmt.Name.Accept(w)
 	}
-	return nil
 }
 
-func (w *Writer) FormatRollbackSavepoint(stmt ast.RollbackSavepoint) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	if stmt.Name != "" {
-		w.WriteBlank()
-		w.WriteString(stmt.Name)
-	}
-	return nil
+func (w *Writer) VisitCommit(stmt ast.Commit) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("commit")
 }
 
-func (w *Writer) FormatCommit(stmt ast.Commit) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	return nil
-}
-
-func (w *Writer) FormatRollback(stmt ast.Rollback) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	return nil
+func (w *Writer) VisitRollback(stmt ast.Rollback) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("rollback")
 }

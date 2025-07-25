@@ -8,6 +8,26 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+type Body struct {
+	Values []Node
+}
+
+func (b Body) Accept(visit Visitor) {
+	visit.VisitBody(b)
+}
+
+type List struct {
+	Values []Node
+}
+
+func (i List) Accept(visit Visitor) {
+	visit.VisitList(i)
+}
+
+func (i List) Len() int {
+	return len(i.Values)
+}
+
 type Group struct {
 	Node
 }
@@ -107,10 +127,6 @@ func (_ Row) Accept(visit Visitor) {}
 
 func (r Row) GetStatement() []Node {
 	return r.Values
-}
-
-func (r Row) Keyword() (string, error) {
-	return "ROW", nil
 }
 
 type Unary struct {
@@ -213,18 +229,6 @@ func (b Between) Accept(visit Visitor) {
 
 func (b Between) GetStatement() []Node {
 	return slx.Make(b.Lower, b.Upper)
-}
-
-type List struct {
-	Values []Node
-}
-
-func (i List) Accept(visit Visitor) {
-	visit.VisitList(i)
-}
-
-func (i List) Len() int {
-	return len(i.Values)
 }
 
 type Placeholder struct {
