@@ -183,7 +183,7 @@ var ansi = [][]string{
 	{"if"},
 	{"end", "if"},
 	{"else"},
-	{"elsif"},
+	{"elseif"},
 	{"with"},
 	{"recursive"},
 	{"materialized"},

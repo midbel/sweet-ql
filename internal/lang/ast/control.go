@@ -22,7 +22,9 @@ type While struct {
 	Body Node
 }
 
-func (_ While) Accept(visit Visitor) {}
+func (w While) Accept(visit Visitor) {
+	visit.VisitWhile(w)
+}
 
 type If struct {
 	token.Position
@@ -31,7 +33,9 @@ type If struct {
 	Alt Node
 }
 
-func (_ If) Accept(visit Visitor) {}
+func (i If) Accept(visit Visitor) {
+	visit.VisitIf(i)
+}
 
 type Declare struct {
 	token.Position
@@ -40,7 +44,9 @@ type Declare struct {
 	Value Node
 }
 
-func (_ Declare) Accept(visit Visitor) {}
+func (d Declare) Accept(visit Visitor) {
+	visit.VisitDeclare(d)
+}
 
 type Case struct {
 	token.Position
@@ -78,4 +84,6 @@ type Set struct {
 	Expr  Node
 }
 
-func (_ Set) Accept(visit Visitor) {}
+func (s Set) Accept(visit Visitor) {
+	visit.VisitSet(s)
+}

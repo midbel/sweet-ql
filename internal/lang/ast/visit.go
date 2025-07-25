@@ -4,6 +4,15 @@ type VisitableNode interface {
 	Accept(Visitor)
 }
 
+type ControlVisitor interface {
+	VisitBody(Body)
+	VisitIf(If)
+	VisitWhile(While)
+	VisitSet(Set)
+	VisitDeclare(Declare)
+	VisitReturn(Return)
+}
+
 type StmtVisitor interface {
 	VisitValues(ValuesStatement)
 	VisitSelect(SelectStatement)
@@ -34,14 +43,12 @@ type StmtVisitor interface {
 	VisitOrder(Order)
 	VisitLimit(Limit)
 	VisitOffset(Offset)
-	VisitReturn(Return)
 }
 
 type ExprVisitor interface {
 	VisitBinary(Binary)
 	VisitUnary(Unary)
 	VisitList(List)
-	VisitBody(Body)
 	VisitCollate(Collate)
 	VisitIn(In)
 	VisitIs(Is)
@@ -68,6 +75,7 @@ type Visitor interface {
 	StmtVisitor
 	ExprVisitor
 	XmlVisitor
+	ControlVisitor
 }
 
 type noopVisitor struct{}
@@ -137,8 +145,6 @@ func (_ noopVisitor) VisitCall(_ Call) {}
 
 func (_ noopVisitor) VisitList(_ List) {}
 
-func (_ noopVisitor) VisitBody(_ Body) {}
-
 func (_ noopVisitor) VisitCollate(_ Collate) {}
 
 func (_ noopVisitor) VisitIn(_ In) {}
@@ -165,10 +171,20 @@ func (_ noopVisitor) VisitName(_ Name) {}
 
 func (_ noopVisitor) VisitGroup(_ Group) {}
 
-func (_ noopVisitor) VisitCase(_ Case) {}
+func (_ noopVisitor) VisitAssignment(_ Assignment) {}
 
-func (_ noopVisitor) VisitWhen(_ When) {}
+func (_ noopVisitor) VisitBody(_ Body) {}
+
+func (_ noopVisitor) VisitIf(_ If) {}
+
+func (_ noopVisitor) VisitWhile(_ While) {}
+
+func (_ noopVisitor) VisitSet(_ Set) {}
+
+func (_ noopVisitor) VisitDeclare(_ Declare) {}
 
 func (_ noopVisitor) VisitReturn(_ Return) {}
 
-func (_ noopVisitor) VisitAssignment(_ Assignment) {}
+func (_ noopVisitor) VisitCase(_ Case) {}
+
+func (_ noopVisitor) VisitWhen(_ When) {}

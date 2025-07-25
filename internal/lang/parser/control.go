@@ -68,7 +68,7 @@ func (p *Parser) parseIf() (ast.Node, error) {
 		return nil, p.Unexpected("if", keywordExpected("THEN"))
 	}
 	p.Next()
-	stmt.Csq, err = p.ParseBody(p.KwCheck("ELSE", "ELSIF", "END IF"))
+	stmt.Csq, err = p.ParseBody(p.KwCheck("ELSE", "ELSEIF", "END IF"))
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (p *Parser) parseIf() (ast.Node, error) {
 	case p.IsKeyword("ELSE"):
 		p.Next()
 		stmt.Alt, err = p.ParseBody(p.KwCheck("END IF"))
-	case p.IsKeyword("ELSIF"):
+	case p.IsKeyword("ELSEIF"):
 		stmt.Alt, err = p.parseIf()
 		return stmt, err
 	case p.IsKeyword("END IF"):

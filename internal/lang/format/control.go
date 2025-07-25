@@ -4,84 +4,82 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) FormatIf(stmt ast.If) error {
-	if err := w.formatIf(stmt, "IF"); err != nil {
-		return err
-	}
-	w.WriteKeyword("END IF")
-	return nil
+func (w *Writer) VisitIf(stmt ast.If) {
+	w.Enter()
+	defer w.Leave()
+	w.visitIf(stmt, "if")
+	w.WriteKeyword("end")
+	w.WriteBlank()
+	w.WriteKeyword("if")
 }
 
-func (w *Writer) formatIf(stmt ast.If, kw string) error {
+func (w *Writer) visitIf(stmt ast.If, kw string) {
+	w.WritePrefix()
 	w.WriteKeyword(kw)
 	w.WriteBlank()
-	if err := w.FormatExpr(stmt.Cdt, false); err != nil {
-		return err
-	}
+	stmt.Cdt.Accept(w)
 	w.WriteBlank()
-	w.WriteKeyword("THEN")
+	w.WriteKeyword("then")
 	w.WriteNL()
+	stmt.Csq.Accept(w)
 
-	if err := w.FormatStatement(stmt.Csq); err != nil {
-		return err
-	}
-
-	var err error
 	if stmt.Alt != nil {
 		if s, ok := stmt.Alt.(ast.If); ok {
-			err = w.formatIf(s, "ELSIF")
+			w.visitIf(s, "elseif")
 		} else {
-			w.WriteKeyword("ELSE")
+			w.WritePrefix()
+			w.WriteKeyword("else")
 			w.WriteNL()
-			err = w.FormatStatement(stmt.Alt)
+			stmt.Alt.Accept(w)
 		}
 	}
-	return err
 }
 
-func (w *Writer) FormatWhile(stmt ast.While) error {
-	w.WriteKeyword("WHILE")
+func (w *Writer) VisitWhile(stmt ast.While) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("while")
 	w.WriteBlank()
-	if err := w.FormatExpr(stmt.Cdt, false); err != nil {
-		return err
-	}
+	stmt.Cdt.Accept(w)
 	w.WriteBlank()
-	w.WriteKeyword("DO")
+	w.WriteKeyword("do")
 	w.WriteNL()
-	if err := w.FormatStatement(stmt.Body); err != nil {
-		return err
-	}
-	w.WriteKeyword("END WHILE")
-	return nil
+
+	stmt.Body.Accept(w)
+	w.WriteKeyword("end")
+	w.WriteBlank()
+	w.WriteKeyword("while")
 }
 
-func (w *Writer) FormatSet(stmt ast.Set) error {
-	w.WriteKeyword("SET")
+func (w *Writer) VisitSet(stmt ast.Set) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("set")
 	w.WriteBlank()
 	w.WriteString(stmt.Ident)
 	w.WriteBlank()
 	w.WriteString("=")
 	w.WriteBlank()
-	return w.FormatExpr(stmt.Expr, false)
+	stmt.Expr.Accept(w)
 }
 
-func (w *Writer) FormatDeclare(stmt ast.Declare) error {
-	w.WriteKeyword("DECLARE")
+func (w *Writer) VisitDeclare(stmt ast.Declare) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("declare")
 	w.WriteBlank()
 	w.WriteString(stmt.Ident)
 	w.WriteBlank()
-	if err := w.FormatType(stmt.Type); err != nil {
-		return err
-	}
+	w.visitType(stmt.Type)
 	if stmt.Value != nil {
 		w.WriteBlank()
-		w.WriteKeyword("DEFAULT")
+		w.WriteKeyword("default")
 		w.WriteBlank()
-		if err := w.FormatExpr(stmt.Value, false); err != nil {
-			return err
-		}
+		stmt.Value.Accept(w)
 	}
-	return nil
 }
 
 func (w *Writer) FormatCall(stmt ast.CallStatement) error {
