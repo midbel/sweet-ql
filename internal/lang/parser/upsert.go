@@ -211,13 +211,6 @@ func (p *Parser) ParseUpdate() (ast.Node, error) {
 	if stmt.List, err = p.ParseUpdateSet(); err != nil {
 		return nil, err
 	}
-
-	if p.IsKeyword("FROM") {
-		_, err = p.ParseFrom()
-		if err != nil {
-			return nil, err
-		}
-	}
 	if stmt.Where, err = p.ParseWhere(); err != nil {
 		return nil, err
 	}
@@ -247,60 +240,17 @@ func (p *Parser) parseAssignment() (ast.Node, error) {
 		ass ast.Assignment
 		err error
 	)
-	switch {
-	case p.Is(token.Ident):
-		ass.Field, err = p.ParseIdentifier()
-		if err != nil {
-			return nil, err
-		}
-	case p.Is(token.Lparen):
-		p.Next()
-		var list ast.List
-		for !p.Done() && !p.Is(token.Rparen) {
-			stmt, err := p.ParseIdentifier()
-			if err != nil {
-				return nil, err
-			}
-			list.Values = append(list.Values, stmt)
-			if err = p.EnsureEnd("update", token.Comma, token.Rparen); err != nil {
-				return nil, err
-			}
-		}
-		if !p.Is(token.Rparen) {
-			return nil, err
-		}
-		p.Next()
-		ass.Field = list
-	default:
-		return nil, p.Unexpected("update", defaultReason)
+	ass.Field, err = p.ParseIdentifier()
+	if err != nil {
+		return nil, err
 	}
 	if !p.Is(token.Eq) {
 		return nil, p.Unexpected("update", "equal operator expected")
 	}
 	p.Next()
-	if p.Is(token.Lparen) {
-		p.Next()
-		var list ast.List
-		for !p.Done() && !p.Is(token.Rparen) {
-			expr, err := p.StartExpression()
-			if err != nil {
-				return nil, err
-			}
-			if err = p.EnsureEnd("update", token.Comma, token.Rparen); err != nil {
-				return nil, err
-			}
-			list.Values = append(list.Values, expr)
-		}
-		if !p.Is(token.Rparen) {
-			return nil, p.Unexpected("update", missingCloseParen)
-		}
-		p.Next()
-		ass.Value = list
-	} else {
-		ass.Value, err = p.StartExpression()
-		if err != nil {
-			return nil, err
-		}
+	ass.Value, err = p.StartExpression()
+	if err != nil {
+		return nil, err
 	}
 	return ass, nil
 }

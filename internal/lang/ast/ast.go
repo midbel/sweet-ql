@@ -317,7 +317,9 @@ type Assignment struct {
 	Value Node
 }
 
-func (_ Assignment) Accept(visit Visitor) {}
+func (a Assignment) Accept(visit Visitor) {
+	visit.VisitAssignment(a)
+}
 
 type InsertStatement struct {
 	token.Position
@@ -338,10 +340,9 @@ func (s InsertStatement) Keyword() (string, error) {
 type UpdateStatement struct {
 	token.Position
 
-	Table  Node
-	List   []Node
-	Tables []Node
-	Where  Node
+	Table Node
+	List  []Node
+	Where Node
 }
 
 func (s UpdateStatement) Accept(visit Visitor) {

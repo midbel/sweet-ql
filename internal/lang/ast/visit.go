@@ -47,6 +47,7 @@ type ExprVisitor interface {
 	VisitGroup(Group)
 	VisitCase(Case)
 	VisitWhen(When)
+	VisitAssignment(Assignment)
 }
 
 type XmlVisitor interface{}
@@ -137,3 +138,5 @@ func (_ noopVisitor) VisitCase(_ Case) {}
 func (_ noopVisitor) VisitWhen(_ When) {}
 
 func (_ noopVisitor) VisitReturn(_ Return) {}
+
+func (_ noopVisitor) VisitAssignment(_ Assignment) {}

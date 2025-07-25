@@ -143,6 +143,7 @@ var ansi = [][]string{
 	{"similar"},
 	{"like"},
 	{"ilike"},
+	{"delete"},
 	{"delete", "from"},
 	{"truncate"},
 	{"truncate", "table"},
