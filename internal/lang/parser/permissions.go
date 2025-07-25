@@ -18,17 +18,19 @@ func (p *Parser) ParseGrant() (ast.Node, error) {
 		return nil, p.Unexpected("grant", keywordExpected("ON"))
 	}
 	p.Next()
-	if !p.Is(token.Ident) {
-		return nil, p.Unexpected("grant", identExpected)
+	if stmt.Object, err = p.ParseIdentifier(); err != nil {
+		return nil, err
 	}
-	stmt.Object = p.GetCurrLiteral()
-	p.Next()
 	if !p.IsKeyword("TO") {
 		return nil, p.Unexpected("grant", keywordExpected("TO"))
 	}
 	p.Next()
 	if stmt.Users, err = p.parseGranted(); err != nil {
 		return nil, err
+	}
+	if p.IsKeyword("WITH GRANT OPTION") {
+		p.Next()
+		stmt.Grant = true
 	}
 	return stmt, nil
 }
@@ -46,11 +48,9 @@ func (p *Parser) ParseRevoke() (ast.Node, error) {
 		return nil, p.Unexpected("revoke", keywordExpected("ON"))
 	}
 	p.Next()
-	if !p.Is(token.Ident) {
-		return nil, p.Unexpected("revoke", identExpected)
+	if stmt.Object, err = p.ParseIdentifier(); err != nil {
+		return nil, err
 	}
-	stmt.Object = p.GetCurrLiteral()
-	p.Next()
 	if !p.IsKeyword("FROM") {
 		return nil, p.Unexpected("revoke", keywordExpected("FROM"))
 	}
@@ -58,13 +58,21 @@ func (p *Parser) ParseRevoke() (ast.Node, error) {
 	if stmt.Users, err = p.parseGranted(); err != nil {
 		return nil, err
 	}
+	if p.IsKeyword("RESTRICT") {
+		stmt.Cascade = ast.Restrict
+	} else if p.IsKeyword("CASCADE") {
+		stmt.Cascade = ast.Restrict
+	}
+	if stmt.Cascade != 0 {
+		p.Next()
+	}
 	return stmt, nil
 }
 
 func (p *Parser) parseGranted() ([]string, error) {
 	var list []string
-	for !p.QueryEnds() && !p.Done() {
-		if !p.Is(token.Ident) {
+	for !p.QueryEnds() && !p.Is(token.Keyword) && !p.Done() {
+		if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 			return nil, p.Unexpected("role", identExpected)
 		}
 		list = append(list, p.GetCurrLiteral())
@@ -75,7 +83,7 @@ func (p *Parser) parseGranted() ([]string, error) {
 			if p.QueryEnds() {
 				return nil, p.Unexpected("role", "unexpected comma before end of statement")
 			}
-		case p.QueryEnds():
+		case p.QueryEnds() || p.Is(token.Keyword):
 		default:
 			return nil, p.Unexpected("role", defaultReason)
 		}

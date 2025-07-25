@@ -1,25 +1,23 @@
 package ast
 
 type GrantStatement struct {
-	Object     string
+	Object     Node
 	Privileges []string
 	Users      []string
+	Grant      bool
 }
 
-func (_ GrantStatement) Accept(visit Visitor) {}
-
-func (s GrantStatement) Keyword() (string, error) {
-	return "GRANT", nil
+func (g GrantStatement) Accept(visit Visitor) {
+	visit.VisitGrant(g)
 }
 
 type RevokeStatement struct {
-	Object     string
+	Object     Node
 	Privileges []string
 	Users      []string
+	Cascade    CascadeMode
 }
 
-func (_ RevokeStatement) Accept(visit Visitor) {}
-
-func (s RevokeStatement) Keyword() (string, error) {
-	return "REVOKE", nil
+func (r RevokeStatement) Accept(visit Visitor) {
+	visit.VisitRevoke(r)
 }

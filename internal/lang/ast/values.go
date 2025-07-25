@@ -234,6 +234,17 @@ type Placeholder struct {
 
 func (_ Placeholder) Accept(visit Visitor) {}
 
+type StaticType int8
+
+const (
+	TypeAny StaticType = 1 << iota
+	TypeNumber
+	TypeText
+	TypeDate
+	TypeBool
+	TypeNull
+)
+
 type Value struct {
 	token.Position
 	Literal string
@@ -243,6 +254,19 @@ func (v Value) Accept(visit Visitor) {
 	visit.VisitValue(v)
 }
 
+func (v Value) Type() StaticType {
+	if v.Bool() {
+		return TypeBool
+	}
+	if v.Null() {
+		return TypeNull
+	}
+	if v.Number() {
+		return TypeNumber
+	}
+	return TypeText
+}
+
 func (v Value) Number() bool {
 	_, err := strconv.ParseFloat(v.Literal, 64)
 	return err == nil
@@ -250,6 +274,10 @@ func (v Value) Number() bool {
 
 func (v Value) Constant() bool {
 	return v.Null() || v.True() || v.False()
+}
+
+func (v Value) Bool() bool {
+	return v.True() || v.False()
 }
 
 func (v Value) Null() bool {

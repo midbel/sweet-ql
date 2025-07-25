@@ -4,58 +4,87 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) FormatGrant(stmt ast.GrantStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitGrant(stmt ast.GrantStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("grant")
 	w.WriteBlank()
 	if len(stmt.Privileges) == 0 {
-		w.WriteKeyword("ALL PRIVILEGES")
+		w.WriteKeyword("all")
+		w.WriteBlank()
+		w.WriteKeyword("privileges")
 	} else {
 		for i, p := range stmt.Privileges {
 			if i > 0 {
-				w.WriteString(",")
-				w.WriteBlank()
+				w.WriteComma()
 			}
 			w.WriteKeyword(p)
 		}
 	}
-	w.WriteBlank()
-	w.WriteKeyword("TO")
+	if stmt.Object != nil {
+		w.WriteNL()
+		w.WriteKeyword("on")
+		w.WriteBlank()
+		stmt.Object.Accept(w)
+	}
+	w.WriteNL()
+	w.WriteKeyword("to")
 	w.WriteBlank()
 	for i, u := range stmt.Users {
 		if i > 0 {
 			w.WriteString(",")
 			w.WriteBlank()
 		}
-		w.WriteString(u)
+		w.WriteIdent(u)
 	}
-	return nil
+	if stmt.Grant {
+		w.WriteNL()
+		w.WriteKeyword("with")
+		w.WriteBlank()
+		w.WriteKeyword("grant")
+		w.WriteBlank()
+		w.WriteKeyword("option")
+	}
 }
 
-func (w *Writer) FormatRevoke(stmt ast.RevokeStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitRevoke(stmt ast.RevokeStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("revoke")
 	w.WriteBlank()
 	if len(stmt.Privileges) == 0 {
-		w.WriteKeyword("ALL")
+		w.WriteKeyword("all")
 	} else {
 		for i, p := range stmt.Privileges {
 			if i > 0 {
-				w.WriteString(",")
-				w.WriteBlank()
+				w.WriteComma()
 			}
 			w.WriteKeyword(p)
 		}
 	}
-	w.WriteBlank()
-	w.WriteKeyword("FROM")
+	if stmt.Object != nil {
+		w.WriteNL()
+		w.WriteKeyword("on")
+		w.WriteBlank()
+		stmt.Object.Accept(w)
+	}
+	w.WriteNL()
+	w.WriteKeyword("from")
 	w.WriteBlank()
 	for i, u := range stmt.Users {
 		if i > 0 {
-			w.WriteString(",")
-			w.WriteBlank()
+			w.WriteComma()
 		}
-		w.WriteString(u)
+		w.WriteIdent(u)
 	}
-	return nil
+	if stmt.Cascade == ast.Cascade {
+		w.WriteNL()
+		w.WriteKeyword("cascade")
+	} else if stmt.Cascade == ast.Restrict {
+		w.WriteNL()
+		w.WriteKeyword("restrict")
+	}
+
 }

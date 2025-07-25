@@ -243,6 +243,7 @@ var ansi = [][]string{
 	{"restart", "identity"},
 	{"continue", "identity"},
 	{"grant"},
+	{"with", "grant", "option"},
 	{"revoke"},
 	{"all", "privileges"},
 }

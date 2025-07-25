@@ -17,6 +17,8 @@ type StmtVisitor interface {
 	VisitWith(WithStatement)
 	VisitCte(CteStatement)
 	VisitMerge(MergeStatement)
+	VisitGrant(GrantStatement)
+	VisitRevoke(RevokeStatement)
 
 	VisitMatch(MatchStatement)
 	VisitJoin(Join)
@@ -90,6 +92,10 @@ func (_ noopVisitor) VisitCte(_ CteStatement) {}
 func (_ noopVisitor) VisitMerge(_ MergeStatement) {}
 
 func (_ noopVisitor) VisitMatch(_ MatchStatement) {}
+
+func (_ noopVisitor) VisitGrant(_ GrantStatement) {}
+
+func (_ noopVisitor) VisitRevoke(_ RevokeStatement) {}
 
 func (_ noopVisitor) VisitJoin(_ Join) {}
 
