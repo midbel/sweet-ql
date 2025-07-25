@@ -8,40 +8,7 @@ import (
 )
 
 func (w *Writer) FormatCreateView(stmt ast.CreateViewStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-	if stmt.NotExists {
-		w.WriteKeyword("IF NOT EXISTS")
-		w.WriteBlank()
-	}
-	if err := w.FormatTableName(stmt.Name); err != nil {
-		return err
-	}
-	if len(stmt.Columns) > 0 {
-		w.WriteBlank()
-		w.WriteString("(")
-		for i, s := range stmt.Columns {
-			if i > 0 {
-				w.WriteString(",")
-				w.WriteBlank()
-			}
-			if w.Upperize.Identifier() || w.Upperize.All() {
-				s = strings.ToUpper(s)
-			}
-			if w.UseQuote {
-				s = w.Quote(s)
-			}
-			w.WriteString(s)
-		}
-		w.WriteString(")")
-	}
-
-	w.WriteBlank()
-	w.WriteKeyword("AS")
-	w.WriteNL()
-
-	return w.FormatStatement(stmt.Select)
+	return nil
 }
 
 type CreateTableFormatter interface {

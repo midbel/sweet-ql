@@ -116,7 +116,7 @@ type CreateViewStatement struct {
 	Temp      bool
 	Name      Node
 	NotExists bool
-	Columns   []string
+	Columns   []Node
 	Select    Node
 }
 

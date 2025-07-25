@@ -84,10 +84,7 @@ func (w *Writer) VisitCte(stmt ast.CteStatement) {
 			if i > 0 {
 				w.WriteComma()
 			}
-			if w.Upperize.All() || w.Upperize.Identifier() {
-				c = strings.ToUpper(c)
-			}
-			w.WriteString(c)
+			c.Accept(w)
 		}
 		w.WriteString(")")
 	}

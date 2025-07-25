@@ -149,9 +149,6 @@ func (p *Parser) ParseDelete() (ast.Node, error) {
 	if stmt.Where, err = p.ParseWhere(); err != nil {
 		return nil, err
 	}
-	if stmt.Return, err = p.ParseReturning(); err != nil {
-		return nil, err
-	}
 	return stmt, nil
 }
 
@@ -195,25 +192,6 @@ func (p *Parser) ParseTruncate() (ast.Node, error) {
 	return stmt, nil
 }
 
-func (p *Parser) ParseReturning() (ast.Node, error) {
-	if !p.IsKeyword("RETURNING") {
-		return nil, nil
-	}
-	p.Next()
-	var ret ast.Return
-	for !p.Done() && !p.Is(token.EOL) {
-		stmt, err := p.StartExpression()
-		if err != nil {
-			return nil, err
-		}
-		ret.Values = append(ret.Values, stmt)
-		if err = p.EnsureEnd("returning", token.Comma, token.EOL); err != nil {
-			return nil, err
-		}
-	}
-	return ret, nil
-}
-
 func (p *Parser) ParseUpdate() (ast.Node, error) {
 	p.Next()
 	var (
@@ -243,7 +221,6 @@ func (p *Parser) ParseUpdate() (ast.Node, error) {
 	if stmt.Where, err = p.ParseWhere(); err != nil {
 		return nil, err
 	}
-	stmt.Return, err = p.ParseReturning()
 	return stmt, err
 }
 
@@ -345,7 +322,7 @@ func (p *Parser) ParseInsert() (ast.Node, error) {
 	}
 
 	switch {
-	case p.IsKeyword("SELECT") || p.IsKeyword("WITH"):
+	case p.IsKeyword("SELECT"):
 		stmt.Values, err = p.ParseStatement()
 	case p.IsKeyword("VALUES"):
 		stmt.Values, err = p.ParseValues()
@@ -355,67 +332,5 @@ func (p *Parser) ParseInsert() (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if stmt.Upsert, err = p.ParseUpsert(); err != nil {
-		return nil, err
-	}
-	stmt.Return, err = p.ParseReturning()
-	return stmt, err
-}
-
-func (p *Parser) ParseUpsert() (ast.Node, error) {
-	if !p.IsKeyword("ON CONFLICT") {
-		return nil, nil
-	}
-	p.Next()
-
-	var (
-		stmt ast.Upsert
-		err  error
-	)
-
-	if !p.IsKeyword("DO") {
-		stmt.Columns, err = p.parseColumnsList()
-		if err != nil {
-			return nil, err
-		}
-	}
-	if !p.IsKeyword("DO") {
-		return nil, p.Unexpected("upsert", keywordExpected("DO"))
-	}
-	p.Next()
-	if p.IsKeyword("NOTHING") {
-		p.Next()
-		return stmt, nil
-	}
-	if !p.IsKeyword("UPDATE") {
-		return nil, p.Unexpected("upsert", keywordExpected("UPDATE"))
-	}
-	p.Next()
-	if !p.IsKeyword("SET") {
-		return nil, p.Unexpected("upsert", keywordExpected("SET"))
-	}
-	p.Next()
-	if stmt.List, err = p.ParseUpsertList(); err != nil {
-		return nil, err
-	}
-	stmt.Where, err = p.ParseWhere()
-	return stmt, err
-}
-
-func (p *Parser) ParseUpsertList() ([]ast.Node, error) {
-	var list []ast.Node
-	for !p.Done() && !p.Is(token.EOL) && !p.IsKeyword("WHERE") && !p.IsKeyword("RETURNING") {
-		stmt, err := p.parseAssignment()
-		if err != nil {
-			return nil, err
-		}
-		if p.Is(token.EOL) {
-			break
-		}
-		if err := p.EnsureEnd("update", token.Comma, token.Keyword); err != nil {
-			return nil, err
-		}
-		list = append(list, stmt)
-	}
-	return list, nil
+	return stmt, nil
 }

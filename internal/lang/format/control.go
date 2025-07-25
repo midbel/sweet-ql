@@ -4,18 +4,6 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitReturn(ret ast.Return) {
-	w.WritePrefix()
-	w.WriteKeyword("returning")
-	w.WriteBlank()
-	for i, v := range ret.Values {
-		if i > 0 {
-			w.WriteComma()
-		}
-		v.Accept(w)
-	}
-}
-
 func (w *Writer) FormatIf(stmt ast.If) error {
 	if err := w.formatIf(stmt, "IF"); err != nil {
 		return err

@@ -219,14 +219,14 @@ func (p *Parser) UnregisterInfix(literal string, kind rune) {
 	p.infix.Unregister(literal, kind)
 }
 
-func (p *Parser) parseColumnsList() ([]string, error) {
+func (p *Parser) parseColumnsList() ([]ast.Node, error) {
 	if !p.Is(token.Lparen) {
 		return nil, nil
 	}
 	p.Next()
 
 	var (
-		list []string
+		list []ast.Node
 		err  error
 	)
 
@@ -234,8 +234,11 @@ func (p *Parser) parseColumnsList() ([]string, error) {
 		if !p.Curr().IsValue() {
 			return nil, p.Unexpected("columns", valueExpected)
 		}
-		list = append(list, p.GetCurrLiteral())
-		p.Next()
+		c, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, c)
 		if err := p.EnsureEnd("columns", token.Comma, token.Rparen); err != nil {
 			return nil, err
 		}

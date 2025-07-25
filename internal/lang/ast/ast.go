@@ -148,7 +148,7 @@ type CteStatement struct {
 
 	Ident        string
 	Materialized MaterializedMode
-	Columns      []string
+	Columns      []Node
 	Node
 }
 
@@ -312,14 +312,6 @@ func (s MergeStatement) Keyword() (string, error) {
 	return "MERGE", nil
 }
 
-type Upsert struct {
-	Columns []string
-	List    []Node
-	Where   Node
-}
-
-func (_ Upsert) Accept(visit Visitor) {}
-
 type Assignment struct {
 	Field Node
 	Value Node
@@ -331,10 +323,8 @@ type InsertStatement struct {
 	token.Position
 
 	Table   Node
-	Columns []string
+	Columns []Node
 	Values  Node
-	Upsert  Node
-	Return  Node
 }
 
 func (s InsertStatement) Accept(visit Visitor) {
@@ -352,7 +342,6 @@ type UpdateStatement struct {
 	List   []Node
 	Tables []Node
 	Where  Node
-	Return Node
 }
 
 func (s UpdateStatement) Accept(visit Visitor) {
@@ -380,9 +369,8 @@ func (s TruncateStatement) Keyword() (string, error) {
 type DeleteStatement struct {
 	token.Position
 
-	Table  Node
-	Where  Node
-	Return Node
+	Table Node
+	Where Node
 }
 
 func (s DeleteStatement) Accept(visit Visitor) {

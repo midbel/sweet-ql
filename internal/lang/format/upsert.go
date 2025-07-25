@@ -1,21 +1,39 @@
 package format
 
 import (
-	"strings"
-
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
 func (w *Writer) VisitInsert(stmt ast.InsertStatement) {
 	w.Enter()
 	defer w.Leave()
+
 	w.WritePrefix()
+	w.WriteKeyword("insert")
+	w.WriteBlank()
+	w.WriteKeyword("into")
+	w.WriteBlank()
+	stmt.Table.Accept(w)
+	w.WriteBlank()
+	if len(stmt.Columns) > 0 {
+		w.WriteString("(")
+		for i, c := range stmt.Columns {
+			if i > 0 {
+				w.WriteComma()
+			}
+			c.Accept(w)
+		}
+		w.WriteString(")")
+	}
+	w.WriteNL()
+	stmt.Values.Accept(w)
 }
 
 func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
+	w.WriteKeyword("update")
 }
 
 func (w *Writer) VisitDelete(stmt ast.DeleteStatement) {
@@ -28,10 +46,6 @@ func (w *Writer) VisitDelete(stmt ast.DeleteStatement) {
 	w.WriteBlank()
 	stmt.Table.Accept(w)
 	w.visitWhere(stmt.Where)
-	if stmt.Return != nil {
-		w.WriteBlank()
-		stmt.Return.Accept(w)
-	}
 }
 
 func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) {
@@ -160,7 +174,6 @@ func (w *Writer) FormatMatch(stmt ast.MatchStatement) error {
 					w.WriteString(",")
 					w.WriteBlank()
 				}
-				w.WriteString(stmt.Columns[i])
 			}
 			w.WriteString(")")
 			w.WriteBlank()
@@ -224,131 +237,6 @@ func (w *Writer) FormatUpdate(stmt ast.UpdateStatement) error {
 		// if err := w.FormatWhere(stmt.Where); err != nil {
 		// 	return err
 		// }
-	}
-	if stmt.Return != nil {
-		w.WriteBlank()
-		if err := w.FormatReturning(stmt.Return); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (w *Writer) FormatInsert(stmt ast.InsertStatement) error {
-	w.Enter()
-	defer w.Leave()
-
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-
-	if err := w.FormatExpr(stmt.Table, false); err != nil {
-		return err
-	}
-	if len(stmt.Columns) > 0 {
-		if w.Compact.KeepSpacesAround() {
-			w.WriteBlank()
-		}
-		w.WriteString("(")
-		if w.Compact.ColumnsStacked() {
-			w.WriteNL()
-		}
-		w.Enter()
-		for i, c := range stmt.Columns {
-			if i > 0 {
-				w.WriteString(",")
-				if w.Compact.ColumnsStacked() {
-					w.WriteNL()
-				} else {
-					w.WriteBlank()
-				}
-			}
-			if w.Compact.ColumnsStacked() {
-				w.WritePrefix()
-			}
-			if w.Upperize.Identifier() {
-				c = strings.ToUpper(c)
-			}
-			w.WriteString(c)
-		}
-		w.Leave()
-		if w.Compact.ColumnsStacked() {
-			w.WriteNL()
-		}
-		w.WriteString(")")
-		w.WriteNL()
-	} else {
-		w.WriteBlank()
-	}
-	w.Enter()
-	if err := w.FormatInsertValues(stmt.Values); err != nil {
-		return err
-	}
-	w.Leave()
-	if stmt.Upsert != nil {
-		w.WriteNL()
-		if err := w.FormatUpsert(stmt.Upsert); err != nil {
-			return err
-		}
-	}
-	if stmt.Return != nil {
-		w.WriteNL()
-		if err := w.FormatReturning(stmt.Return); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (w *Writer) FormatInsertValues(values ast.Node) error {
-	return nil
-}
-
-func (w *Writer) FormatUpsert(stmt ast.Node) error {
-	if stmt == nil {
-		return nil
-	}
-	upsert, ok := stmt.(ast.Upsert)
-	if !ok {
-		return w.CanNotUse("insert(upsert)", stmt)
-	}
-	w.WriteKeyword("ON CONFLICT")
-
-	if len(upsert.Columns) > 0 {
-		w.WriteBlank()
-		w.WriteString("(")
-		for i, s := range upsert.Columns {
-			if i > 0 {
-				w.WriteString(",")
-				w.WriteBlank()
-			}
-			w.WriteString(s)
-		}
-		w.WriteString(")")
-	}
-	w.WriteBlank()
-	if len(upsert.List) == 0 {
-		w.WriteKeyword("DO NOTHING")
-		return nil
-	}
-	w.Enter()
-	defer w.Leave()
-
-	w.WriteKeyword("DO UPDATE")
-	w.WriteNL()
-	w.WritePrefix()
-	w.WriteKeyword("SET")
-	w.WriteNL()
-
-	w.Enter()
-	if err := w.FormatAssignment(upsert.List); err != nil {
-		return err
-	}
-	w.Leave()
-
-	if upsert.Where != nil {
-		w.WriteNL()
-		w.WritePrefix()
 	}
 	return nil
 }
