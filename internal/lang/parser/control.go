@@ -140,13 +140,16 @@ func (p *Parser) ParseBody(done func() bool) (ast.Node, error) {
 }
 
 func (p *Parser) parseReturn() (ast.Node, error) {
-	var (
-		stmt ast.Return
-		err  error
-	)
-	stmt.Position = p.curr.Position
-	p.Next()
-
-	stmt.Node, err = p.StartExpression()
-	return stmt, err
+	var ret ast.Return
+	for !p.Done() && !p.Is(token.EOL) {
+		stmt, err := p.StartExpression()
+		if err != nil {
+			return nil, err
+		}
+		ret.Values = append(ret.Values, stmt)
+		if err = p.EnsureEnd("return", token.Comma, token.EOL); err != nil {
+			return nil, err
+		}
+	}
+	return ret, nil
 }

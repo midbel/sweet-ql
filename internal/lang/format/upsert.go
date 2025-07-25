@@ -7,23 +7,71 @@ import (
 )
 
 func (w *Writer) VisitInsert(stmt ast.InsertStatement) {
-
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
 }
 
 func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) {
-
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
 }
 
 func (w *Writer) VisitDelete(stmt ast.DeleteStatement) {
-
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("delete")
+	w.WriteBlank()
+	w.WriteKeyword("from")
+	w.WriteBlank()
+	stmt.Table.Accept(w)
+	w.visitWhere(stmt.Where)
+	if stmt.Return != nil {
+		w.WriteBlank()
+		stmt.Return.Accept(w)
+	}
 }
 
 func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) {
-
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("truncate")
+	w.WriteBlank()
+	w.WriteKeyword("table")
+	w.WriteBlank()
+	for i, n := range stmt.Tables {
+		if i > 0 {
+			w.WriteComma()
+		}
+		n.Accept(w)
+	}
+	if stmt.Identity == ast.RestartIdentity {
+		w.WriteBlank()
+		w.WriteKeyword("restart")
+		w.WriteBlank()
+		w.WriteKeyword("identity")
+	} else if stmt.Identity == ast.ContinueIdentity {
+		w.WriteBlank()
+		w.WriteKeyword("continue")
+		w.WriteBlank()
+		w.WriteKeyword("identity")
+	}
+	if stmt.Cascade == ast.Cascade {
+		w.WriteBlank()
+		w.WriteKeyword("cascade")
+	} else if stmt.Cascade == ast.Restrict {
+		w.WriteBlank()
+		w.WriteKeyword("restrict")
+	}
 }
 
 func (w *Writer) VisitMerge(stmt ast.MergeStatement) {
-
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
 }
 
 func (w *Writer) FormatMerge(stmt ast.MergeStatement) error {
@@ -131,41 +179,6 @@ func (w *Writer) FormatMatch(stmt ast.MatchStatement) error {
 		// }
 	default:
 		return w.CanNotUse("merge", stmt)
-	}
-	return nil
-}
-
-func (w *Writer) FormatTruncate(stmt ast.TruncateStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-	if len(stmt.Tables) == 0 {
-		w.WriteString("*")
-		return nil
-	}
-	for i := range stmt.Tables {
-		if i > 0 {
-			w.WriteString(",")
-			w.WriteBlank()
-		}
-		w.WriteString(stmt.Tables[i])
-	}
-	return nil
-}
-
-func (w *Writer) FormatDelete(stmt ast.DeleteStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-	w.WriteString(stmt.Table)
-	if stmt.Where != nil {
-		w.WriteNL()
-	}
-	if stmt.Return != nil {
-		w.WriteNL()
-		if err := w.FormatReturning(stmt.Return); err != nil {
-			return err
-		}
 	}
 	return nil
 }

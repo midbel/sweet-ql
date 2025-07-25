@@ -3,14 +3,14 @@ package ast
 type CascadeMode int
 
 const (
-	Cascade CascadeMode = iota + 1
+	Cascade CascadeMode = 1 << iota
 	Restrict
 )
 
 type IdentityMode int
 
 const (
-	RestartIdentity IdentityMode = iota + 1
+	RestartIdentity IdentityMode = 1 << iota
 	ContinueIdentity
 )
 

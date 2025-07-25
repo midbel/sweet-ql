@@ -4,6 +4,18 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
+func (w *Writer) VisitReturn(ret ast.Return) {
+	w.WritePrefix()
+	w.WriteKeyword("returning")
+	w.WriteBlank()
+	for i, v := range ret.Values {
+		if i > 0 {
+			w.WriteComma()
+		}
+		v.Accept(w)
+	}
+}
+
 func (w *Writer) FormatIf(stmt ast.If) error {
 	if err := w.formatIf(stmt, "IF"); err != nil {
 		return err
@@ -63,17 +75,6 @@ func (w *Writer) FormatSet(stmt ast.Set) error {
 	w.WriteString("=")
 	w.WriteBlank()
 	return w.FormatExpr(stmt.Expr, false)
-}
-
-func (w *Writer) FormatReturn(stmt ast.Return) error {
-	w.WriteKeyword("RETURN")
-	if stmt.Node != nil {
-		w.WriteBlank()
-		if err := w.FormatExpr(stmt.Node, false); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (w *Writer) FormatDeclare(stmt ast.Declare) error {

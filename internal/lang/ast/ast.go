@@ -364,7 +364,7 @@ func (s UpdateStatement) Keyword() (string, error) {
 }
 
 type TruncateStatement struct {
-	Tables   []string
+	Tables   []Node
 	Cascade  CascadeMode
 	Identity IdentityMode
 }
@@ -380,7 +380,7 @@ func (s TruncateStatement) Keyword() (string, error) {
 type DeleteStatement struct {
 	token.Position
 
-	Table  string
+	Table  Node
 	Where  Node
 	Return Node
 }

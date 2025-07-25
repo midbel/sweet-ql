@@ -9,10 +9,12 @@ import (
 
 type Return struct {
 	token.Position
-	Node
+	Values []Node
 }
 
-func (_ Return) Accept(visit Visitor) {}
+func (r Return) Accept(visit Visitor) {
+	visit.VisitReturn(r)
+}
 
 type While struct {
 	token.Position

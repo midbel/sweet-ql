@@ -23,6 +23,7 @@ type StmtVisitor interface {
 	VisitOrder(Order)
 	VisitLimit(Limit)
 	VisitOffset(Offset)
+	VisitReturn(Return)
 }
 
 type ExprVisitor interface {
@@ -134,3 +135,5 @@ func (_ noopVisitor) VisitGroup(_ Group) {}
 func (_ noopVisitor) VisitCase(_ Case) {}
 
 func (_ noopVisitor) VisitWhen(_ When) {}
+
+func (_ noopVisitor) VisitReturn(_ Return) {}

@@ -143,9 +143,9 @@ func (p *Parser) ParseDelete() (ast.Node, error) {
 	if !p.Is(token.Ident) {
 		return nil, p.Unexpected("delete", identExpected)
 	}
-	stmt.Table = p.GetCurrLiteral()
-	p.Next()
-
+	if stmt.Table, err = p.ParseIdentifier(); err != nil {
+		return nil, err
+	}
 	if stmt.Where, err = p.ParseWhere(); err != nil {
 		return nil, err
 	}
@@ -163,11 +163,11 @@ func (p *Parser) ParseTruncate() (ast.Node, error) {
 		return stmt, nil
 	} else {
 		for !p.Is(token.EOL) && !p.Done() && !p.Is(token.Keyword) {
-			if !p.Is(token.Ident) {
-				return nil, p.Unexpected("truncate", identExpected)
+			t, err := p.ParseIdentifier()
+			if err != nil {
+				return nil, err
 			}
-			stmt.Tables = append(stmt.Tables, p.GetCurrLiteral())
-			p.Next()
+			stmt.Tables = append(stmt.Tables, t)
 			switch {
 			case p.Is(token.EOL) || p.Is(token.Keyword):
 			case p.Is(token.Comma):
@@ -200,26 +200,18 @@ func (p *Parser) ParseReturning() (ast.Node, error) {
 		return nil, nil
 	}
 	p.Next()
-	if p.Is(token.Star) {
-		var stmt ast.Name
-		p.Next()
-		if !p.QueryEnds() {
-			return nil, p.Unexpected("returning", missingEol)
-		}
-		return stmt, nil
-	}
-	var list ast.List
+	var ret ast.Return
 	for !p.Done() && !p.Is(token.EOL) {
 		stmt, err := p.StartExpression()
 		if err != nil {
 			return nil, err
 		}
-		list.Values = append(list.Values, stmt)
+		ret.Values = append(ret.Values, stmt)
 		if err = p.EnsureEnd("returning", token.Comma, token.EOL); err != nil {
 			return nil, err
 		}
 	}
-	return list, nil
+	return ret, nil
 }
 
 func (p *Parser) ParseUpdate() (ast.Node, error) {
