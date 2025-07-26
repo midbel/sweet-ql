@@ -117,3 +117,10 @@ func (w *Writer) VisitXmlComment(elem ast.XmlComment) {
 	elem.Text.Accept(w)
 	w.WriteString(")")
 }
+
+func (w *Writer) VisitXmlAgg(elem ast.XmlComment) {
+	w.WriteCall("xmlagg")
+	w.WriteString("(")
+	elem.Body.Accept(w)
+	w.WriteString(")")
+}
