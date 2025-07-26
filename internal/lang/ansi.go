@@ -214,7 +214,7 @@ var ansi = [][]string{
 	{"check"},
 	{"generated"},
 	{"generated", "always"},
-	{"stored"},
+	{"generated", "by", "default"},
 	{"language"},
 	{"alter", "table"},
 	{"alter"},

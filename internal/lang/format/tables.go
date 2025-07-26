@@ -76,11 +76,11 @@ func (w *Writer) VisitAlterTable(stmt ast.AlterTableStatement) {
 	w.WriteKeyword("table")
 	w.WriteBlank()
 	stmt.Name.Accept(w)
-	w.WriteBlank()
+	w.WriteNL()
 	stmt.Action.Accept(w)
 }
 
-func (w *Writer) VisitAddColumn(action AddColumnAction) {
+func (w *Writer) VisitAddColumn(action ast.AddColumnAction) {
 	w.WriteKeyword("add")
 	w.WriteBlank()
 	w.WriteKeyword("column")
@@ -88,43 +88,45 @@ func (w *Writer) VisitAddColumn(action AddColumnAction) {
 	action.Def.Accept(w)
 }
 
-func (w *Writer) VisitAlterColumn(action AlterColumnAction) {
-
+func (w *Writer) VisitAlterColumn(action ast.AlterColumnAction) {
+	w.WriteKeyword("alter")
+	w.WriteBlank()
+	w.WriteKeyword("column")
+	w.WriteBlank()
+	action.Name.Accept(w)
 }
 
-func (w *Writer) VisitDropColumn(action DropColumnAction) {
+func (w *Writer) VisitDropColumn(action ast.DropColumnAction) {
 	w.WriteKeyword("drop")
 	w.WriteBlank()
 	w.WriteKeyword("column")
 	w.WriteBlank()
 	action.Name.Accept(w)
-	if stmt.Cascade == ast.Cascade {
+	if action.Cascade == ast.Cascade {
 		w.WriteBlank()
 		w.WriteKeyword("cascade")
-	} else if stmt.Cascade == ast.Restrict {
+	} else if action.Cascade == ast.Restrict {
 		w.WriteBlank()
 		w.WriteKeyword("restrict")
 	}
 }
 
-func (w *Writer) VisitAddConstraint(action AddConstraintAction) {
+func (w *Writer) VisitAddConstraint(action ast.AddConstraintAction) {
 	w.WriteKeyword("add")
-	w.WriteBlank()
-	w.WriteKeyword("constraint")
 	w.WriteBlank()
 	action.Constraint.Accept(w)
 }
 
-func (w *Writer) VisitDropConstraint(action DropConstraintAction) {
+func (w *Writer) VisitDropConstraint(action ast.DropConstraintAction) {
 	w.WriteKeyword("drop")
 	w.WriteBlank()
 	w.WriteKeyword("constraint")
 	w.WriteBlank()
 	action.Name.Accept(w)
-	if stmt.Cascade == ast.Cascade {
+	if action.Cascade == ast.Cascade {
 		w.WriteBlank()
 		w.WriteKeyword("cascade")
-	} else if stmt.Cascade == ast.Restrict {
+	} else if action.Cascade == ast.Restrict {
 		w.WriteBlank()
 		w.WriteKeyword("restrict")
 	}
@@ -292,4 +294,17 @@ func (w *Writer) VisitCheck(cst ast.CheckConstraint) {
 }
 
 func (w *Writer) VisitGenerated(cst ast.GeneratedConstraint) {
+	w.WriteKeyword("generated")
+	w.WriteBlank()
+	if cst.Default {
+		w.WriteKeyword("by")
+		w.WriteBlank()
+		w.WriteKeyword("default")
+	} else {
+		w.WriteKeyword("always")
+	}
+	w.WriteBlank()
+	w.WriteKeyword("as")
+	w.WriteBlank()
+	cst.Expr.Accept(w)
 }

@@ -152,7 +152,8 @@ func (c DefaultConstraint) Accept(visit Visitor) {
 }
 
 type GeneratedConstraint struct {
-	Expr Node
+	Expr    Node
+	Default bool
 }
 
 func (c GeneratedConstraint) Accept(visit Visitor) {
