@@ -71,7 +71,14 @@ type ExprVisitor interface {
 	VisitAssignment(Assignment)
 }
 
-type XmlVisitor interface{}
+type XmlVisitor interface {
+	VisitXmlElement(XmlElement)
+	VisitXmlAttribute(XmlAttribute)
+	VisitXmlNamespace(XmlNamespace)
+	VisitXmlText(XmlText)
+	VisitXmlComment(XmlComment)
+	VisitXmlAgg(XmlAgg)
+}
 
 type DefinitionVisitor interface {
 	VisitCreateProcedure(CreateProcedureStatement)
@@ -259,3 +266,15 @@ func (_ noopVisitor) VisitCheck(_ CheckConstraint) {}
 func (_ noopVisitor) VisitDefault(_ DefaultConstraint) {}
 
 func (_ noopVisitor) VisitGenerated(_ GeneratedConstraint) {}
+
+func (_ noopVisitor) VisitXmlElement(_ XmlElement) {}
+
+func (_ noopVisitor) VisitXmlAttribute(_ XmlAttribute) {}
+
+func (_ noopVisitor) VisitXmlNamespace(_ XmlNamespace) {}
+
+func (_ noopVisitor) VisitXmlText(_ XmlText) {}
+
+func (_ noopVisitor) VisitXmlComment(_ XmlComment) {}
+
+func (_ noopVisitor) VisitXmlAgg(_ XmlAgg) {}

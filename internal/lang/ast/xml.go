@@ -7,14 +7,18 @@ type XmlAttribute struct {
 	Value Node
 }
 
-func (_ XmlAttribute) Accept(visit Visitor) {}
+func (x XmlAttribute) Accept(visit Visitor) {
+	visit.VisitXmlAttribute(x)
+}
 
 type XmlNamespace struct {
 	Name Node
 	Uri  Node
 }
 
-func (_ XmlNamespace) Accept(visit Visitor) {}
+func (x XmlNamespace) Accept(visit Visitor) {
+	visit.VisitXmlNamespace(x)
+}
 
 func (x XmlNamespace) IsDefault() bool {
 	return x.Name == nil
@@ -46,7 +50,9 @@ type XmlElement struct {
 	Children   []Node
 }
 
-func (_ XmlElement) Accept(visit Visitor) {}
+func (x XmlElement) Accept(visit Visitor) {
+	visit.VisitXmlElement(x)
+}
 
 type XmlText struct {
 	token.Position
@@ -54,7 +60,9 @@ type XmlText struct {
 	Text  Node
 }
 
-func (_ XmlText) Accept(visit Visitor) {}
+func (x XmlText) Accept(visit Visitor) {
+	visit.VisitXmlText(x)
+}
 
 type XmlComment struct {
 	token.Position
@@ -62,7 +70,9 @@ type XmlComment struct {
 	Text  Node
 }
 
-func (_ XmlComment) Accept(visit Visitor) {}
+func (x XmlComment) Accept(visit Visitor) {
+	visit.VisitXmlComment(x)
+}
 
 type XmlAgg struct {
 	token.Position
@@ -70,7 +80,9 @@ type XmlAgg struct {
 	Body  Node
 }
 
-func (_ XmlAgg) Accept(visit Visitor) {}
+func (x XmlAgg) Accept(visit Visitor) {
+	visit.VisitXmlAgg(x)
+}
 
 type XmlForest struct {
 	token.Position

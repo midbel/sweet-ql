@@ -99,10 +99,6 @@ func (w *Writer) FormatStatement(stmt ast.Node) error {
 	return nil
 }
 
-func (w *Writer) FormatExpr(stmt ast.Node, nl bool) error {
-	return nil
-}
-
 func (w *Writer) WriteKeyword(kw string) {
 	if w.Upperize.Keyword() || w.Upperize.All() {
 		kw = strings.ToUpper(kw)

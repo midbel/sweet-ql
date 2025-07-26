@@ -329,7 +329,3 @@ func (w *Writer) VisitRow(stmt ast.Row) {
 	}
 	w.WriteString(")")
 }
-
-func (w *Writer) FormatType(dt ast.Type) error {
-	return nil
-}

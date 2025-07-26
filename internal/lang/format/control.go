@@ -8,6 +8,7 @@ func (w *Writer) VisitIf(stmt ast.If) {
 	w.Enter()
 	defer w.Leave()
 	w.visitIf(stmt, "if")
+	w.WritePrefix()
 	w.WriteKeyword("end")
 	w.WriteBlank()
 	w.WriteKeyword("if")
