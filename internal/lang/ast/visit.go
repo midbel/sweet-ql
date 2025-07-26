@@ -73,11 +73,36 @@ type ExprVisitor interface {
 
 type XmlVisitor interface{}
 
+type DefinitionVisitor interface {
+	VisitCreateTable(CreateTableStatement)
+	VisitDropTable(DropTableStatement)
+	VisitAlterTable(AlterTableStatement)
+	VisitCreateView(CreateViewStatement)
+	VisitDropView(DropViewStatement)
+
+	VisitColumnDef(ColumnDef)
+	VisitAddColumn(AddColumnAction)
+	VisitAlterColumn(AlterColumnAction)
+	VisitDropColumn(DropColumnAction)
+	VisitAddConstraint(AddConstraintAction)
+	VisitDropConstraint(DropConstraintAction)
+
+	VisitConstraint(Constraint)
+	VisitPrimaryKey(PrimaryKeyConstraint)
+	VisitForeignKey(ForeignKeyConstraint)
+	VisitNotNull(NotNullConstraint)
+	VisitUnique(UniqueConstraint)
+	VisitCheck(CheckConstraint)
+	VisitDefault(DefaultConstraint)
+	VisitGenerated(GeneratedConstraint)
+}
+
 type Visitor interface {
 	StmtVisitor
 	ExprVisitor
 	XmlVisitor
 	ControlVisitor
+	DefinitionVisitor
 }
 
 type noopVisitor struct{}
@@ -192,3 +217,41 @@ func (_ noopVisitor) VisitReturn(_ Return) {}
 func (_ noopVisitor) VisitCase(_ Case) {}
 
 func (_ noopVisitor) VisitWhen(_ When) {}
+
+func (_ noopVisitor) VisitCreateTable(_ CreateTableStatement) {}
+
+func (_ noopVisitor) VisitDropTable(_ DropTableStatement) {}
+
+func (_ noopVisitor) VisitAlterTable(_ AlterTableStatement) {}
+
+func (_ noopVisitor) VisitCreateView(_ CreateViewStatement) {}
+
+func (_ noopVisitor) VisitDropView(_ DropViewStatement) {}
+
+func (_ noopVisitor) VisitColumnDef(_ ColumnDef) {}
+
+func (_ noopVisitor) VisitAddColumn(_ AddColumnAction) {}
+
+func (_ noopVisitor) VisitAlterColumn(_ AlterColumnAction) {}
+
+func (_ noopVisitor) VisitDropColumn(_ DropColumnAction) {}
+
+func (_ noopVisitor) VisitAddConstraint(_ AddConstraintAction) {}
+
+func (_ noopVisitor) VisitDropConstraint(_ DropConstraintAction) {}
+
+func (_ noopVisitor) VisitConstraint(_ Constraint) {}
+
+func (_ noopVisitor) VisitPrimaryKey(_ PrimaryKeyConstraint) {}
+
+func (_ noopVisitor) VisitForeignKey(_ ForeignKeyConstraint) {}
+
+func (_ noopVisitor) VisitNotNull(_ NotNullConstraint) {}
+
+func (_ noopVisitor) VisitUnique(_ UniqueConstraint) {}
+
+func (_ noopVisitor) VisitCheck(_ CheckConstraint) {}
+
+func (_ noopVisitor) VisitDefault(_ DefaultConstraint) {}
+
+func (_ noopVisitor) VisitGenerated(_ GeneratedConstraint) {}

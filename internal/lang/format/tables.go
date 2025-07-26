@@ -1,379 +1,295 @@
 package format
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) FormatCreateView(stmt ast.CreateViewStatement) error {
-	return nil
-}
-
-func (w *Writer) FormatCreateTable(stmt ast.CreateTableStatement) error {
-	return w.FormatCreateTableWithFormatter(w, stmt)
-}
-
-func (w *Writer) FormatCreateTableWithFormatter(ctf CreateTableFormatter, stmt ast.CreateTableStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitCreateTable(stmt ast.CreateTableStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("create")
 	w.WriteBlank()
-	if err := ctf.FormatTableName(stmt.Name); err != nil {
-		return err
-	}
+	w.WriteKeyword("table")
+	w.WriteBlank()
+	stmt.Name.Accept(w)
 	w.WriteBlank()
 	w.WriteString("(")
 	w.WriteNL()
-
-	var longest int
-	if !w.Compact.All() {
-		for _, c := range stmt.Columns {
-			d, ok := c.(ast.ColumnDef)
-			if !ok {
-				continue
-			}
-			if z := len(d.Name); z > longest {
-				longest = z
-			}
-		}
-	}
 	for i, c := range stmt.Columns {
-		if i > 0 {
-			w.WriteString(",")
+		w.Enter()
+		w.WritePrefix()
+		c.Accept(w)
+		if i < len(stmt.Columns)-1 {
+			w.WriteComma()
 			w.WriteNL()
 		}
-		if err := ctf.FormatColumnDef(ctf, c, longest); err != nil {
-			return err
-		}
+		w.Leave()
 	}
-	for _, c := range stmt.Constraints {
-		w.WriteString(",")
+	if len(stmt.Constraints) > 0 {
+		w.WriteComma()
 		w.WriteNL()
-		if err := ctf.FormatConstraint(c); err != nil {
-			return err
+	}
+	for i, c := range stmt.Constraints {
+		w.Enter()
+		w.WritePrefix()
+		c.Accept(w)
+		if i < len(stmt.Constraints)-1 {
+			w.WriteComma()
+			w.WriteNL()
 		}
+		w.Leave()
 	}
 	w.WriteNL()
 	w.WriteString(")")
-	return nil
 }
 
-func (w *Writer) FormatTableName(stmt ast.Node) error {
-	return w.FormatExpr(stmt, false)
-}
-
-func (w *Writer) FormatColumnDef(ctf ConstraintFormatter, stmt ast.Node, size int) error {
-	def, ok := stmt.(ast.ColumnDef)
-	if !ok {
-		return w.CanNotUse("column", stmt)
+func (w *Writer) VisitDropTable(stmt ast.DropTableStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("drop")
+	w.WriteBlank()
+	w.WriteKeyword("table")
+	w.WriteBlank()
+	for i, s := range stmt.Names {
+		if i > 0 {
+			w.WriteComma()
+		}
+		s.Accept(w)
 	}
-	w.WriteString(def.Name)
-	if z := len(def.Name); size > 0 && z < size {
-		w.WriteString(strings.Repeat(" ", size-z))
+	if stmt.Cascade == ast.Cascade {
+		w.WriteBlank()
+		w.WriteKeyword("cascade")
+	} else if stmt.Cascade == ast.Restrict {
+		w.WriteBlank()
+		w.WriteKeyword("restrict")
+	}
+}
+
+func (w *Writer) VisitAlterTable(stmt ast.AlterTableStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("alter")
+	w.WriteBlank()
+	w.WriteKeyword("table")
+	w.WriteBlank()
+	stmt.Name.Accept(w)
+	w.WriteBlank()
+	stmt.Action.Accept(w)
+}
+
+func (w *Writer) VisitAddColumn(action AddColumnAction) {
+	w.WriteKeyword("add")
+	w.WriteBlank()
+	w.WriteKeyword("column")
+	w.WriteBlank()
+	action.Def.Accept(w)
+}
+
+func (w *Writer) VisitAlterColumn(action AlterColumnAction) {
+
+}
+
+func (w *Writer) VisitDropColumn(action DropColumnAction) {
+	w.WriteKeyword("drop")
+	w.WriteBlank()
+	w.WriteKeyword("column")
+	w.WriteBlank()
+	action.Name.Accept(w)
+	if stmt.Cascade == ast.Cascade {
+		w.WriteBlank()
+		w.WriteKeyword("cascade")
+	} else if stmt.Cascade == ast.Restrict {
+		w.WriteBlank()
+		w.WriteKeyword("restrict")
+	}
+}
+
+func (w *Writer) VisitAddConstraint(action AddConstraintAction) {
+	w.WriteKeyword("add")
+	w.WriteBlank()
+	w.WriteKeyword("constraint")
+	w.WriteBlank()
+	action.Constraint.Accept(w)
+}
+
+func (w *Writer) VisitDropConstraint(action DropConstraintAction) {
+	w.WriteKeyword("drop")
+	w.WriteBlank()
+	w.WriteKeyword("constraint")
+	w.WriteBlank()
+	action.Name.Accept(w)
+	if stmt.Cascade == ast.Cascade {
+		w.WriteBlank()
+		w.WriteKeyword("cascade")
+	} else if stmt.Cascade == ast.Restrict {
+		w.WriteBlank()
+		w.WriteKeyword("restrict")
+	}
+}
+
+func (w *Writer) VisitCreateView(stmt ast.CreateViewStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("create")
+	w.WriteBlank()
+	w.WriteKeyword("view")
+	w.WriteBlank()
+	stmt.Name.Accept(w)
+	if len(stmt.Columns) > 0 {
+		w.WriteString("(")
+		for i, c := range stmt.Columns {
+			if i > 0 {
+				w.WriteComma()
+			}
+			c.Accept(w)
+		}
+		w.WriteString(")")
 	}
 	w.WriteBlank()
-	if err := w.FormatType(def.Type); err != nil {
-		return err
-	}
+	w.WriteKeyword("as")
+	w.WriteNL()
+	stmt.Select.Accept(w)
+}
 
+func (w *Writer) VisitDropView(stmt ast.DropViewStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("drop")
+	w.WriteBlank()
+	w.WriteKeyword("view")
+	w.WriteBlank()
+	for i, s := range stmt.Names {
+		if i > 0 {
+			w.WriteComma()
+		}
+		s.Accept(w)
+	}
+	if stmt.Cascade == ast.Cascade {
+		w.WriteBlank()
+		w.WriteKeyword("cascade")
+	} else if stmt.Cascade == ast.Restrict {
+		w.WriteBlank()
+		w.WriteKeyword("restrict")
+	}
+}
+
+func (w *Writer) VisitColumnDef(def ast.ColumnDef) {
+	def.Name.Accept(w)
+	w.WriteBlank()
+	w.visitType(def.Type)
 	for _, c := range def.Constraints {
 		w.WriteBlank()
-		if err := ctf.FormatConstraint(c); err != nil {
-			return err
-		}
+		c.Accept(w)
 	}
-	return nil
 }
 
-func (w *Writer) FormatConstraint(stmt ast.Node) error {
-	return w.formatConstraint(stmt, "CONSTRAINT")
-}
-
-func (w *Writer) formatConstraint(stmt ast.Node, keyword string) error {
-	cst, ok := stmt.(ast.Constraint)
-	if !ok {
-		return w.CanNotUse("constraint", stmt)
-	}
+func (w *Writer) VisitConstraint(cst ast.Constraint) {
 	if cst.Name != "" {
-		w.WriteKeyword(keyword)
+		w.WriteKeyword("constraint")
 		w.WriteBlank()
-		w.WriteString(cst.Name)
+		w.WriteIdent(cst.Name)
 		w.WriteBlank()
 	}
-	switch stmt := cst.Node.(type) {
-	case ast.PrimaryKeyConstraint:
-		return w.FormatPrimaryKeyConstraint(stmt)
-	case ast.ForeignKeyConstraint:
-		return w.FormatForeignKeyConstraint(stmt)
-	case ast.NotNullConstraint:
-		return w.FormatNotNullConstraint(stmt)
-	case ast.UniqueConstraint:
-		return w.FormatUniqueConstraint(stmt)
-	case ast.CheckConstraint:
-		return w.FormatCheckConstraint(stmt)
-	case ast.DefaultConstraint:
-		return w.FormatDefaultConstraint(stmt)
-	case ast.GeneratedConstraint:
-		return w.FormatGeneratedConstraint(stmt)
-	default:
-		return fmt.Errorf("%T: unsupported constraint type", cst.Node)
-	}
+	cst.Node.Accept(w)
 }
 
-func (w *Writer) FormatPrimaryKeyConstraint(cst ast.PrimaryKeyConstraint) error {
-	kw, _ := cst.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitPrimaryKey(cst ast.PrimaryKeyConstraint) {
+	w.WriteKeyword("primary")
+	w.WriteBlank()
+	w.WriteKeyword("key")
 	if len(cst.Columns) == 0 {
-		return nil
+		return
 	}
 	w.WriteBlank()
 	w.WriteString("(")
 	for i, c := range cst.Columns {
 		if i > 0 {
-			w.WriteString(",")
-			w.WriteBlank()
+			w.WriteComma()
 		}
-		w.WriteString(c)
+		c.Accept(w)
 	}
 	w.WriteString(")")
-	return nil
 }
 
-func (w *Writer) FormatForeignKeyConstraint(cst ast.ForeignKeyConstraint) error {
+func (w *Writer) VisitForeignKey(cst ast.ForeignKeyConstraint) {
 	if len(cst.Locals) > 0 {
-		w.WriteKeyword("FOREIGN KEY")
+		w.WriteKeyword("foreign")
+		w.WriteBlank()
+		w.WriteKeyword("key")
 		w.WriteBlank()
 		w.WriteString("(")
 		for i, c := range cst.Locals {
 			if i > 0 {
-				w.WriteString(",")
-				w.WriteBlank()
+				w.WriteComma()
 			}
-			w.WriteString(c)
+			c.Accept(w)
 		}
 		w.WriteString(")")
 		w.WriteBlank()
 	}
 	if len(cst.Remotes) > 0 {
-		w.WriteKeyword("REFERENCES")
+		w.WriteKeyword("references")
 		w.WriteBlank()
-		w.WriteString(cst.Table)
+		cst.Table.Accept(w)
 		w.WriteString("(")
 		for i, c := range cst.Remotes {
 			if i > 0 {
-				w.WriteString(",")
-				w.WriteBlank()
+				w.WriteComma()
 			}
-			w.WriteString(c)
+			c.Accept(w)
 		}
 		w.WriteString(")")
 	}
-	return nil
 }
 
-func (w *Writer) FormatNotNullConstraint(cst ast.NotNullConstraint) error {
-	kw, _ := cst.Keyword()
-	w.WriteKeyword(kw)
-	return nil
-}
-
-func (w *Writer) FormatUniqueConstraint(cst ast.UniqueConstraint) error {
-	kw, _ := cst.Keyword()
-	w.WriteKeyword(kw)
-	if len(cst.Columns) == 0 {
-		return nil
-	}
+func (w *Writer) VisitNotNull(cst ast.NotNullConstraint) {
+	w.WriteKeyword("not")
 	w.WriteBlank()
+	w.WriteKeyword("null")
+}
+
+func (w *Writer) VisitUnique(cst ast.UniqueConstraint) {
+	w.WriteKeyword("unique")
+	if len(cst.Columns) == 0 {
+		return
+	}
 	w.WriteString("(")
 	for i, c := range cst.Columns {
 		if i > 0 {
-			w.WriteString(",")
-			w.WriteBlank()
+			w.WriteComma()
 		}
-		w.WriteString(c)
+		c.Accept(w)
 	}
 	w.WriteString(")")
-	return nil
 }
 
-func (w *Writer) FormatDefaultConstraint(cst ast.DefaultConstraint) error {
-	kw, _ := cst.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitDefault(cst ast.DefaultConstraint) {
+	compact := w.Compact
+	w.Compact = compactAll
+	defer func() {
+		w.Compact = compact
+	}()
+
+	w.WriteKeyword("default")
 	w.WriteBlank()
-	_, ok := cst.Expr.(ast.Value)
-	if !ok {
-		w.WriteString("(")
-	}
-	if err := w.FormatExpr(cst.Expr, false); err != nil {
-		return err
-	}
-	if !ok {
-		w.WriteString(")")
-	}
-	return nil
+	cst.Expr.Accept(w)
 }
 
-func (w *Writer) FormatCheckConstraint(cst ast.CheckConstraint) error {
-	kw, _ := cst.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitCheck(cst ast.CheckConstraint) {
+	compact := w.Compact
+	w.Compact = compactAll
+	defer func() {
+		w.Compact = compact
+	}()
+	w.WriteKeyword("check")
 	w.WriteBlank()
-	if err := w.FormatExpr(cst.Expr, false); err != nil {
-		return err
-	}
-	return nil
+	cst.Expr.Accept(w)
 }
 
-func (w *Writer) FormatGeneratedConstraint(cst ast.GeneratedConstraint) error {
-	kw, _ := cst.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-	w.WriteString("(")
-	if err := w.FormatExpr(cst.Expr, false); err != nil {
-		return err
-	}
-	w.WriteString(")")
-	w.WriteBlank()
-	w.WriteKeyword("STORED")
-	return nil
-}
-
-func (w *Writer) FormatAlterTable(stmt ast.AlterTableStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-	if err := w.FormatExpr(stmt.Name, false); err != nil {
-		return err
-	}
-	w.WriteBlank()
-	switch action := stmt.Action.(type) {
-	case ast.DropColumnAction:
-		w.WriteKeyword("DROP COLUMN")
-		if action.Exists {
-			w.WriteBlank()
-			w.WriteKeyword("IF EXISTS")
-		}
-		w.WriteBlank()
-		w.WriteString(action.Name)
-		if action.Cascade == ast.Cascade {
-			w.WriteBlank()
-			w.WriteKeyword("CASCADE")
-		} else if action.Cascade == ast.Restrict {
-			w.WriteBlank()
-			w.WriteKeyword("RESTRICT")
-		}
-	case ast.AddColumnAction:
-		w.WriteKeyword("ADD COLUMN")
-		w.WriteBlank()
-
-		def, ok := action.Def.(ast.ColumnDef)
-		if !ok {
-			return w.CanNotUse("add column", action.Def)
-		}
-		w.WriteString(def.Name)
-		w.WriteBlank()
-		if err := w.FormatType(def.Type); err != nil {
-			return err
-		}
-		for _, c := range def.Constraints {
-			w.WriteBlank()
-			if err := w.FormatConstraint(c); err != nil {
-				return err
-			}
-		}
-		return nil
-	case ast.AlterColumnAction:
-	case ast.RenameColumnAction:
-		w.WriteKeyword("RENAME COLUMN")
-		w.WriteBlank()
-		w.WriteString(action.Old)
-		w.WriteBlank()
-		w.WriteKeyword("TO")
-		w.WriteBlank()
-		w.WriteString(action.New)
-	case ast.AddConstraintAction:
-		return w.formatConstraint(action.Constraint, "ADD CONSTRAINT")
-	case ast.DropConstraintAction:
-		w.WriteKeyword("DROP CONSTRAINT")
-		if action.Exists {
-			w.WriteBlank()
-			w.WriteKeyword("IF EXISTS")
-		}
-		w.WriteBlank()
-		w.WriteString(action.Name)
-		if action.Cascade == ast.Cascade {
-			w.WriteBlank()
-			w.WriteKeyword("CASCADE")
-		} else if action.Cascade == ast.Restrict {
-			w.WriteBlank()
-			w.WriteKeyword("RESTRICT")
-		}
-	case ast.RenameConstraintAction:
-		w.WriteKeyword("RENAME CONSTRAINT")
-		w.WriteBlank()
-		w.WriteString(action.Old)
-		w.WriteBlank()
-		w.WriteKeyword("TO")
-		w.WriteBlank()
-		w.WriteString(action.New)
-	case ast.RenameTableAction:
-		w.WriteKeyword("RENAME")
-		w.WriteBlank()
-		w.WriteKeyword("TO")
-		w.WriteBlank()
-		w.WriteString(action.Name)
-	default:
-		return w.CanNotUse("alter table", action)
-	}
-	return nil
-}
-
-func (w *Writer) FormatDropView(stmt ast.DropViewStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-	for i, s := range stmt.Names {
-		if i > 0 {
-			w.WriteString(",")
-			w.WriteBlank()
-		}
-		if err := w.FormatExpr(s, false); err != nil {
-			return err
-		}
-	}
-	switch stmt.Cascade {
-	case ast.Cascade:
-		w.WriteBlank()
-		w.WriteKeyword("CASCADE")
-	case ast.Restrict:
-		w.WriteBlank()
-		w.WriteKeyword("RESTRICT")
-	default:
-	}
-	return nil
-}
-
-func (w *Writer) FormatDropTable(stmt ast.DropTableStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
-	w.WriteBlank()
-	for i, s := range stmt.Names {
-		if i > 0 {
-			w.WriteString(",")
-			w.WriteBlank()
-		}
-		if err := w.FormatExpr(s, false); err != nil {
-			return err
-		}
-	}
-	switch stmt.Cascade {
-	case ast.Cascade:
-		w.WriteBlank()
-		w.WriteKeyword("CASCADE")
-	case ast.Restrict:
-		w.WriteBlank()
-		w.WriteKeyword("RESTRICT")
-	default:
-	}
-	return nil
+func (w *Writer) VisitGenerated(cst ast.GeneratedConstraint) {
 }

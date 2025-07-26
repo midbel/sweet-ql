@@ -1,77 +1,64 @@
 package ast
 
 type ColumnDef struct {
-	Name        string
+	Name        Node
 	Type        Type
 	Constraints []Node
 }
 
-func (_ ColumnDef) Accept(visit Visitor) {}
-
-type RenameTableAction struct {
-	Name string
+func (c ColumnDef) Accept(visit Visitor) {
+	visit.VisitColumnDef(c)
 }
-
-func (_ RenameTableAction) Accept(visit Visitor) {}
-
-type RenameColumnAction struct {
-	Old string
-	New string
-}
-
-func (_ RenameColumnAction) Accept(visit Visitor) {}
 
 type AddColumnAction struct {
-	Def       Node
-	NotExists bool
+	Def Node
 }
 
-func (_ AddColumnAction) Accept(visit Visitor) {}
+func (a AddColumnAction) Accept(visit Visitor) {
+	visit.VisitAddColumn(a)
+}
 
 type AlterColumnAction struct {
-	Name string
+	Name Node
 }
 
-func (_ AlterColumnAction) Accept(visit Visitor) {}
+func (a AlterColumnAction) Accept(visit Visitor) {
+	visit.VisitAlterColumn(a)
+}
 
 type DropColumnAction struct {
-	Name    string
-	Exists  bool
+	Name    Node
 	Cascade CascadeMode
 }
 
-func (_ DropColumnAction) Accept(visit Visitor) {}
+func (a DropColumnAction) Accept(visit Visitor) {
+	visit.VisitDropColumn(a)
+}
 
 type AddConstraintAction struct {
 	Constraint Node
 }
 
-func (_ AddConstraintAction) Accept(visit Visitor) {}
+func (a AddConstraintAction) Accept(visit Visitor) {
+	visit.VisitAddConstraint(a)
+}
 
 type DropConstraintAction struct {
-	Name    string
-	Exists  bool
+	Name    Node
 	Cascade CascadeMode
 }
 
-func (_ DropConstraintAction) Accept(visit Visitor) {}
-
-type RenameConstraintAction struct {
-	Old string
-	New string
+func (a DropConstraintAction) Accept(visit Visitor) {
+	visit.VisitDropConstraint(a)
 }
-
-func (_ RenameConstraintAction) Accept(visit Visitor) {}
 
 type AlterTableStatement struct {
 	Name   Node
 	Action Node
 }
 
-func (_ AlterTableStatement) Accept(visit Visitor) {}
-
-func (s AlterTableStatement) Keyword() (string, error) {
-	return "ALTER TABLE", nil
+func (s AlterTableStatement) Accept(visit Visitor) {
+	visit.VisitAlterTable(s)
 }
 
 type DropViewStatement struct {
@@ -79,10 +66,8 @@ type DropViewStatement struct {
 	Cascade CascadeMode
 }
 
-func (_ DropViewStatement) Accept(visit Visitor) {}
-
-func (s DropViewStatement) Keyword() (string, error) {
-	return "DROP VIEW", nil
+func (s DropViewStatement) Accept(visit Visitor) {
+	visit.VisitDropView(s)
 }
 
 type DropTableStatement struct {
@@ -90,40 +75,95 @@ type DropTableStatement struct {
 	Cascade CascadeMode
 }
 
-func (_ DropTableStatement) Accept(visit Visitor) {}
-
-func (s DropTableStatement) Keyword() (string, error) {
-	return "DROP TABLE", nil
+func (s DropTableStatement) Accept(visit Visitor) {
+	visit.VisitDropTable(s)
 }
 
 type CreateViewStatement struct {
-	Temp    bool
 	Name    Node
 	Columns []Node
 	Select  Node
 }
 
-func (_ CreateViewStatement) Accept(visit Visitor) {}
-
-func (s CreateViewStatement) Keyword() (string, error) {
-	if s.Temp {
-		return "CREATE TEMPORARY VIEW", nil
-	}
-	return "CREATE VIEW", nil
+func (s CreateViewStatement) Accept(visit Visitor) {
+	visit.VisitCreateView(s)
 }
 
 type CreateTableStatement struct {
-	Temp        bool
 	Name        Node
 	Columns     []Node
 	Constraints []Node
 }
 
-func (_ CreateTableStatement) Accept(visit Visitor) {}
+func (s CreateTableStatement) Accept(visit Visitor) {
+	visit.VisitCreateTable(s)
+}
 
-func (s CreateTableStatement) Keyword() (string, error) {
-	if s.Temp {
-		return "CREATE TEMPORARY TABLE", nil
-	}
-	return "CREATE TABLE", nil
+type PrimaryKeyConstraint struct {
+	Columns []Node
+}
+
+func (c PrimaryKeyConstraint) Accept(visit Visitor) {
+	visit.VisitPrimaryKey(c)
+}
+
+type ForeignKeyConstraint struct {
+	Locals   []Node
+	Remotes  []Node
+	Table    Node
+	OnDelete Node
+	OnUpdate Node
+}
+
+func (c ForeignKeyConstraint) Accept(visit Visitor) {
+	visit.VisitForeignKey(c)
+}
+
+type NotNullConstraint struct {
+	Column Node
+}
+
+func (c NotNullConstraint) Accept(visit Visitor) {
+	visit.VisitNotNull(c)
+}
+
+type UniqueConstraint struct {
+	Columns []Node
+}
+
+func (c UniqueConstraint) Accept(visit Visitor) {
+	visit.VisitUnique(c)
+}
+
+type CheckConstraint struct {
+	Expr Node
+}
+
+func (c CheckConstraint) Accept(visit Visitor) {
+	visit.VisitCheck(c)
+}
+
+type DefaultConstraint struct {
+	Expr Node
+}
+
+func (c DefaultConstraint) Accept(visit Visitor) {
+	visit.VisitDefault(c)
+}
+
+type GeneratedConstraint struct {
+	Expr Node
+}
+
+func (c GeneratedConstraint) Accept(visit Visitor) {
+	visit.VisitGenerated(c)
+}
+
+type Constraint struct {
+	Name string
+	Node
+}
+
+func (c Constraint) Accept(visit Visitor) {
+	visit.VisitConstraint(c)
 }

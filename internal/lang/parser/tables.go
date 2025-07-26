@@ -78,53 +78,14 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 		return nil, err
 	}
 	switch {
-	case p.IsKeyword("RENAME TO"):
-		p.Next()
-		stmt.Action = ast.RenameTableAction{
-			Name: p.GetCurrLiteral(),
-		}
-		p.Next()
-	case p.IsKeyword("RENAME CONSTRAINT"):
-		p.Next()
-		src := p.GetCurrLiteral()
-		p.Next()
-		if !p.IsKeyword("TO") {
-			return nil, p.Unexpected("alter table", keywordExpected("TO"))
-		}
-		p.Next()
-		dst := p.GetCurrLiteral()
-		stmt.Action = ast.RenameConstraintAction{
-			Old: src,
-			New: dst,
-		}
-		p.Next()
-	case p.IsKeyword("RENAME COLUMN"):
-		p.Next()
-		src := p.GetCurrLiteral()
-		p.Next()
-		if !p.IsKeyword("TO") {
-			return nil, p.Unexpected("alter table", keywordExpected("TO"))
-		}
-		p.Next()
-		dst := p.GetCurrLiteral()
-		stmt.Action = ast.RenameColumnAction{
-			Old: src,
-			New: dst,
-		}
-		p.Next()
 	case p.IsKeyword("ADD") || p.IsKeyword("ADD COLUMN"):
 		p.Next()
-		var notExists bool
-		if notExists = p.IsKeyword("IF NOT EXISTS"); notExists {
-			p.Next()
-		}
 		def, err := p.ParseColumnDef(p)
 		if err != nil {
 			return nil, err
 		}
 		stmt.Action = ast.AddColumnAction{
-			Def:       def,
-			NotExists: notExists,
+			Def: def,
 		}
 	case p.IsKeyword("ADD CONSTRAINT"):
 		cst, err := p.parseConstraintWithKeyword("ADD CONSTRAINT", true, false)
@@ -140,19 +101,20 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			action ast.AlterColumnAction
 			err    error
 		)
-		action.Name = p.GetCurrLiteral()
-		p.Next()
+		action.Name, err = p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
 		stmt.Action = action
 		return nil, err
 	case p.IsKeyword("DROP CONSTRAINT"):
 		p.Next()
-		var exists bool
-		if exists = p.IsKeyword("IF EXISTS"); exists {
-			p.Next()
+		ident, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
 		}
 		action := ast.DropConstraintAction{
-			Name:   p.GetCurrLiteral(),
-			Exists: exists,
+			Name: ident,
 		}
 		p.Next()
 		if p.IsKeyword("CASCADE") {
@@ -165,13 +127,12 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 		stmt.Action = action
 	case p.IsKeyword("DROP") || p.IsKeyword("DROP COLUMN"):
 		p.Next()
-		var exists bool
-		if exists = p.IsKeyword("IF EXISTS"); exists {
-			p.Next()
+		ident, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
 		}
 		action := ast.DropColumnAction{
-			Name:   p.GetCurrLiteral(),
-			Exists: exists,
+			Name: ident,
 		}
 		p.Next()
 		if p.IsKeyword("CASCADE") {
@@ -260,8 +221,10 @@ func (p *Parser) ParseColumnDef(ctp CreateTableParser) (ast.Node, error) {
 		def ast.ColumnDef
 		err error
 	)
-	def.Name = p.GetCurrLiteral()
-	p.Next()
+	def.Name, err = p.ParseIdentifier()
+	if err != nil {
+		return nil, err
+	}
 	if def.Type, err = p.ParseType(); err != nil {
 		return nil, err
 	}
@@ -334,8 +297,11 @@ func (p *Parser) ParsePrimaryKeyConstraint(short bool) (ast.Node, error) {
 		if !p.Is(token.Ident) {
 			return nil, p.Unexpected("primary key", identExpected)
 		}
-		cst.Columns = append(cst.Columns, p.GetCurrLiteral())
-		p.Next()
+		col, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		cst.Columns = append(cst.Columns, col)
 		if err := p.EnsureEnd("primary key", token.Comma, token.Rparen); err != nil {
 			return nil, err
 		}
@@ -354,8 +320,11 @@ func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Node, error) {
 			if !p.Is(token.Ident) {
 				return nil, p.Unexpected("foreign key", identExpected)
 			}
-			cst.Locals = append(cst.Locals, p.GetCurrLiteral())
-			p.Next()
+			col, err := p.ParseIdentifier()
+			if err != nil {
+				return nil, err
+			}
+			cst.Locals = append(cst.Locals, col)
 			if err := p.EnsureEnd("foreign key", token.Comma, token.Rparen); err != nil {
 				return nil, err
 			}
@@ -368,11 +337,11 @@ func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Node, error) {
 		return nil, p.Unexpected("foreign key", keywordExpected("REFERENCES"))
 	}
 	p.Next()
-	if !p.Is(token.Ident) {
-		return nil, p.Unexpected("foreign key", identExpected)
+	ident, err := p.ParseIdentifier()
+	if err != nil {
+		return nil, err
 	}
-	cst.Table = p.GetCurrLiteral()
-	p.Next()
+	cst.Table = ident
 	if err := p.Expect("foreign key", token.Lparen); err != nil {
 		return nil, err
 	}
@@ -380,8 +349,11 @@ func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Node, error) {
 		if !p.Is(token.Ident) {
 			return nil, p.Unexpected("foreign key", identExpected)
 		}
-		cst.Remotes = append(cst.Remotes, p.GetCurrLiteral())
-		p.Next()
+		col, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		cst.Remotes = append(cst.Remotes, col)
 		if err := p.EnsureEnd("foreign key", token.Comma, token.Rparen); err != nil {
 			return nil, err
 		}
@@ -402,8 +374,11 @@ func (p *Parser) ParseUniqueConstraint(short bool) (ast.Node, error) {
 		if !p.Is(token.Ident) {
 			return nil, p.Unexpected("unique", identExpected)
 		}
-		cst.Columns = append(cst.Columns, p.GetCurrLiteral())
-		p.Next()
+		col, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		cst.Columns = append(cst.Columns, col)
 		if err := p.EnsureEnd("unique", token.Comma, token.Rparen); err != nil {
 			return nil, err
 		}
