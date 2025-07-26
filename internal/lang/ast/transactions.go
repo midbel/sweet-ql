@@ -1,21 +1,5 @@
 package ast
 
-type TransactionMode int
-
-const (
-	ModeReadWrite TransactionMode = 1 << (iota + 1)
-	ModeReadOnly
-)
-
-type TransactionLevel int
-
-const (
-	LevelReadRepeat TransactionLevel = 1 << (iota + 1)
-	LevelReadCommit
-	LevelReadUncommit
-	LevelSerializable
-)
-
 type SetTransaction struct {
 	Mode  TransactionMode
 	Level TransactionLevel

@@ -238,17 +238,6 @@ type Placeholder struct {
 
 func (_ Placeholder) Accept(visit Visitor) {}
 
-type StaticType int8
-
-const (
-	TypeAny StaticType = 1 << iota
-	TypeNumber
-	TypeText
-	TypeDate
-	TypeBool
-	TypeNull
-)
-
 type Value struct {
 	token.Position
 	Literal string

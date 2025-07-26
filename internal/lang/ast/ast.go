@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
@@ -13,7 +11,6 @@ type Expr interface {
 
 type Stmt interface {
 	IsStmt() bool
-	Keyword() (string, error)
 }
 
 type Node interface {
@@ -58,13 +55,6 @@ func (o Offset) Accept(visit Visitor) {
 	visit.VisitOffset(o)
 }
 
-type OrderDir uint8
-
-const (
-	AscOrder OrderDir = 1 << iota
-	DescOrder
-)
-
 type Order struct {
 	token.Position
 
@@ -105,24 +95,6 @@ type Window struct {
 
 func (_ Window) Accept(visit Visitor) {}
 
-type FrameRow int
-
-const (
-	RowCurrent FrameRow = 1 << iota
-	RowPreceding
-	RowFollowing
-	RowUnbounded
-)
-
-type FrameExclude int
-
-const (
-	ExcludeCurrent FrameExclude = 1 << (iota + 1)
-	ExcludeNoOthers
-	ExcludeGroup
-	ExcludeTies
-)
-
 type FrameSpec struct {
 	Row  FrameRow
 	Expr Node
@@ -135,13 +107,6 @@ type BetweenFrameSpec struct {
 }
 
 func (_ BetweenFrameSpec) Accept(visit Visitor) {}
-
-type MaterializedMode int
-
-const (
-	MaterializedCte MaterializedMode = iota + 1
-	NotMaterializedCte
-)
 
 type CteStatement struct {
 	token.Position
@@ -168,10 +133,6 @@ func (s WithStatement) Accept(visit Visitor) {
 	visit.VisitWith(s)
 }
 
-func (s WithStatement) Keyword() (string, error) {
-	return "WITH", nil
-}
-
 func (s WithStatement) Get() Node {
 	if len(s.Queries) == 0 {
 		return s.Node
@@ -189,10 +150,6 @@ type ValuesStatement struct {
 
 func (s ValuesStatement) Accept(visit Visitor) {
 	visit.VisitValues(s)
-}
-
-func (s ValuesStatement) Keyword() (string, error) {
-	return "VALUES", nil
 }
 
 type SelectStatement struct {
@@ -213,14 +170,6 @@ func (s SelectStatement) Accept(visit Visitor) {
 	visit.VisitSelect(s)
 }
 
-func (s SelectStatement) Keyword() (string, error) {
-	return "SELECT", nil
-}
-
-func (s SelectStatement) ColumnsCount() int {
-	return -1
-}
-
 type UnionStatement struct {
 	token.Position
 
@@ -232,10 +181,6 @@ type UnionStatement struct {
 
 func (s UnionStatement) Accept(visit Visitor) {
 	visit.VisitUnion(s)
-}
-
-func (s UnionStatement) Keyword() (string, error) {
-	return getCompoundKeyword("UNION", s.All, s.Distinct)
 }
 
 func (s UnionStatement) GetNode() []Node {
@@ -255,10 +200,6 @@ func (s IntersectStatement) Accept(visit Visitor) {
 	visit.VisitIntersect(s)
 }
 
-func (s IntersectStatement) Keyword() (string, error) {
-	return getCompoundKeyword("INTERSECT", s.All, s.Distinct)
-}
-
 func (s IntersectStatement) GetNode() []Node {
 	return slx.Make(s.Left, s.Right)
 }
@@ -274,10 +215,6 @@ type ExceptStatement struct {
 
 func (s ExceptStatement) Accept(visit Visitor) {
 	visit.VisitExcept(s)
-}
-
-func (s ExceptStatement) Keyword() (string, error) {
-	return getCompoundKeyword("EXCEPT", s.All, s.Distinct)
 }
 
 func (s ExceptStatement) GetNode() []Node {
@@ -308,10 +245,6 @@ func (s MergeStatement) Accept(visit Visitor) {
 	visit.VisitMerge(s)
 }
 
-func (s MergeStatement) Keyword() (string, error) {
-	return "MERGE", nil
-}
-
 type Assignment struct {
 	Field Node
 	Value Node
@@ -333,10 +266,6 @@ func (s InsertStatement) Accept(visit Visitor) {
 	visit.VisitInsert(s)
 }
 
-func (s InsertStatement) Keyword() (string, error) {
-	return "INSERT INTO", nil
-}
-
 type UpdateStatement struct {
 	token.Position
 
@@ -349,10 +278,6 @@ func (s UpdateStatement) Accept(visit Visitor) {
 	visit.VisitUpdate(s)
 }
 
-func (s UpdateStatement) Keyword() (string, error) {
-	return "UPDATE", nil
-}
-
 type TruncateStatement struct {
 	Tables   []Node
 	Cascade  CascadeMode
@@ -361,10 +286,6 @@ type TruncateStatement struct {
 
 func (s TruncateStatement) Accept(visit Visitor) {
 	visit.VisitTruncate(s)
-}
-
-func (s TruncateStatement) Keyword() (string, error) {
-	return "TRUNCATE", nil
 }
 
 type DeleteStatement struct {
@@ -378,10 +299,6 @@ func (s DeleteStatement) Accept(visit Visitor) {
 	visit.VisitDelete(s)
 }
 
-func (s DeleteStatement) Keyword() (string, error) {
-	return "DELETE FROM", nil
-}
-
 type CallStatement struct {
 	token.Position
 	Ident Node
@@ -390,22 +307,3 @@ type CallStatement struct {
 }
 
 func (s CallStatement) Accept(visit Visitor) {}
-
-func (_ CallStatement) Keyword() (string, error) {
-	return "CALL", nil
-}
-
-func getCompoundKeyword(kw string, all, distinct bool) (string, error) {
-	var suffix string
-	switch {
-	default:
-		return kw, nil
-	case all:
-		suffix = "ALL"
-	case distinct:
-		suffix = "DISTINCT"
-	case all && distinct:
-		return "", fmt.Errorf("%s: all and distinct can not be set at the same time", kw)
-	}
-	return fmt.Sprintf("%s %s", kw, suffix), nil
-}

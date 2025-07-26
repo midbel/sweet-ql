@@ -1,13 +1,5 @@
 package ast
 
-type ParameterMode int
-
-const (
-	ModeIn ParameterMode = 1 << (iota + 1)
-	ModeOut
-	ModeInOut
-)
-
 type ProcedureParameter struct {
 	Mode    ParameterMode
 	Name    string

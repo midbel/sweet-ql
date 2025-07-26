@@ -1,19 +1,5 @@
 package ast
 
-type CascadeMode int
-
-const (
-	Cascade CascadeMode = 1 << iota
-	Restrict
-)
-
-type IdentityMode int
-
-const (
-	RestartIdentity IdentityMode = 1 << iota
-	ContinueIdentity
-)
-
 type ColumnDef struct {
 	Name        string
 	Type        Type
