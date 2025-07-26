@@ -10,12 +10,8 @@ func (p *Parser) ParseCreateProcedure() (ast.Node, error) {
 		stmt ast.CreateProcedureStatement
 		err  error
 	)
-	if p.IsKeyword("CREATE OR REPLACE PROCEDURE") {
-		stmt.Replace = true
-	}
 	p.Next()
-	stmt.Name, err = p.ParseProcedureName()
-	if err != nil {
+	if stmt.Name, err = p.ParseIdentifier(); err != nil {
 		return nil, err
 	}
 	if stmt.Parameters, err = p.ParseProcedureParameters(); err != nil {
@@ -27,10 +23,6 @@ func (p *Parser) ParseCreateProcedure() (ast.Node, error) {
 
 	stmt.Body, err = p.ParseProcedureBody()
 	return stmt, err
-}
-
-func (p *Parser) ParseProcedureName() (ast.Node, error) {
-	return p.ParseIdentifier()
 }
 
 func (p *Parser) ParseProcedureLanguage() (string, error) {
@@ -58,11 +50,11 @@ func (p *Parser) ParseProcedureBody() (ast.Node, error) {
 	return body, err
 }
 
-func (p *Parser) ParseProcedureParameters() ([]ast.Node, error) {
+func (p *Parser) ParseProcedureParameters() ([]ast.ProcedureParameter, error) {
 	if err := p.Expect("procedure", token.Lparen); err != nil {
 		return nil, err
 	}
-	var list []ast.Node
+	var list []ast.ProcedureParameter
 	for !p.Done() && !p.Is(token.Rparen) {
 		stmt, err := p.ParseProcedureParameter()
 		if err != nil {
@@ -76,7 +68,7 @@ func (p *Parser) ParseProcedureParameters() ([]ast.Node, error) {
 	return list, p.Expect("procedure", token.Rparen)
 }
 
-func (p *Parser) ParseProcedureParameter() (ast.Node, error) {
+func (p *Parser) ParseProcedureParameter() (ast.ProcedureParameter, error) {
 	var (
 		param ast.ProcedureParameter
 		err   error
@@ -94,18 +86,18 @@ func (p *Parser) ParseProcedureParameter() (ast.Node, error) {
 		p.Next()
 	}
 	if !p.Is(token.Ident) {
-		return nil, p.Unexpected("procedure", identExpected)
+		return param, p.Unexpected("procedure", identExpected)
 	}
 	param.Name = p.GetCurrLiteral()
 	p.Next()
 	if param.Type, err = p.ParseType(); err != nil {
-		return nil, err
+		return param, err
 	}
 	if p.IsKeyword("DEFAULT") || p.Is(token.Eq) {
 		p.Next()
 		param.Default, err = p.StartExpression()
 		if err != nil {
-			return nil, err
+			return param, err
 		}
 	}
 	return param, nil

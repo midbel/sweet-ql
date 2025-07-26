@@ -1,80 +1,58 @@
 package format
 
 import (
-	"strings"
-
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) FormatCreateProcedure(stmt ast.CreateProcedureStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitCreateProcedure(stmt ast.CreateProcedureStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("create")
 	w.WriteBlank()
-	if err := w.FormatExpr(stmt.Name, false); err != nil {
-		return err
-	}
+	w.WriteKeyword("procedure")
+	w.WriteBlank()
+	stmt.Name.Accept(w)
 	w.WriteString("(")
-	w.WriteNL()
-
-	for i, s := range stmt.Parameters {
+	for i, p := range stmt.Parameters {
 		if i > 0 {
-			w.WriteString(",")
-			w.WriteNL()
+			w.WriteComma()
 		}
-		p, ok := s.(ast.ProcedureParameter)
-		if !ok {
-			return w.CanNotUse("create procedure", s)
-		}
-		if err := w.formatParamter(p); err != nil {
-			return err
-		}
+		w.visitParamter(p)
 	}
-	w.WriteNL()
 	w.WriteString(")")
 	w.WriteNL()
 	if stmt.Language != "" {
-		w.WriteKeyword("LANGUAGE")
+		w.WriteKeyword("language")
 		w.WriteBlank()
-		w.WriteString(stmt.Language)
+		w.WriteIdent(stmt.Language)
 		w.WriteNL()
 	}
-	w.WriteKeyword("BEGIN")
+	w.WriteKeyword("begin")
 	w.WriteNL()
-	if err := w.FormatStatement(stmt.Body); err != nil {
-		return err
-	}
-	w.WriteKeyword("END")
-	return nil
+	stmt.Body.Accept(w)
+	w.WriteKeyword("end")
 }
 
-func (w *Writer) formatParamter(param ast.ProcedureParameter) error {
-
+func (w *Writer) visitParamter(param ast.ProcedureParameter) {
 	switch param.Mode {
 	case ast.ModeIn:
-		w.WriteKeyword("IN")
+		w.WriteKeyword("in")
 	case ast.ModeOut:
-		w.WriteKeyword("OUT")
+		w.WriteKeyword("out")
 	case ast.ModeInOut:
-		w.WriteKeyword("INOUT")
+		w.WriteKeyword("inout")
 	}
 	if param.Mode != 0 {
 		w.WriteBlank()
 	}
-	if w.Upperize.Identifier() || w.Upperize.All() {
-		param.Name = strings.ToUpper(param.Name)
-	}
-	w.WriteString(param.Name)
+	w.WriteIdent(param.Name)
 	w.WriteBlank()
-	if err := w.FormatType(param.Type); err != nil {
-		return err
-	}
+	w.visitType(param.Type)
 	if param.Default != nil {
 		w.WriteBlank()
-		w.WriteKeyword("DEFAULT")
+		w.WriteKeyword("default")
 		w.WriteBlank()
-		if err := w.FormatExpr(param.Default, false); err != nil {
-			return err
-		}
+		param.Default.Accept(w)
 	}
-	return nil
 }

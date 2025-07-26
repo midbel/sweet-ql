@@ -74,6 +74,8 @@ type ExprVisitor interface {
 type XmlVisitor interface{}
 
 type DefinitionVisitor interface {
+	VisitCreateProcedure(CreateProcedureStatement)
+
 	VisitCreateTable(CreateTableStatement)
 	VisitDropTable(DropTableStatement)
 	VisitAlterTable(AlterTableStatement)
@@ -217,6 +219,8 @@ func (_ noopVisitor) VisitReturn(_ Return) {}
 func (_ noopVisitor) VisitCase(_ Case) {}
 
 func (_ noopVisitor) VisitWhen(_ When) {}
+
+func (_ noopVisitor) VisitCreateProcedure(CreateProcedureStatement) {}
 
 func (_ noopVisitor) VisitCreateTable(_ CreateTableStatement) {}
 

@@ -7,21 +7,13 @@ type ProcedureParameter struct {
 	Default Node
 }
 
-func (_ ProcedureParameter) Accept(visit Visitor) {}
-
 type CreateProcedureStatement struct {
-	Replace    bool
 	Name       Node
-	Parameters []Node
+	Parameters []ProcedureParameter
 	Language   string
 	Body       Node
 }
 
-func (_ CreateProcedureStatement) Accept(visit Visitor) {}
-
-func (s CreateProcedureStatement) Keyword() (string, error) {
-	if s.Replace {
-		return "CREATE OR REPLACE PROCEDURE", nil
-	}
-	return "CREATE PROCEDURE", nil
+func (s CreateProcedureStatement) Accept(visit Visitor) {
+	visit.VisitCreateProcedure(s)
 }

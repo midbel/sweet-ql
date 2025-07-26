@@ -87,7 +87,6 @@ func CompactKeyword(kw string) string {
 
 var ansi = [][]string{
 	{"create", "procedure"},
-	{"create", "or", "replace", "procedure"},
 	{"create", "table"},
 	{"create", "view"},
 	{"declare"},
