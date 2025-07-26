@@ -27,6 +27,8 @@ type StmtVisitor interface {
 	VisitCte(CteStatement)
 	VisitMerge(MergeStatement)
 
+	VisitCall(CallStatement)
+
 	VisitGrant(GrantStatement)
 	VisitRevoke(RevokeStatement)
 
@@ -58,7 +60,7 @@ type ExprVisitor interface {
 	VisitAny(Any)
 	VisitNot(Not)
 	VisitCast(Cast)
-	VisitCall(Call)
+	VisitCallFunc(Call)
 
 	VisitValue(Value)
 	VisitAlias(Alias)
@@ -111,6 +113,8 @@ func (_ noopVisitor) VisitMerge(_ MergeStatement) {}
 
 func (_ noopVisitor) VisitMatch(_ MatchStatement) {}
 
+func (_ noopVisitor) VisitCall(_ CallStatement) {}
+
 func (_ noopVisitor) VisitGrant(_ GrantStatement) {}
 
 func (_ noopVisitor) VisitRevoke(_ RevokeStatement) {}
@@ -141,7 +145,7 @@ func (_ noopVisitor) VisitBinary(_ Binary) {}
 
 func (_ noopVisitor) VisitUnary(_ Unary) {}
 
-func (_ noopVisitor) VisitCall(_ Call) {}
+func (_ noopVisitor) VisitCallFunc(_ Call) {}
 
 func (_ noopVisitor) VisitList(_ List) {}
 

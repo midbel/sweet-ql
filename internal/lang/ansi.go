@@ -94,8 +94,6 @@ var ansi = [][]string{
 	{"create", "temporary", "view"},
 	{"create", "temp", "table"},
 	{"create", "temporary", "table"},
-	{"if", "not", "exists"},
-	{"if", "exists"},
 	{"declare"},
 	{"default"},
 	{"exists"},

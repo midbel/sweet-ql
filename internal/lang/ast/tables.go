@@ -76,7 +76,6 @@ func (s AlterTableStatement) Keyword() (string, error) {
 
 type DropViewStatement struct {
 	Names   []Node
-	Exists  bool
 	Cascade CascadeMode
 }
 
@@ -88,7 +87,6 @@ func (s DropViewStatement) Keyword() (string, error) {
 
 type DropTableStatement struct {
 	Names   []Node
-	Exists  bool
 	Cascade CascadeMode
 }
 
@@ -99,11 +97,10 @@ func (s DropTableStatement) Keyword() (string, error) {
 }
 
 type CreateViewStatement struct {
-	Temp      bool
-	Name      Node
-	NotExists bool
-	Columns   []Node
-	Select    Node
+	Temp    bool
+	Name    Node
+	Columns []Node
+	Select  Node
 }
 
 func (_ CreateViewStatement) Accept(visit Visitor) {}
@@ -118,7 +115,6 @@ func (s CreateViewStatement) Keyword() (string, error) {
 type CreateTableStatement struct {
 	Temp        bool
 	Name        Node
-	NotExists   bool
 	Columns     []Node
 	Constraints []Node
 }

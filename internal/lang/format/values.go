@@ -59,7 +59,7 @@ func (w *Writer) VisitCollate(collate ast.Collate) {
 	collate.Value.Accept(w)
 }
 
-func (w *Writer) VisitCall(call ast.Call) {
+func (w *Writer) VisitCallFunc(call ast.Call) {
 	call.Ident.Accept(w)
 	w.WriteString("(")
 	if call.Distinct {

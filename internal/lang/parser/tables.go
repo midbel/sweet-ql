@@ -17,10 +17,6 @@ func (p *Parser) ParseDropTable() (ast.Node, error) {
 		stmt ast.DropTableStatement
 		err  error
 	)
-	if p.IsKeyword("IF EXISTS") {
-		stmt.Exists = true
-		p.Next()
-	}
 	for !p.QueryEnds() && !p.Done() {
 		n, err := p.ParseIdentifier()
 		if err != nil {
@@ -49,10 +45,6 @@ func (p *Parser) ParseDropView() (ast.Node, error) {
 		stmt ast.DropViewStatement
 		err  error
 	)
-	if p.IsKeyword("IF EXISTS") {
-		stmt.Exists = true
-		p.Next()
-	}
 	for !p.QueryEnds() && !p.Done() {
 		n, err := p.ParseIdentifier()
 		if err != nil {
@@ -206,10 +198,6 @@ func (p *Parser) ParseCreateTableStatement(ctp CreateTableParser) (ast.Node, err
 		stmt ast.CreateTableStatement
 		err  error
 	)
-	if p.IsKeyword("IF NOT EXISTS") {
-		p.Next()
-		stmt.NotExists = true
-	}
 	if stmt.Name, err = ctp.ParseTableName(); err != nil {
 		return nil, err
 	}
@@ -245,10 +233,6 @@ func (p *Parser) ParseCreateView() (ast.Node, error) {
 		stmt ast.CreateViewStatement
 		err  error
 	)
-	if p.IsKeyword("IF NOT EXISTS") {
-		p.Next()
-		stmt.NotExists = true
-	}
 	if stmt.Name, err = p.ParseTableName(); err != nil {
 		return nil, err
 	}

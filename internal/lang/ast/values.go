@@ -103,7 +103,7 @@ type Call struct {
 }
 
 func (c Call) Accept(visit Visitor) {
-	visit.VisitCall(c)
+	visit.VisitCallFunc(c)
 }
 
 func (c Call) GetStatement() []Node {

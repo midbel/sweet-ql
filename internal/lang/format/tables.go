@@ -11,24 +11,6 @@ func (w *Writer) FormatCreateView(stmt ast.CreateViewStatement) error {
 	return nil
 }
 
-type CreateTableFormatter interface {
-	FormatTableName(ast.Node) error
-	FormatColumnDef(ConstraintFormatter, ast.Node, int) error
-	ConstraintFormatter
-}
-
-type ConstraintFormatter interface {
-	FormatConstraint(ast.Node) error
-
-	FormatPrimaryKeyConstraint(ast.PrimaryKeyConstraint) error
-	FormatForeignKeyConstraint(ast.ForeignKeyConstraint) error
-	FormatDefaultConstraint(ast.DefaultConstraint) error
-	FormatNotNullConstraint(ast.NotNullConstraint) error
-	FormatUniqueConstraint(ast.UniqueConstraint) error
-	FormatCheckConstraint(ast.CheckConstraint) error
-	FormatGeneratedConstraint(ast.GeneratedConstraint) error
-}
-
 func (w *Writer) FormatCreateTable(stmt ast.CreateTableStatement) error {
 	return w.FormatCreateTableWithFormatter(w, stmt)
 }
@@ -37,10 +19,6 @@ func (w *Writer) FormatCreateTableWithFormatter(ctf CreateTableFormatter, stmt a
 	kw, _ := stmt.Keyword()
 	w.WriteKeyword(kw)
 	w.WriteBlank()
-	if stmt.NotExists {
-		w.WriteKeyword("IF NOT EXISTS")
-		w.WriteBlank()
-	}
 	if err := ctf.FormatTableName(stmt.Name); err != nil {
 		return err
 	}
@@ -353,10 +331,6 @@ func (w *Writer) FormatAlterTable(stmt ast.AlterTableStatement) error {
 func (w *Writer) FormatDropView(stmt ast.DropViewStatement) error {
 	kw, _ := stmt.Keyword()
 	w.WriteKeyword(kw)
-	if stmt.Exists {
-		w.WriteBlank()
-		w.WriteKeyword("IF EXISTS")
-	}
 	w.WriteBlank()
 	for i, s := range stmt.Names {
 		if i > 0 {
@@ -382,10 +356,6 @@ func (w *Writer) FormatDropView(stmt ast.DropViewStatement) error {
 func (w *Writer) FormatDropTable(stmt ast.DropTableStatement) error {
 	kw, _ := stmt.Keyword()
 	w.WriteKeyword(kw)
-	if stmt.Exists {
-		w.WriteBlank()
-		w.WriteKeyword("IF EXISTS")
-	}
 	w.WriteBlank()
 	for i, s := range stmt.Names {
 		if i > 0 {

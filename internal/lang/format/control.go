@@ -82,22 +82,21 @@ func (w *Writer) VisitDeclare(stmt ast.Declare) {
 	}
 }
 
-func (w *Writer) FormatCall(stmt ast.CallStatement) error {
-	kw, _ := stmt.Keyword()
-	w.WriteKeyword(kw)
+func (w *Writer) VisitCall(stmt ast.CallStatement) {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("call")
+	w.WriteBlank()
+	stmt.Ident.Accept(w)
+	w.WriteBlank()
 	w.WriteString("(")
-	defer w.WriteString(")")
 
-	w.WriteNL()
 	for i, a := range stmt.Args {
 		if i > 0 {
-			w.WriteString(",")
-			w.WriteNL()
+			w.WriteComma()
 		}
-		if err := w.FormatExpr(a, false); err != nil {
-			return err
-		}
+		a.Accept(w)
 	}
-	w.WriteNL()
-	return nil
+	w.WriteString(")")
 }
