@@ -118,9 +118,15 @@ func (w *Writer) VisitXmlComment(elem ast.XmlComment) {
 	w.WriteString(")")
 }
 
-func (w *Writer) VisitXmlAgg(elem ast.XmlComment) {
+func (w *Writer) VisitXmlAgg(elem ast.XmlAgg) {
 	w.WriteCall("xmlagg")
 	w.WriteString("(")
+	w.WriteNL()
+	w.Enter()
+	w.WritePrefix()
 	elem.Body.Accept(w)
+	w.WriteNL()
+	w.Leave()
+	w.WritePrefix()
 	w.WriteString(")")
 }
