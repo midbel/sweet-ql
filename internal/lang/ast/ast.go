@@ -23,7 +23,9 @@ type CommentedNode struct {
 	After  string
 }
 
-func (n CommentedNode) Accept(visit Visitor) {}
+func (n CommentedNode) Accept(visit Visitor) error {
+	return nil
+}
 
 func (n CommentedNode) Get() Node {
 	if len(n.Before) == 0 && n.After == "" {
@@ -39,8 +41,8 @@ type Limit struct {
 	Offset Node
 }
 
-func (i Limit) Accept(visit Visitor) {
-	visit.VisitLimit(i)
+func (i Limit) Accept(visit Visitor) error {
+	return visit.VisitLimit(i)
 }
 
 type Offset struct {
@@ -51,8 +53,8 @@ type Offset struct {
 	Next   bool
 }
 
-func (o Offset) Accept(visit Visitor) {
-	visit.VisitOffset(o)
+func (o Offset) Accept(visit Visitor) error {
+	return visit.VisitOffset(o)
 }
 
 type Order struct {
@@ -63,8 +65,8 @@ type Order struct {
 	Nulls string
 }
 
-func (o Order) Accept(visit Visitor) {
-	visit.VisitOrder(o)
+func (o Order) Accept(visit Visitor) error {
+	return visit.VisitOrder(o)
 }
 
 type Join struct {
@@ -75,8 +77,8 @@ type Join struct {
 	Where Node
 }
 
-func (j Join) Accept(visit Visitor) {
-	visit.VisitJoin(j)
+func (j Join) Accept(visit Visitor) error {
+	return visit.VisitJoin(j)
 }
 
 type WindowDefinition struct {
@@ -84,7 +86,9 @@ type WindowDefinition struct {
 	Window Node
 }
 
-func (_ WindowDefinition) Accept(visit Visitor) {}
+func (_ WindowDefinition) Accept(visit Visitor) error {
+	return nil
+}
 
 type Window struct {
 	Ident      Node
@@ -93,7 +97,9 @@ type Window struct {
 	Spec       FrameSpec
 }
 
-func (_ Window) Accept(visit Visitor) {}
+func (_ Window) Accept(visit Visitor) error {
+	return nil
+}
 
 type FrameSpec struct {
 	Row  FrameRow
@@ -106,7 +112,9 @@ type BetweenFrameSpec struct {
 	Exclude FrameExclude
 }
 
-func (_ BetweenFrameSpec) Accept(visit Visitor) {}
+func (_ BetweenFrameSpec) Accept(visit Visitor) error {
+	return nil
+}
 
 type CteStatement struct {
 	token.Position
@@ -117,8 +125,8 @@ type CteStatement struct {
 	Node
 }
 
-func (s CteStatement) Accept(visit Visitor) {
-	visit.VisitCte(s)
+func (s CteStatement) Accept(visit Visitor) error {
+	return visit.VisitCte(s)
 }
 
 type WithStatement struct {
@@ -129,8 +137,8 @@ type WithStatement struct {
 	Node
 }
 
-func (s WithStatement) Accept(visit Visitor) {
-	visit.VisitWith(s)
+func (s WithStatement) Accept(visit Visitor) error {
+	return visit.VisitWith(s)
 }
 
 func (s WithStatement) Get() Node {
@@ -148,8 +156,8 @@ type ValuesStatement struct {
 	Limit  Node
 }
 
-func (s ValuesStatement) Accept(visit Visitor) {
-	visit.VisitValues(s)
+func (s ValuesStatement) Accept(visit Visitor) error {
+	return visit.VisitValues(s)
 }
 
 type SelectStatement struct {
@@ -166,8 +174,8 @@ type SelectStatement struct {
 	Limit    Node
 }
 
-func (s SelectStatement) Accept(visit Visitor) {
-	visit.VisitSelect(s)
+func (s SelectStatement) Accept(visit Visitor) error {
+	return visit.VisitSelect(s)
 }
 
 type UnionStatement struct {
@@ -179,8 +187,8 @@ type UnionStatement struct {
 	Distinct bool
 }
 
-func (s UnionStatement) Accept(visit Visitor) {
-	visit.VisitUnion(s)
+func (s UnionStatement) Accept(visit Visitor) error {
+	return visit.VisitUnion(s)
 }
 
 func (s UnionStatement) GetNode() []Node {
@@ -196,8 +204,8 @@ type IntersectStatement struct {
 	Distinct bool
 }
 
-func (s IntersectStatement) Accept(visit Visitor) {
-	visit.VisitIntersect(s)
+func (s IntersectStatement) Accept(visit Visitor) error {
+	return visit.VisitIntersect(s)
 }
 
 func (s IntersectStatement) GetNode() []Node {
@@ -213,8 +221,8 @@ type ExceptStatement struct {
 	Distinct bool
 }
 
-func (s ExceptStatement) Accept(visit Visitor) {
-	visit.VisitExcept(s)
+func (s ExceptStatement) Accept(visit Visitor) error {
+	return visit.VisitExcept(s)
 }
 
 func (s ExceptStatement) GetNode() []Node {
@@ -228,8 +236,8 @@ type MatchStatement struct {
 	Node
 }
 
-func (s MatchStatement) Accept(visit Visitor) {
-	visit.VisitMatch(s)
+func (s MatchStatement) Accept(visit Visitor) error {
+	return visit.VisitMatch(s)
 }
 
 type MergeStatement struct {
@@ -241,8 +249,8 @@ type MergeStatement struct {
 	Actions []Node
 }
 
-func (s MergeStatement) Accept(visit Visitor) {
-	visit.VisitMerge(s)
+func (s MergeStatement) Accept(visit Visitor) error {
+	return visit.VisitMerge(s)
 }
 
 type Assignment struct {
@@ -250,8 +258,8 @@ type Assignment struct {
 	Value Node
 }
 
-func (a Assignment) Accept(visit Visitor) {
-	visit.VisitAssignment(a)
+func (a Assignment) Accept(visit Visitor) error {
+	return visit.VisitAssignment(a)
 }
 
 type InsertStatement struct {
@@ -262,8 +270,8 @@ type InsertStatement struct {
 	Values  Node
 }
 
-func (s InsertStatement) Accept(visit Visitor) {
-	visit.VisitInsert(s)
+func (s InsertStatement) Accept(visit Visitor) error {
+	return visit.VisitInsert(s)
 }
 
 type UpdateStatement struct {
@@ -274,8 +282,8 @@ type UpdateStatement struct {
 	Where Node
 }
 
-func (s UpdateStatement) Accept(visit Visitor) {
-	visit.VisitUpdate(s)
+func (s UpdateStatement) Accept(visit Visitor) error {
+	return visit.VisitUpdate(s)
 }
 
 type TruncateStatement struct {
@@ -284,8 +292,8 @@ type TruncateStatement struct {
 	Identity IdentityMode
 }
 
-func (s TruncateStatement) Accept(visit Visitor) {
-	visit.VisitTruncate(s)
+func (s TruncateStatement) Accept(visit Visitor) error {
+	return visit.VisitTruncate(s)
 }
 
 type DeleteStatement struct {
@@ -295,8 +303,8 @@ type DeleteStatement struct {
 	Where Node
 }
 
-func (s DeleteStatement) Accept(visit Visitor) {
-	visit.VisitDelete(s)
+func (s DeleteStatement) Accept(visit Visitor) error {
+	return visit.VisitDelete(s)
 }
 
 type CallStatement struct {
@@ -306,4 +314,6 @@ type CallStatement struct {
 	Args  []Node
 }
 
-func (s CallStatement) Accept(visit Visitor) {}
+func (s CallStatement) Accept(visit Visitor) error {
+	return nil
+}

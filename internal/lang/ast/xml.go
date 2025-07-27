@@ -7,8 +7,8 @@ type XmlAttribute struct {
 	Value Node
 }
 
-func (x XmlAttribute) Accept(visit Visitor) {
-	visit.VisitXmlAttribute(x)
+func (x XmlAttribute) Accept(visit Visitor) error {
+	return visit.VisitXmlAttribute(x)
 }
 
 type XmlNamespace struct {
@@ -16,8 +16,8 @@ type XmlNamespace struct {
 	Uri  Node
 }
 
-func (x XmlNamespace) Accept(visit Visitor) {
-	visit.VisitXmlNamespace(x)
+func (x XmlNamespace) Accept(visit Visitor) error {
+	return visit.VisitXmlNamespace(x)
 }
 
 func (x XmlNamespace) IsDefault() bool {
@@ -31,7 +31,9 @@ type XmlRoot struct {
 	Standalone string
 }
 
-func (_ XmlRoot) Accept(visit Visitor) {}
+func (_ XmlRoot) Accept(visit Visitor) error {
+	return nil
+}
 
 type XmlPi struct {
 	Ident Node
@@ -39,7 +41,9 @@ type XmlPi struct {
 	Body  Node
 }
 
-func (_ XmlPi) Accept(visit Visitor) {}
+func (_ XmlPi) Accept(visit Visitor) error {
+	return nil
+}
 
 type XmlElement struct {
 	token.Position
@@ -50,8 +54,8 @@ type XmlElement struct {
 	Children   []Node
 }
 
-func (x XmlElement) Accept(visit Visitor) {
-	visit.VisitXmlElement(x)
+func (x XmlElement) Accept(visit Visitor) error {
+	return visit.VisitXmlElement(x)
 }
 
 type XmlText struct {
@@ -60,8 +64,8 @@ type XmlText struct {
 	Text  Node
 }
 
-func (x XmlText) Accept(visit Visitor) {
-	visit.VisitXmlText(x)
+func (x XmlText) Accept(visit Visitor) error {
+	return visit.VisitXmlText(x)
 }
 
 type XmlComment struct {
@@ -70,8 +74,8 @@ type XmlComment struct {
 	Text  Node
 }
 
-func (x XmlComment) Accept(visit Visitor) {
-	visit.VisitXmlComment(x)
+func (x XmlComment) Accept(visit Visitor) error {
+	return visit.VisitXmlComment(x)
 }
 
 type XmlAgg struct {
@@ -80,8 +84,8 @@ type XmlAgg struct {
 	Body  Node
 }
 
-func (x XmlAgg) Accept(visit Visitor) {
-	visit.VisitXmlAgg(x)
+func (x XmlAgg) Accept(visit Visitor) error {
+	return visit.VisitXmlAgg(x)
 }
 
 type XmlForest struct {
@@ -90,7 +94,9 @@ type XmlForest struct {
 	Args  []Node
 }
 
-func (_ XmlForest) Accept(visit Visitor) {}
+func (_ XmlForest) Accept(visit Visitor) error {
+	return nil
+}
 
 type XmlConcat struct {
 	token.Position
@@ -98,4 +104,6 @@ type XmlConcat struct {
 	Args  []Node
 }
 
-func (_ XmlConcat) Accept(visit Visitor) {}
+func (_ XmlConcat) Accept(visit Visitor) error {
+	return nil
+}

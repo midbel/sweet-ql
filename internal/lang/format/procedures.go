@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitCreateProcedure(stmt ast.CreateProcedureStatement) {
+func (w *Writer) VisitCreateProcedure(stmt ast.CreateProcedureStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -32,6 +32,7 @@ func (w *Writer) VisitCreateProcedure(stmt ast.CreateProcedureStatement) {
 	w.WriteNL()
 	stmt.Body.Accept(w)
 	w.WriteKeyword("end")
+	return nil
 }
 
 func (w *Writer) visitParamter(param ast.ProcedureParameter) {

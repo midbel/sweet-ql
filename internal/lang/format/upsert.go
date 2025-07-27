@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitInsert(stmt ast.InsertStatement) {
+func (w *Writer) VisitInsert(stmt ast.InsertStatement) error {
 	w.Enter()
 	defer w.Leave()
 
@@ -29,9 +29,10 @@ func (w *Writer) VisitInsert(stmt ast.InsertStatement) {
 	}
 	w.WriteNL()
 	stmt.Values.Accept(w)
+	return nil
 }
 
-func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) {
+func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -55,32 +56,35 @@ func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) {
 		n.Accept(w)
 	}
 	w.visitWhere(stmt.Where)
+	return nil
 }
 
-func (w *Writer) VisitAssignment(stmt ast.Assignment) {
+func (w *Writer) VisitAssignment(stmt ast.Assignment) error {
 	stmt.Field.Accept(w)
 	w.WriteBlank()
 	w.WriteString("=")
 	w.WriteBlank()
 	stmt.Value.Accept(w)
+	return nil
 }
 
-func (w *Writer) VisitDelete(stmt ast.DeleteStatement) {
+func (w *Writer) VisitDelete(stmt ast.DeleteStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
 	w.WriteKeyword("delete")
 	if stmt.Table == nil {
-		return
+		return nil
 	}
 	w.WriteBlank()
 	w.WriteKeyword("from")
 	w.WriteBlank()
 	stmt.Table.Accept(w)
 	w.visitWhere(stmt.Where)
+	return nil
 }
 
-func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) {
+func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -112,9 +116,10 @@ func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) {
 		w.WriteBlank()
 		w.WriteKeyword("restrict")
 	}
+	return nil
 }
 
-func (w *Writer) VisitMerge(stmt ast.MergeStatement) {
+func (w *Writer) VisitMerge(stmt ast.MergeStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -139,9 +144,10 @@ func (w *Writer) VisitMerge(stmt ast.MergeStatement) {
 		w.WritePrefix()
 		a.Accept(w)
 	}
+	return nil
 }
 
-func (w *Writer) VisitMatch(stmt ast.MatchStatement) {
+func (w *Writer) VisitMatch(stmt ast.MatchStatement) error {
 	w.WriteKeyword("when")
 	w.WriteBlank()
 	switch stmt.Node.(type) {
@@ -152,7 +158,7 @@ func (w *Writer) VisitMatch(stmt ast.MatchStatement) {
 		w.WriteBlank()
 		w.WriteKeyword("matched")
 	default:
-		return
+		return nil
 	}
 	if stmt.Condition != nil {
 		w.WriteBlank()
@@ -164,4 +170,5 @@ func (w *Writer) VisitMatch(stmt ast.MatchStatement) {
 	w.WriteKeyword("then")
 	w.WriteNL()
 	stmt.Node.Accept(w)
+	return nil
 }

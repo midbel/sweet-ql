@@ -7,8 +7,8 @@ type GrantStatement struct {
 	Grant      bool
 }
 
-func (g GrantStatement) Accept(visit Visitor) {
-	visit.VisitGrant(g)
+func (g GrantStatement) Accept(visit Visitor) error {
+	return visit.VisitGrant(g)
 }
 
 type RevokeStatement struct {
@@ -18,6 +18,6 @@ type RevokeStatement struct {
 	Cascade    CascadeMode
 }
 
-func (r RevokeStatement) Accept(visit Visitor) {
-	visit.VisitRevoke(r)
+func (r RevokeStatement) Accept(visit Visitor) error {
+	return visit.VisitRevoke(r)
 }

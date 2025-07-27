@@ -14,6 +14,6 @@ type CreateProcedureStatement struct {
 	Body       Node
 }
 
-func (s CreateProcedureStatement) Accept(visit Visitor) {
-	visit.VisitCreateProcedure(s)
+func (s CreateProcedureStatement) Accept(visit Visitor) error {
+	return visit.VisitCreateProcedure(s)
 }

@@ -1,109 +1,109 @@
 package ast
 
 type VisitableNode interface {
-	Accept(Visitor)
+	Accept(Visitor) error
 }
 
 type ControlVisitor interface {
-	VisitBody(Body)
-	VisitIf(If)
-	VisitWhile(While)
-	VisitSet(Set)
-	VisitDeclare(Declare)
-	VisitReturn(Return)
+	VisitBody(Body) error
+	VisitIf(If) error
+	VisitWhile(While) error
+	VisitSet(Set) error
+	VisitDeclare(Declare) error
+	VisitReturn(Return) error
 }
 
 type StmtVisitor interface {
-	VisitValues(ValuesStatement)
-	VisitSelect(SelectStatement)
-	VisitUnion(UnionStatement)
-	VisitIntersect(IntersectStatement)
-	VisitExcept(ExceptStatement)
-	VisitInsert(InsertStatement)
-	VisitUpdate(UpdateStatement)
-	VisitDelete(DeleteStatement)
-	VisitTruncate(TruncateStatement)
-	VisitWith(WithStatement)
-	VisitCte(CteStatement)
-	VisitMerge(MergeStatement)
+	VisitValues(ValuesStatement) error
+	VisitSelect(SelectStatement) error
+	VisitUnion(UnionStatement) error
+	VisitIntersect(IntersectStatement) error
+	VisitExcept(ExceptStatement) error
+	VisitInsert(InsertStatement) error
+	VisitUpdate(UpdateStatement) error
+	VisitDelete(DeleteStatement) error
+	VisitTruncate(TruncateStatement) error
+	VisitWith(WithStatement) error
+	VisitCte(CteStatement) error
+	VisitMerge(MergeStatement) error
 
-	VisitCall(CallStatement)
+	VisitCall(CallStatement) error
 
-	VisitGrant(GrantStatement)
-	VisitRevoke(RevokeStatement)
+	VisitGrant(GrantStatement) error
+	VisitRevoke(RevokeStatement) error
 
-	VisitCommit(Commit)
-	VisitRollback(Rollback)
-	VisitSetTransaction(SetTransaction)
-	VisitStartTransaction(StartTransaction)
-	VisitSavepoint(Savepoint)
-	VisitReleaseSavepoint(ReleaseSavepoint)
-	VisitRollbackSavepoint(RollbackSavepoint)
+	VisitCommit(Commit) error
+	VisitRollback(Rollback) error
+	VisitSetTransaction(SetTransaction) error
+	VisitStartTransaction(StartTransaction) error
+	VisitSavepoint(Savepoint) error
+	VisitReleaseSavepoint(ReleaseSavepoint) error
+	VisitRollbackSavepoint(RollbackSavepoint) error
 
-	VisitMatch(MatchStatement)
-	VisitJoin(Join)
-	VisitOrder(Order)
-	VisitLimit(Limit)
-	VisitOffset(Offset)
+	VisitMatch(MatchStatement) error
+	VisitJoin(Join) error
+	VisitOrder(Order) error
+	VisitLimit(Limit) error
+	VisitOffset(Offset) error
 }
 
 type ExprVisitor interface {
-	VisitBinary(Binary)
-	VisitUnary(Unary)
-	VisitList(List)
-	VisitCollate(Collate)
-	VisitIn(In)
-	VisitIs(Is)
-	VisitExists(Exists)
-	VisitBetween(Between)
-	VisitAll(All)
-	VisitAny(Any)
-	VisitNot(Not)
-	VisitCast(Cast)
-	VisitCallFunc(Call)
+	VisitBinary(Binary) error
+	VisitUnary(Unary) error
+	VisitList(List) error
+	VisitCollate(Collate) error
+	VisitIn(In) error
+	VisitIs(Is) error
+	VisitExists(Exists) error
+	VisitBetween(Between) error
+	VisitAll(All) error
+	VisitAny(Any) error
+	VisitNot(Not) error
+	VisitCast(Cast) error
+	VisitCallFunc(Call) error
 
-	VisitValue(Value)
-	VisitAlias(Alias)
-	VisitName(Name)
-	VisitGroup(Group)
-	VisitCase(Case)
-	VisitWhen(When)
-	VisitAssignment(Assignment)
+	VisitValue(Value) error
+	VisitAlias(Alias) error
+	VisitName(Name) error
+	VisitGroup(Group) error
+	VisitCase(Case) error
+	VisitWhen(When) error
+	VisitAssignment(Assignment) error
 }
 
 type XmlVisitor interface {
-	VisitXmlElement(XmlElement)
-	VisitXmlAttribute(XmlAttribute)
-	VisitXmlNamespace(XmlNamespace)
-	VisitXmlText(XmlText)
-	VisitXmlComment(XmlComment)
-	VisitXmlAgg(XmlAgg)
+	VisitXmlElement(XmlElement) error
+	VisitXmlAttribute(XmlAttribute) error
+	VisitXmlNamespace(XmlNamespace) error
+	VisitXmlText(XmlText) error
+	VisitXmlComment(XmlComment) error
+	VisitXmlAgg(XmlAgg) error
 }
 
 type DefinitionVisitor interface {
-	VisitCreateProcedure(CreateProcedureStatement)
+	VisitCreateProcedure(CreateProcedureStatement) error
 
-	VisitCreateTable(CreateTableStatement)
-	VisitDropTable(DropTableStatement)
-	VisitAlterTable(AlterTableStatement)
-	VisitCreateView(CreateViewStatement)
-	VisitDropView(DropViewStatement)
+	VisitCreateTable(CreateTableStatement) error
+	VisitDropTable(DropTableStatement) error
+	VisitAlterTable(AlterTableStatement) error
+	VisitCreateView(CreateViewStatement) error
+	VisitDropView(DropViewStatement) error
 
-	VisitColumnDef(ColumnDef)
-	VisitAddColumn(AddColumnAction)
-	VisitAlterColumn(AlterColumnAction)
-	VisitDropColumn(DropColumnAction)
-	VisitAddConstraint(AddConstraintAction)
-	VisitDropConstraint(DropConstraintAction)
+	VisitColumnDef(ColumnDef) error
+	VisitAddColumn(AddColumnAction) error
+	VisitAlterColumn(AlterColumnAction) error
+	VisitDropColumn(DropColumnAction) error
+	VisitAddConstraint(AddConstraintAction) error
+	VisitDropConstraint(DropConstraintAction) error
 
-	VisitConstraint(Constraint)
-	VisitPrimaryKey(PrimaryKeyConstraint)
-	VisitForeignKey(ForeignKeyConstraint)
-	VisitNotNull(NotNullConstraint)
-	VisitUnique(UniqueConstraint)
-	VisitCheck(CheckConstraint)
-	VisitDefault(DefaultConstraint)
-	VisitGenerated(GeneratedConstraint)
+	VisitConstraint(Constraint) error
+	VisitPrimaryKey(PrimaryKeyConstraint) error
+	VisitForeignKey(ForeignKeyConstraint) error
+	VisitNotNull(NotNullConstraint) error
+	VisitUnique(UniqueConstraint) error
+	VisitCheck(CheckConstraint) error
+	VisitDefault(DefaultConstraint) error
+	VisitGenerated(GeneratedConstraint) error
 }
 
 type Visitor interface {
@@ -121,160 +121,318 @@ func Visit() Visitor {
 	return noop
 }
 
-func (_ noopVisitor) VisitValues(_ ValuesStatement) {}
-
-func (_ noopVisitor) VisitSelect(_ SelectStatement) {}
-
-func (_ noopVisitor) VisitUnion(_ UnionStatement) {}
-
-func (_ noopVisitor) VisitIntersect(_ IntersectStatement) {}
-
-func (_ noopVisitor) VisitExcept(_ ExceptStatement) {}
-
-func (_ noopVisitor) VisitInsert(_ InsertStatement) {}
-
-func (_ noopVisitor) VisitUpdate(_ UpdateStatement) {}
-
-func (_ noopVisitor) VisitDelete(_ DeleteStatement) {}
-
-func (_ noopVisitor) VisitTruncate(_ TruncateStatement) {}
-
-func (_ noopVisitor) VisitWith(_ WithStatement) {}
-
-func (_ noopVisitor) VisitCte(_ CteStatement) {}
-
-func (_ noopVisitor) VisitMerge(_ MergeStatement) {}
-
-func (_ noopVisitor) VisitMatch(_ MatchStatement) {}
-
-func (_ noopVisitor) VisitCall(_ CallStatement) {}
-
-func (_ noopVisitor) VisitGrant(_ GrantStatement) {}
-
-func (_ noopVisitor) VisitRevoke(_ RevokeStatement) {}
-
-func (_ noopVisitor) VisitCommit(_ Commit) {}
-
-func (_ noopVisitor) VisitRollback(_ Rollback) {}
-
-func (_ noopVisitor) VisitSetTransaction(_ SetTransaction) {}
-
-func (_ noopVisitor) VisitStartTransaction(_ StartTransaction) {}
-
-func (_ noopVisitor) VisitSavepoint(_ Savepoint) {}
-
-func (_ noopVisitor) VisitReleaseSavepoint(_ ReleaseSavepoint) {}
-
-func (_ noopVisitor) VisitRollbackSavepoint(_ RollbackSavepoint) {}
-
-func (_ noopVisitor) VisitJoin(_ Join) {}
-
-func (_ noopVisitor) VisitOrder(_ Order) {}
-
-func (_ noopVisitor) VisitLimit(_ Limit) {}
-
-func (_ noopVisitor) VisitOffset(_ Offset) {}
-
-func (_ noopVisitor) VisitBinary(_ Binary) {}
-
-func (_ noopVisitor) VisitUnary(_ Unary) {}
-
-func (_ noopVisitor) VisitCallFunc(_ Call) {}
-
-func (_ noopVisitor) VisitList(_ List) {}
-
-func (_ noopVisitor) VisitCollate(_ Collate) {}
-
-func (_ noopVisitor) VisitIn(_ In) {}
-
-func (_ noopVisitor) VisitIs(_ Is) {}
-
-func (_ noopVisitor) VisitExists(_ Exists) {}
-
-func (_ noopVisitor) VisitBetween(_ Between) {}
-
-func (_ noopVisitor) VisitAll(_ All) {}
-
-func (_ noopVisitor) VisitAny(_ Any) {}
-
-func (_ noopVisitor) VisitNot(_ Not) {}
-
-func (_ noopVisitor) VisitCast(_ Cast) {}
-
-func (_ noopVisitor) VisitValue(_ Value) {}
-
-func (_ noopVisitor) VisitAlias(_ Alias) {}
-
-func (_ noopVisitor) VisitName(_ Name) {}
-
-func (_ noopVisitor) VisitGroup(_ Group) {}
-
-func (_ noopVisitor) VisitAssignment(_ Assignment) {}
-
-func (_ noopVisitor) VisitBody(_ Body) {}
-
-func (_ noopVisitor) VisitIf(_ If) {}
-
-func (_ noopVisitor) VisitWhile(_ While) {}
-
-func (_ noopVisitor) VisitSet(_ Set) {}
-
-func (_ noopVisitor) VisitDeclare(_ Declare) {}
-
-func (_ noopVisitor) VisitReturn(_ Return) {}
-
-func (_ noopVisitor) VisitCase(_ Case) {}
-
-func (_ noopVisitor) VisitWhen(_ When) {}
-
-func (_ noopVisitor) VisitCreateProcedure(CreateProcedureStatement) {}
-
-func (_ noopVisitor) VisitCreateTable(_ CreateTableStatement) {}
-
-func (_ noopVisitor) VisitDropTable(_ DropTableStatement) {}
-
-func (_ noopVisitor) VisitAlterTable(_ AlterTableStatement) {}
-
-func (_ noopVisitor) VisitCreateView(_ CreateViewStatement) {}
-
-func (_ noopVisitor) VisitDropView(_ DropViewStatement) {}
-
-func (_ noopVisitor) VisitColumnDef(_ ColumnDef) {}
-
-func (_ noopVisitor) VisitAddColumn(_ AddColumnAction) {}
-
-func (_ noopVisitor) VisitAlterColumn(_ AlterColumnAction) {}
-
-func (_ noopVisitor) VisitDropColumn(_ DropColumnAction) {}
-
-func (_ noopVisitor) VisitAddConstraint(_ AddConstraintAction) {}
-
-func (_ noopVisitor) VisitDropConstraint(_ DropConstraintAction) {}
-
-func (_ noopVisitor) VisitConstraint(_ Constraint) {}
-
-func (_ noopVisitor) VisitPrimaryKey(_ PrimaryKeyConstraint) {}
-
-func (_ noopVisitor) VisitForeignKey(_ ForeignKeyConstraint) {}
-
-func (_ noopVisitor) VisitNotNull(_ NotNullConstraint) {}
-
-func (_ noopVisitor) VisitUnique(_ UniqueConstraint) {}
-
-func (_ noopVisitor) VisitCheck(_ CheckConstraint) {}
-
-func (_ noopVisitor) VisitDefault(_ DefaultConstraint) {}
-
-func (_ noopVisitor) VisitGenerated(_ GeneratedConstraint) {}
-
-func (_ noopVisitor) VisitXmlElement(_ XmlElement) {}
-
-func (_ noopVisitor) VisitXmlAttribute(_ XmlAttribute) {}
-
-func (_ noopVisitor) VisitXmlNamespace(_ XmlNamespace) {}
-
-func (_ noopVisitor) VisitXmlText(_ XmlText) {}
-
-func (_ noopVisitor) VisitXmlComment(_ XmlComment) {}
-
-func (_ noopVisitor) VisitXmlAgg(_ XmlAgg) {}
+func (_ noopVisitor) VisitValues(_ ValuesStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitSelect(_ SelectStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitUnion(_ UnionStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitIntersect(_ IntersectStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitExcept(_ ExceptStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitInsert(_ InsertStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitUpdate(_ UpdateStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitDelete(_ DeleteStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitTruncate(_ TruncateStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitWith(_ WithStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCte(_ CteStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitMerge(_ MergeStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitMatch(_ MatchStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCall(_ CallStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitGrant(_ GrantStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitRevoke(_ RevokeStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCommit(_ Commit) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitRollback(_ Rollback) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitSetTransaction(_ SetTransaction) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitStartTransaction(_ StartTransaction) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitSavepoint(_ Savepoint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitReleaseSavepoint(_ ReleaseSavepoint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitRollbackSavepoint(_ RollbackSavepoint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitJoin(_ Join) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitOrder(_ Order) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitLimit(_ Limit) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitOffset(_ Offset) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitBinary(_ Binary) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitUnary(_ Unary) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCallFunc(_ Call) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitList(_ List) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCollate(_ Collate) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitIn(_ In) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitIs(_ Is) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitExists(_ Exists) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitBetween(_ Between) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAll(_ All) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAny(_ Any) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitNot(_ Not) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCast(_ Cast) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitValue(_ Value) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAlias(_ Alias) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitName(_ Name) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitGroup(_ Group) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAssignment(_ Assignment) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitBody(_ Body) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitIf(_ If) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitWhile(_ While) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitSet(_ Set) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitDeclare(_ Declare) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitReturn(_ Return) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCase(_ Case) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitWhen(_ When) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCreateProcedure(CreateProcedureStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCreateTable(_ CreateTableStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitDropTable(_ DropTableStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAlterTable(_ AlterTableStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCreateView(_ CreateViewStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitDropView(_ DropViewStatement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitColumnDef(_ ColumnDef) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAddColumn(_ AddColumnAction) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAlterColumn(_ AlterColumnAction) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitDropColumn(_ DropColumnAction) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitAddConstraint(_ AddConstraintAction) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitDropConstraint(_ DropConstraintAction) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitConstraint(_ Constraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitPrimaryKey(_ PrimaryKeyConstraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitForeignKey(_ ForeignKeyConstraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitNotNull(_ NotNullConstraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitUnique(_ UniqueConstraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitCheck(_ CheckConstraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitDefault(_ DefaultConstraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitGenerated(_ GeneratedConstraint) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitXmlElement(_ XmlElement) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitXmlAttribute(_ XmlAttribute) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitXmlNamespace(_ XmlNamespace) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitXmlText(_ XmlText) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitXmlComment(_ XmlComment) error {
+	return nil
+}
+
+func (_ noopVisitor) VisitXmlAgg(_ XmlAgg) error {
+	return nil
+}

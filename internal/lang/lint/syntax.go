@@ -10,6 +10,7 @@ import (
 
 type noStar struct {
 	severity Severity
+	issues   []Issue
 }
 
 func NoStar(level Severity) Rule {
@@ -23,11 +24,8 @@ func (_ noStar) Name() string {
 }
 
 func (r noStar) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
-
-func (r noStar) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkStar)
+	r.issues = r.issues[:0]
+	return r.issues, nil
 }
 
 func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {

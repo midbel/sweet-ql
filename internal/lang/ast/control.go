@@ -12,8 +12,8 @@ type Return struct {
 	Values []Node
 }
 
-func (r Return) Accept(visit Visitor) {
-	visit.VisitReturn(r)
+func (r Return) Accept(visit Visitor) error {
+	return visit.VisitReturn(r)
 }
 
 type While struct {
@@ -22,8 +22,8 @@ type While struct {
 	Body Node
 }
 
-func (w While) Accept(visit Visitor) {
-	visit.VisitWhile(w)
+func (w While) Accept(visit Visitor) error {
+	return visit.VisitWhile(w)
 }
 
 type If struct {
@@ -33,8 +33,8 @@ type If struct {
 	Alt Node
 }
 
-func (i If) Accept(visit Visitor) {
-	visit.VisitIf(i)
+func (i If) Accept(visit Visitor) error {
+	return visit.VisitIf(i)
 }
 
 type Declare struct {
@@ -44,8 +44,8 @@ type Declare struct {
 	Value Node
 }
 
-func (d Declare) Accept(visit Visitor) {
-	visit.VisitDeclare(d)
+func (d Declare) Accept(visit Visitor) error {
+	return visit.VisitDeclare(d)
 }
 
 type Case struct {
@@ -55,8 +55,8 @@ type Case struct {
 	Else Node
 }
 
-func (c Case) Accept(visit Visitor) {
-	visit.VisitCase(c)
+func (c Case) Accept(visit Visitor) error {
+	return visit.VisitCase(c)
 }
 
 func (c Case) GetStatement() []Node {
@@ -70,8 +70,8 @@ type When struct {
 	Body Node
 }
 
-func (w When) Accept(visit Visitor) {
-	visit.VisitWhen(w)
+func (w When) Accept(visit Visitor) error {
+	return visit.VisitWhen(w)
 }
 
 func (w When) GetStatement() []Node {
@@ -84,6 +84,6 @@ type Set struct {
 	Expr  Node
 }
 
-func (s Set) Accept(visit Visitor) {
-	visit.VisitSet(s)
+func (s Set) Accept(visit Visitor) error {
+	return visit.VisitSet(s)
 }

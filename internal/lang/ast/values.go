@@ -12,16 +12,16 @@ type Body struct {
 	Values []Node
 }
 
-func (b Body) Accept(visit Visitor) {
-	visit.VisitBody(b)
+func (b Body) Accept(visit Visitor) error {
+	return visit.VisitBody(b)
 }
 
 type List struct {
 	Values []Node
 }
 
-func (i List) Accept(visit Visitor) {
-	visit.VisitList(i)
+func (i List) Accept(visit Visitor) error {
+	return visit.VisitList(i)
 }
 
 func (i List) Len() int {
@@ -32,8 +32,8 @@ type Group struct {
 	Node
 }
 
-func (g Group) Accept(visit Visitor) {
-	visit.VisitGroup(g)
+func (g Group) Accept(visit Visitor) error {
+	return visit.VisitGroup(g)
 }
 
 func (g Group) GetStatement() []Node {
@@ -47,8 +47,8 @@ type Cast struct {
 	Type Type
 }
 
-func (c Cast) Accept(visit Visitor) {
-	visit.VisitCast(c)
+func (c Cast) Accept(visit Visitor) error {
+	return visit.VisitCast(c)
 }
 
 type Type struct {
@@ -64,8 +64,8 @@ type Not struct {
 	Node
 }
 
-func (n Not) Accept(visit Visitor) {
-	visit.VisitNot(n)
+func (n Not) Accept(visit Visitor) error {
+	return visit.VisitNot(n)
 }
 
 func (n Not) GetStatement() []Node {
@@ -78,15 +78,17 @@ type Collate struct {
 	Value Node
 }
 
-func (_ Collate) Accept(visit Visitor) {}
+func (_ Collate) Accept(visit Visitor) error {
+	return nil
+}
 
 type Exists struct {
 	token.Position
 	Node
 }
 
-func (e Exists) Accept(visit Visitor) {
-	visit.VisitExists(e)
+func (e Exists) Accept(visit Visitor) error {
+	return visit.VisitExists(e)
 }
 
 func (e Exists) GetStatement() []Node {
@@ -102,8 +104,8 @@ type Call struct {
 	Over     Node
 }
 
-func (c Call) Accept(visit Visitor) {
-	visit.VisitCallFunc(c)
+func (c Call) Accept(visit Visitor) error {
+	return visit.VisitCallFunc(c)
 }
 
 func (c Call) GetStatement() []Node {
@@ -123,7 +125,9 @@ type Row struct {
 	Values []Node
 }
 
-func (_ Row) Accept(visit Visitor) {}
+func (_ Row) Accept(visit Visitor) error {
+	return nil
+}
 
 func (r Row) GetStatement() []Node {
 	return r.Values
@@ -135,8 +139,8 @@ type Unary struct {
 	Op    string
 }
 
-func (u Unary) Accept(visit Visitor) {
-	visit.VisitUnary(u)
+func (u Unary) Accept(visit Visitor) error {
+	return visit.VisitUnary(u)
 }
 
 func (u Unary) GetStatement() []Node {
@@ -150,8 +154,8 @@ type Binary struct {
 	Op    string
 }
 
-func (b Binary) Accept(visit Visitor) {
-	visit.VisitBinary(b)
+func (b Binary) Accept(visit Visitor) error {
+	return visit.VisitBinary(b)
 }
 
 func (b Binary) GetStatement() []Node {
@@ -167,8 +171,8 @@ type All struct {
 	Node
 }
 
-func (a All) Accept(visit Visitor) {
-	visit.VisitAll(a)
+func (a All) Accept(visit Visitor) error {
+	return visit.VisitAll(a)
 }
 
 func (a All) GetStatement() []Node {
@@ -180,8 +184,8 @@ type Any struct {
 	Node
 }
 
-func (a Any) Accept(visit Visitor) {
-	visit.VisitAny(a)
+func (a Any) Accept(visit Visitor) error {
+	return visit.VisitAny(a)
 }
 
 func (a Any) GetStatement() []Node {
@@ -194,8 +198,8 @@ type Is struct {
 	Value Node
 }
 
-func (i Is) Accept(visit Visitor) {
-	visit.VisitIs(i)
+func (i Is) Accept(visit Visitor) error {
+	return visit.VisitIs(i)
 }
 
 func (i Is) GetStatement() []Node {
@@ -208,8 +212,8 @@ type In struct {
 	Value Node
 }
 
-func (i In) Accept(visit Visitor) {
-	visit.VisitIn(i)
+func (i In) Accept(visit Visitor) error {
+	return visit.VisitIn(i)
 }
 
 func (i In) GetStatement() []Node {
@@ -223,8 +227,8 @@ type Between struct {
 	Upper Node
 }
 
-func (b Between) Accept(visit Visitor) {
-	visit.VisitBetween(b)
+func (b Between) Accept(visit Visitor) error {
+	return visit.VisitBetween(b)
 }
 
 func (b Between) GetStatement() []Node {
@@ -236,15 +240,17 @@ type Placeholder struct {
 	Node
 }
 
-func (_ Placeholder) Accept(visit Visitor) {}
+func (_ Placeholder) Accept(visit Visitor) error {
+	return nil
+}
 
 type Value struct {
 	token.Position
 	Literal string
 }
 
-func (v Value) Accept(visit Visitor) {
-	visit.VisitValue(v)
+func (v Value) Accept(visit Visitor) error {
+	return visit.VisitValue(v)
 }
 
 func (v Value) Type() StaticType {
@@ -292,8 +298,8 @@ type Alias struct {
 	Columns []Node
 }
 
-func (a Alias) Accept(visit Visitor) {
-	visit.VisitAlias(a)
+func (a Alias) Accept(visit Visitor) error {
+	return visit.VisitAlias(a)
 }
 
 type Identifier struct {
@@ -310,8 +316,8 @@ type Name struct {
 	Parts []Identifier
 }
 
-func (n Name) Accept(visit Visitor) {
-	visit.VisitName(n)
+func (n Name) Accept(visit Visitor) error {
+	return visit.VisitName(n)
 }
 
 func (n Name) All() bool {

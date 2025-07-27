@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitGrant(stmt ast.GrantStatement) {
+func (w *Writer) VisitGrant(stmt ast.GrantStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -46,9 +46,10 @@ func (w *Writer) VisitGrant(stmt ast.GrantStatement) {
 		w.WriteBlank()
 		w.WriteKeyword("option")
 	}
+	return nil
 }
 
-func (w *Writer) VisitRevoke(stmt ast.RevokeStatement) {
+func (w *Writer) VisitRevoke(stmt ast.RevokeStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -86,5 +87,5 @@ func (w *Writer) VisitRevoke(stmt ast.RevokeStatement) {
 		w.WriteNL()
 		w.WriteKeyword("restrict")
 	}
-
+	return nil
 }

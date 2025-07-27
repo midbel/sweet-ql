@@ -2,7 +2,7 @@ package format
 
 import "github.com/midbel/sweet/internal/lang/ast"
 
-func (w *Writer) VisitXmlElement(elem ast.XmlElement) {
+func (w *Writer) VisitXmlElement(elem ast.XmlElement) error {
 	w.WriteCall("xmlelement")
 	w.WriteString("(")
 	w.WriteNL()
@@ -30,6 +30,7 @@ func (w *Writer) VisitXmlElement(elem ast.XmlElement) {
 	w.Leave()
 	w.WritePrefix()
 	w.WriteString(")")
+	return nil
 }
 
 func (w *Writer) visitXmlAttributes(elem ast.XmlElement) {
@@ -80,7 +81,7 @@ func (w *Writer) visitXmlNamespaces(elem ast.XmlElement) {
 	w.WriteString(")")
 }
 
-func (w *Writer) VisitXmlAttribute(elem ast.XmlAttribute) {
+func (w *Writer) VisitXmlAttribute(elem ast.XmlAttribute) error {
 	elem.Value.Accept(w)
 	if elem.Name != nil {
 		w.WriteBlank()
@@ -88,9 +89,10 @@ func (w *Writer) VisitXmlAttribute(elem ast.XmlAttribute) {
 		w.WriteBlank()
 		elem.Name.Accept(w)
 	}
+	return nil
 }
 
-func (w *Writer) VisitXmlNamespace(elem ast.XmlNamespace) {
+func (w *Writer) VisitXmlNamespace(elem ast.XmlNamespace) error {
 	if elem.Name == nil {
 		w.WriteKeyword("DEFAULT")
 		w.WriteBlank()
@@ -102,23 +104,26 @@ func (w *Writer) VisitXmlNamespace(elem ast.XmlNamespace) {
 		w.WriteBlank()
 		elem.Name.Accept(w)
 	}
+	return nil
 }
 
-func (w *Writer) VisitXmlText(elem ast.XmlText) {
+func (w *Writer) VisitXmlText(elem ast.XmlText) error {
 	w.WriteCall("xmltext")
 	w.WriteString("(")
 	elem.Text.Accept(w)
 	w.WriteString(")")
+	return nil
 }
 
-func (w *Writer) VisitXmlComment(elem ast.XmlComment) {
+func (w *Writer) VisitXmlComment(elem ast.XmlComment) error {
 	w.WriteCall("xmlcomment")
 	w.WriteString("(")
 	elem.Text.Accept(w)
 	w.WriteString(")")
+	return nil
 }
 
-func (w *Writer) VisitXmlAgg(elem ast.XmlAgg) {
+func (w *Writer) VisitXmlAgg(elem ast.XmlAgg) error {
 	w.WriteCall("xmlagg")
 	w.WriteString("(")
 	w.WriteNL()
@@ -129,4 +134,5 @@ func (w *Writer) VisitXmlAgg(elem ast.XmlAgg) {
 	w.Leave()
 	w.WritePrefix()
 	w.WriteString(")")
+	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitStartTransaction(stmt ast.StartTransaction) {
+func (w *Writer) VisitStartTransaction(stmt ast.StartTransaction) error {
 	w.Enter()
 	// defer w.Leave()
 	w.WritePrefix()
@@ -33,9 +33,10 @@ func (w *Writer) VisitStartTransaction(stmt ast.StartTransaction) {
 	if stmt.End != nil {
 		stmt.End.Accept(w)
 	}
+	return nil
 }
 
-func (w *Writer) VisitSetTransaction(stmt ast.SetTransaction) {
+func (w *Writer) VisitSetTransaction(stmt ast.SetTransaction) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -62,9 +63,10 @@ func (w *Writer) VisitSetTransaction(stmt ast.SetTransaction) {
 		default:
 		}
 	}
+	return nil
 }
 
-func (w *Writer) VisitSavepoint(stmt ast.Savepoint) {
+func (w *Writer) VisitSavepoint(stmt ast.Savepoint) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -73,9 +75,10 @@ func (w *Writer) VisitSavepoint(stmt ast.Savepoint) {
 		w.WriteBlank()
 		stmt.Name.Accept(w)
 	}
+	return nil
 }
 
-func (w *Writer) VisitReleaseSavepoint(stmt ast.ReleaseSavepoint) {
+func (w *Writer) VisitReleaseSavepoint(stmt ast.ReleaseSavepoint) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -86,9 +89,10 @@ func (w *Writer) VisitReleaseSavepoint(stmt ast.ReleaseSavepoint) {
 		w.WriteBlank()
 		stmt.Name.Accept(w)
 	}
+	return nil
 }
 
-func (w *Writer) VisitRollbackSavepoint(stmt ast.RollbackSavepoint) {
+func (w *Writer) VisitRollbackSavepoint(stmt ast.RollbackSavepoint) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -99,18 +103,21 @@ func (w *Writer) VisitRollbackSavepoint(stmt ast.RollbackSavepoint) {
 		w.WriteBlank()
 		stmt.Name.Accept(w)
 	}
+	return nil
 }
 
-func (w *Writer) VisitCommit(stmt ast.Commit) {
+func (w *Writer) VisitCommit(stmt ast.Commit) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
 	w.WriteKeyword("commit")
+	return nil
 }
 
-func (w *Writer) VisitRollback(stmt ast.Rollback) {
+func (w *Writer) VisitRollback(stmt ast.Rollback) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
 	w.WriteKeyword("rollback")
+	return nil
 }

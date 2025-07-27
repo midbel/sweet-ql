@@ -5,8 +5,8 @@ type SetTransaction struct {
 	Level TransactionLevel
 }
 
-func (s SetTransaction) Accept(visit Visitor) {
-	visit.VisitSetTransaction(s)
+func (s SetTransaction) Accept(visit Visitor) error {
+	return visit.VisitSetTransaction(s)
 }
 
 type StartTransaction struct {
@@ -15,42 +15,42 @@ type StartTransaction struct {
 	End  Node
 }
 
-func (s StartTransaction) Accept(visit Visitor) {
-	visit.VisitStartTransaction(s)
+func (s StartTransaction) Accept(visit Visitor) error {
+	return visit.VisitStartTransaction(s)
 }
 
 type Savepoint struct {
 	Name Node
 }
 
-func (s Savepoint) Accept(visit Visitor) {
-	visit.VisitSavepoint(s)
+func (s Savepoint) Accept(visit Visitor) error {
+	return visit.VisitSavepoint(s)
 }
 
 type ReleaseSavepoint struct {
 	Name Node
 }
 
-func (r ReleaseSavepoint) Accept(visit Visitor) {
-	visit.VisitReleaseSavepoint(r)
+func (r ReleaseSavepoint) Accept(visit Visitor) error {
+	return visit.VisitReleaseSavepoint(r)
 }
 
 type RollbackSavepoint struct {
 	Name Node
 }
 
-func (r RollbackSavepoint) Accept(visit Visitor) {
-	visit.VisitRollbackSavepoint(r)
+func (r RollbackSavepoint) Accept(visit Visitor) error {
+	return visit.VisitRollbackSavepoint(r)
 }
 
 type Commit struct{}
 
-func (c Commit) Accept(visit Visitor) {
-	visit.VisitCommit(c)
+func (c Commit) Accept(visit Visitor) error {
+	return visit.VisitCommit(c)
 }
 
 type Rollback struct{}
 
-func (r Rollback) Accept(visit Visitor) {
-	visit.VisitRollback(r)
+func (r Rollback) Accept(visit Visitor) error {
+	return visit.VisitRollback(r)
 }
