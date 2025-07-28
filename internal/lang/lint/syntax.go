@@ -9,51 +9,39 @@ import (
 )
 
 type noStar struct {
+	ast.Visitor
 	severity Severity
 	issues   []Issue
 }
 
 func NoStar(level Severity) Rule {
-	return noStar{
+	return &noStar{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ noStar) Name() string {
+func (_ *noStar) Name() string {
 	return "no-star"
 }
 
-func (r noStar) Verify(stmt ast.Node) ([]Issue, error) {
+func (r *noStar) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	return r.issues, nil
+	w := Walk(r)
+	return r.issues, stmt.Accept(w)
 }
 
-func (r noStar) checkStar(q ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	for _, q := range getQueries(q) {
-		issues, err := r.checkColumns(q)
-		if err != nil {
-			return nil, err
+func (r *noStar) VisitName(name ast.Name) error {
+	if name.All() {
+		i := Issue{
+			Position: name.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "avoid using * in select statement; prefer specifying columns name",
 		}
-		list = slices.Concat(list, issues)
+		r.issues = append(r.issues, i)
 	}
-	return list, nil
-}
-
-func (r noStar) checkColumns(q ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	for _, c := range q.Columns {
-		if n, ok := c.(ast.Name); ok && n.All() {
-			i := Issue{
-				Position: n.Position,
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "use explicit field names",
-			}
-			list = append(list, i)
-		}
-	}
-	return list, nil
+	return nil
 }
 
 type duplicateField struct {
@@ -134,66 +122,44 @@ func (r duplicateField) checkColumns(q ast.SelectStatement) ([]Issue, error) {
 }
 
 type setColumnsCount struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func SetColumnsCount(level Severity) Rule {
-	return setColumnsCount{
+	return &setColumnsCount{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ setColumnsCount) Name() string {
+func (_ *setColumnsCount) Name() string {
 	return "set-columns-count"
 }
 
-func (r setColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *setColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	w := Walk(r)
+	return r.issues, stmt.Accept(w)
 }
 
-func (r setColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
-	switch stmt := stmt.(type) {
-	case ast.WithStatement:
-		var list []Issue
-		for _, q := range slices.Concat(stmt.Queries, slx.One(stmt.Node)) {
-			issues, err := r.verify(q)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		return list, nil
-	case ast.CteStatement:
-		return r.verify(stmt.Node)
-	case ast.SelectStatement:
-		return nil, nil
-	case ast.UnionStatement:
-		return r.checkUnionColumnsCount(stmt)
-	case ast.ExceptStatement:
-		return r.checkExceptColumnsCount(stmt)
-	case ast.IntersectStatement:
-		return r.checkIntersectColumnsCount(stmt)
-	default:
-		return nil, nil
-	}
+func (r *setColumnsCount) VisitUnion(stmt ast.UnionStatement) error {
+	return r.checkColumnsCount(stmt.Left, stmt.Right)
 }
 
-func (r setColumnsCount) checkUnionColumnsCount(q ast.UnionStatement) ([]Issue, error) {
-	return r.checkColumnsCount(q.Left, q.Right)
+func (r *setColumnsCount) VisitExcept(stmt ast.ExceptStatement) error {
+	return r.checkColumnsCount(stmt.Left, stmt.Right)
 }
 
-func (r setColumnsCount) checkExceptColumnsCount(q ast.ExceptStatement) ([]Issue, error) {
-	return r.checkColumnsCount(q.Left, q.Right)
+func (r *setColumnsCount) VisitIntersect(stmt ast.IntersectStatement) error {
+	return r.checkColumnsCount(stmt.Left, stmt.Right)
 }
 
-func (r setColumnsCount) checkIntersectColumnsCount(q ast.IntersectStatement) ([]Issue, error) {
-	return r.checkColumnsCount(q.Left, q.Right)
-}
-
-func (r setColumnsCount) checkColumnsCount(left, right ast.Node) ([]Issue, error) {
+func (r *setColumnsCount) checkColumnsCount(left, right ast.Node) error {
 	q1, ok := left.(ast.SelectStatement)
 	if !ok {
-		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
 	ok = slices.ContainsFunc(q1.Columns, func(c ast.Node) bool {
 		n, ok := c.(ast.Name)
@@ -204,14 +170,15 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Node) ([]Issue, error
 			Position: q1.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "unknown columns count because of use of '*'",
+			Reason:   "avoid using * in select statement",
 		}
-		return slx.One(i), nil
+		r.issues = append(r.issues, i)
+		return nil
 	}
 
 	q2, ok := right.(ast.SelectStatement)
 	if !ok {
-		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
 	ok = slices.ContainsFunc(q2.Columns, func(c ast.Node) bool {
 		n, ok := c.(ast.Name)
@@ -222,28 +189,20 @@ func (r setColumnsCount) checkColumnsCount(left, right ast.Node) ([]Issue, error
 			Position: q2.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "unknown columns count because of use of '*'",
+			Reason:   "avoid using * in select statement",
 		}
-		return slx.One(i), nil
+		r.issues = append(r.issues, i)
 	}
-	var list []Issue
 	if len(q1.Columns) != len(q2.Columns) {
 		i := Issue{
 			Position: q1.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "columns count mismatched",
+			Reason:   "same number of columns should be returned by queries combined in compound query",
 		}
-		list = append(list, i)
+		r.issues = append(r.issues, i)
 	}
-	for _, s := range slx.Make(q1, q2) {
-		issues, err := r.verify(s)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	}
-	return list, nil
+	return nil
 }
 
 type missingWhere struct {

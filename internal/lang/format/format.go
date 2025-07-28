@@ -46,7 +46,7 @@ type Writer struct {
 
 func NewWriter(w io.Writer) *Writer {
 	ws := Writer{
-		Visitor:   ast.Visit(),
+		Visitor:   ast.Noop(),
 		inner:     bufio.NewWriter(w),
 		UseIndent: 4,
 		UseSpace:  true,

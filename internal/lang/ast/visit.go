@@ -116,323 +116,323 @@ type Visitor interface {
 
 type noopVisitor struct{}
 
-func Visit() Visitor {
+func Noop() Visitor {
 	var noop noopVisitor
 	return noop
 }
 
-func (_ noopVisitor) VisitValues(_ ValuesStatement) error {
+func (noopVisitor) VisitValues(ValuesStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitSelect(_ SelectStatement) error {
+func (noopVisitor) VisitSelect(SelectStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitUnion(_ UnionStatement) error {
+func (noopVisitor) VisitUnion(UnionStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitIntersect(_ IntersectStatement) error {
+func (noopVisitor) VisitIntersect(IntersectStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitExcept(_ ExceptStatement) error {
+func (noopVisitor) VisitExcept(ExceptStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitInsert(_ InsertStatement) error {
+func (noopVisitor) VisitInsert(InsertStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitUpdate(_ UpdateStatement) error {
+func (noopVisitor) VisitUpdate(UpdateStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitDelete(_ DeleteStatement) error {
+func (noopVisitor) VisitDelete(DeleteStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitTruncate(_ TruncateStatement) error {
+func (noopVisitor) VisitTruncate(TruncateStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitWith(_ WithStatement) error {
+func (noopVisitor) VisitWith(WithStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCte(_ CteStatement) error {
+func (noopVisitor) VisitCte(CteStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitMerge(_ MergeStatement) error {
+func (noopVisitor) VisitMerge(MergeStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitMatch(_ MatchStatement) error {
+func (noopVisitor) VisitMatch(MatchStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCall(_ CallStatement) error {
+func (noopVisitor) VisitCall(CallStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitGrant(_ GrantStatement) error {
+func (noopVisitor) VisitGrant(GrantStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitRevoke(_ RevokeStatement) error {
+func (noopVisitor) VisitRevoke(RevokeStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCommit(_ Commit) error {
+func (noopVisitor) VisitCommit(Commit) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitRollback(_ Rollback) error {
+func (noopVisitor) VisitRollback(Rollback) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitSetTransaction(_ SetTransaction) error {
+func (noopVisitor) VisitSetTransaction(SetTransaction) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitStartTransaction(_ StartTransaction) error {
+func (noopVisitor) VisitStartTransaction(StartTransaction) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitSavepoint(_ Savepoint) error {
+func (noopVisitor) VisitSavepoint(Savepoint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitReleaseSavepoint(_ ReleaseSavepoint) error {
+func (noopVisitor) VisitReleaseSavepoint(ReleaseSavepoint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitRollbackSavepoint(_ RollbackSavepoint) error {
+func (noopVisitor) VisitRollbackSavepoint(RollbackSavepoint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitJoin(_ Join) error {
+func (noopVisitor) VisitJoin(Join) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitOrder(_ Order) error {
+func (noopVisitor) VisitOrder(Order) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitLimit(_ Limit) error {
+func (noopVisitor) VisitLimit(Limit) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitOffset(_ Offset) error {
+func (noopVisitor) VisitOffset(Offset) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitBinary(_ Binary) error {
+func (noopVisitor) VisitBinary(Binary) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitUnary(_ Unary) error {
+func (noopVisitor) VisitUnary(Unary) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCallFunc(_ Call) error {
+func (noopVisitor) VisitCallFunc(Call) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitList(_ List) error {
+func (noopVisitor) VisitList(List) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCollate(_ Collate) error {
+func (noopVisitor) VisitCollate(Collate) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitIn(_ In) error {
+func (noopVisitor) VisitIn(In) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitIs(_ Is) error {
+func (noopVisitor) VisitIs(Is) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitExists(_ Exists) error {
+func (noopVisitor) VisitExists(Exists) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitBetween(_ Between) error {
+func (noopVisitor) VisitBetween(Between) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAll(_ All) error {
+func (noopVisitor) VisitAll(All) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAny(_ Any) error {
+func (noopVisitor) VisitAny(Any) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitNot(_ Not) error {
+func (noopVisitor) VisitNot(Not) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCast(_ Cast) error {
+func (noopVisitor) VisitCast(Cast) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitValue(_ Value) error {
+func (noopVisitor) VisitValue(Value) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAlias(_ Alias) error {
+func (noopVisitor) VisitAlias(Alias) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitName(_ Name) error {
+func (noopVisitor) VisitName(Name) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitGroup(_ Group) error {
+func (noopVisitor) VisitGroup(Group) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAssignment(_ Assignment) error {
+func (noopVisitor) VisitAssignment(Assignment) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitBody(_ Body) error {
+func (noopVisitor) VisitBody(Body) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitIf(_ If) error {
+func (noopVisitor) VisitIf(If) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitWhile(_ While) error {
+func (noopVisitor) VisitWhile(While) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitSet(_ Set) error {
+func (noopVisitor) VisitSet(Set) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitDeclare(_ Declare) error {
+func (noopVisitor) VisitDeclare(Declare) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitReturn(_ Return) error {
+func (noopVisitor) VisitReturn(Return) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCase(_ Case) error {
+func (noopVisitor) VisitCase(Case) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitWhen(_ When) error {
+func (noopVisitor) VisitWhen(When) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCreateProcedure(CreateProcedureStatement) error {
+func (noopVisitor) VisitCreateProcedure(CreateProcedureStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCreateTable(_ CreateTableStatement) error {
+func (noopVisitor) VisitCreateTable(CreateTableStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitDropTable(_ DropTableStatement) error {
+func (noopVisitor) VisitDropTable(DropTableStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAlterTable(_ AlterTableStatement) error {
+func (noopVisitor) VisitAlterTable(AlterTableStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCreateView(_ CreateViewStatement) error {
+func (noopVisitor) VisitCreateView(CreateViewStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitDropView(_ DropViewStatement) error {
+func (noopVisitor) VisitDropView(DropViewStatement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitColumnDef(_ ColumnDef) error {
+func (noopVisitor) VisitColumnDef(ColumnDef) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAddColumn(_ AddColumnAction) error {
+func (noopVisitor) VisitAddColumn(AddColumnAction) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAlterColumn(_ AlterColumnAction) error {
+func (noopVisitor) VisitAlterColumn(AlterColumnAction) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitDropColumn(_ DropColumnAction) error {
+func (noopVisitor) VisitDropColumn(DropColumnAction) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitAddConstraint(_ AddConstraintAction) error {
+func (noopVisitor) VisitAddConstraint(AddConstraintAction) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitDropConstraint(_ DropConstraintAction) error {
+func (noopVisitor) VisitDropConstraint(DropConstraintAction) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitConstraint(_ Constraint) error {
+func (noopVisitor) VisitConstraint(Constraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitPrimaryKey(_ PrimaryKeyConstraint) error {
+func (noopVisitor) VisitPrimaryKey(PrimaryKeyConstraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitForeignKey(_ ForeignKeyConstraint) error {
+func (noopVisitor) VisitForeignKey(ForeignKeyConstraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitNotNull(_ NotNullConstraint) error {
+func (noopVisitor) VisitNotNull(NotNullConstraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitUnique(_ UniqueConstraint) error {
+func (noopVisitor) VisitUnique(UniqueConstraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitCheck(_ CheckConstraint) error {
+func (noopVisitor) VisitCheck(CheckConstraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitDefault(_ DefaultConstraint) error {
+func (noopVisitor) VisitDefault(DefaultConstraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitGenerated(_ GeneratedConstraint) error {
+func (noopVisitor) VisitGenerated(GeneratedConstraint) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitXmlElement(_ XmlElement) error {
+func (noopVisitor) VisitXmlElement(XmlElement) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitXmlAttribute(_ XmlAttribute) error {
+func (noopVisitor) VisitXmlAttribute(XmlAttribute) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitXmlNamespace(_ XmlNamespace) error {
+func (noopVisitor) VisitXmlNamespace(XmlNamespace) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitXmlText(_ XmlText) error {
+func (noopVisitor) VisitXmlText(XmlText) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitXmlComment(_ XmlComment) error {
+func (noopVisitor) VisitXmlComment(XmlComment) error {
 	return nil
 }
 
-func (_ noopVisitor) VisitXmlAgg(_ XmlAgg) error {
+func (noopVisitor) VisitXmlAgg(XmlAgg) error {
 	return nil
 }
