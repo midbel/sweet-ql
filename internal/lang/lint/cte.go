@@ -166,53 +166,64 @@ func (r cteUnused) checkTables(q ast.Node, names map[string]int) {
 }
 
 type cteColumns struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func CteColumns(level Severity) Rule {
-	return cteColumns{
+	return &cteColumns{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ cteColumns) Name() string {
+func (_ *cteColumns) Name() string {
 	return "cte-columns"
 }
 
-func (r cteColumns) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *cteColumns) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r cteColumns) verify(stmt ast.Node) ([]Issue, error) {
-	q, ok := stmt.(ast.WithStatement)
-	if !ok {
-		return nil, nil
-	}
-	var list []Issue
-	for _, q := range q.Queries {
-		c, ok := q.(ast.CteStatement)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
-		}
-		if len(c.Columns) == 0 {
-			i := Issue{
-				Position: c.Position,
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "columns definition missing for cte",
-			}
-			list = append(list, i)
+func (r *cteColumns) VisitWith(with ast.WithStatement) error {
+	sub := Walk(r)
+	for _, q := range with.Queries {
+		err := q.Accept(sub)
+		if err != nil {
+			return err
 		}
 	}
-	return list, nil
+	return errStop
+}
+
+func (r *cteColumns) VisitCte(cte ast.CteStatement) error {
+	if len(cte.Columns) == 0 {
+		i := Issue{
+			Position: cte.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "specify column names explicitly in common table expression",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return errStop
 }
 
 type cteColumnsCount struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func CteColumnsCount(level Severity) Rule {
-	return cteColumnsCount{
+	return &cteColumnsCount{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
@@ -221,68 +232,59 @@ func (_ cteColumnsCount) Name() string {
 	return "cte-columns-count"
 }
 
-func (r cteColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *cteColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r cteColumnsCount) verify(stmt ast.Node) ([]Issue, error) {
-	q, ok := stmt.(ast.WithStatement)
-	if !ok {
-		return nil, nil
+func (r *cteColumnsCount) VisitWith(with ast.WithStatement) error {
+	sub := Walk(r)
+	for _, q := range with.Queries {
+		err := q.Accept(sub)
+		if err != nil && !errors.Is(err, errStop) {
+			return err
+		}
 	}
-	var (
-		list []Issue
-		get  func(ast.Node) (int, error)
-	)
+	return errStop
+}
+
+func (r *cteColumnsCount) VisitCte(cte ast.CteStatement) error {
+	var get func(ast.Node) (int, error)
 	get = func(q ast.Node) (int, error) {
-		var (
-			left  ast.Node
-			right ast.Node
-		)
 		switch c := q.(type) {
 		case ast.SelectStatement:
 			return len(c.Columns), nil
 		case ast.UnionStatement:
-			left, right = c.Left, c.Right
+			return get(c.Left)
 		case ast.ExceptStatement:
-			left, right = c.Left, c.Right
+			return get(c.Left)
 		case ast.IntersectStatement:
-			left, right = c.Left, c.Right
+			return get(c.Left)
 		default:
 			return 0, fmt.Errorf("%s: unexpected query type", r.Name())
 		}
-		c1, err := get(left)
-		if err != nil {
-			return c1, err
-		}
-		c2, err := get(right)
-		if err != nil {
-			return c2, err
-		}
-		return min(c1, c2), nil
 	}
-	for _, q := range q.Queries {
-		c, ok := q.(ast.CteStatement)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
-		}
-		count, err := get(c.Node)
-		if err != nil {
-			return nil, err
-		}
-		if len(c.Columns) > 0 && count != len(c.Columns) {
-			i := Issue{
-				Position: c.Position,
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "invalid number of columns declared in cte",
-			}
-			list = append(list, i)
-		}
+	count, err := get(cte.Node)
+	if err != nil {
+		return err
 	}
-	return list, nil
+	if count != len(cte.Columns) {
+		i := Issue{
+			Position: cte.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "number of columns returned by select does not match number of columns declared by common table expression",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return errStop
 }
 
+// check that fields qualified by cte are exposed by it
 type cteName struct {
 	severity Severity
 }
