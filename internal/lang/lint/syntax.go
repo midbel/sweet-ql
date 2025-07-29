@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -27,8 +28,12 @@ func (_ *noStar) Name() string {
 
 func (r *noStar) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	w := Walk(r)
-	return r.issues, stmt.Accept(w)
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
 func (r *noStar) VisitName(name ast.Name) error {
@@ -45,11 +50,14 @@ func (r *noStar) VisitName(name ast.Name) error {
 }
 
 type duplicateField struct {
+	ast.Visitor
+	issues   []Issue
 	severity Severity
 }
 
 func DuplicateField(level Severity) Rule {
 	return duplicateField{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
@@ -59,30 +67,23 @@ func (_ duplicateField) Name() string {
 }
 
 func (r duplicateField) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
+	r.issues = r.issues[:0]
 
-func (r duplicateField) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkDuplicateFields)
-}
-
-func (r duplicateField) checkDuplicateFields(q ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	for _, q := range getQueries(q) {
-		issues, err := r.checkColumns(q)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
 	}
-	return list, nil
+	return r.issues, err
 }
 
-func (r duplicateField) checkColumns(q ast.SelectStatement) ([]Issue, error) {
-	var (
-		list  []Issue
-		names [][]ast.Identifier
-	)
+func (r duplicateField) VisitSelect(q ast.SelectStatement) error {
+	r.checkColumns(q)
+	q.Accept(Walk(r))
+	return errStop
+}
+
+func (r duplicateField) checkColumns(q ast.SelectStatement) {
+	var names [][]ast.Identifier
 	for _, c := range q.Columns {
 		var id []ast.Identifier
 		switch c := c.(type) {
@@ -92,9 +93,9 @@ func (r duplicateField) checkColumns(q ast.SelectStatement) ([]Issue, error) {
 					Position: getPosition(c),
 					Severity: r.severity,
 					Rule:     r.Name(),
-					Reason:   "implicit duplicated field",
+					Reason:   "implicit duplicated field because of *",
 				}
-				list = append(list, i)
+				r.issues = append(r.issues, i)
 				continue
 			}
 			id = c.Parts
@@ -113,12 +114,11 @@ func (r duplicateField) checkColumns(q ast.SelectStatement) ([]Issue, error) {
 				Rule:     r.Name(),
 				Reason:   "duplicated field",
 			}
-			list = append(list, i)
+			r.issues = append(r.issues, i)
 			continue
 		}
 		names = append(names, id)
 	}
-	return list, nil
 }
 
 type setColumnsCount struct {
@@ -140,8 +140,12 @@ func (_ *setColumnsCount) Name() string {
 
 func (r *setColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	w := Walk(r)
-	return r.issues, stmt.Accept(w)
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
 func (r *setColumnsCount) VisitUnion(stmt ast.UnionStatement) error {

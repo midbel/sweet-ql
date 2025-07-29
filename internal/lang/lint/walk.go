@@ -6,10 +6,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-var (
-	errStop = errors.New("stop")
-	errSkip = errors.New("skip")
-)
+var errStop = errors.New("stop")
 
 type walkVisitor struct {
 	rule ast.Visitor
@@ -37,6 +34,9 @@ func (v walkVisitor) VisitValues(_ ast.ValuesStatement) error {
 }
 
 func (v walkVisitor) VisitSelect(node ast.SelectStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		return err
+	}
 	for _, c := range node.Columns {
 		if err := v.Walk(c); err != nil {
 			return err
@@ -100,7 +100,7 @@ func (v walkVisitor) VisitTruncate(_ ast.TruncateStatement) error {
 }
 
 func (v walkVisitor) VisitWith(node ast.WithStatement) error {
-	if err := v.Walk(node); err != nil {
+	if err := node.Accept(v.rule); err != nil {
 		return err
 	}
 	for _, q := range node.Queries {
@@ -112,7 +112,7 @@ func (v walkVisitor) VisitWith(node ast.WithStatement) error {
 }
 
 func (v walkVisitor) VisitCte(node ast.CteStatement) error {
-	if err := v.Walk(node); err != nil {
+	if err := node.Accept(v.rule); err != nil {
 		return err
 	}
 	return node.Node.Accept(v)
@@ -166,8 +166,14 @@ func (v walkVisitor) VisitRollbackSavepoint(_ ast.RollbackSavepoint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitJoin(_ ast.Join) error {
-	return nil
+func (v walkVisitor) VisitJoin(join ast.Join) error {
+	if err := join.Accept(v.rule); err != nil {
+		return err
+	}
+	if err := v.Walk(join.Table); err != nil {
+		return err
+	}
+	return v.Walk(join.Where)
 }
 
 func (v walkVisitor) VisitOrder(_ ast.Order) error {
@@ -182,12 +188,21 @@ func (v walkVisitor) VisitOffset(_ ast.Offset) error {
 	return nil
 }
 
-func (v walkVisitor) VisitBinary(_ ast.Binary) error {
-	return nil
+func (v walkVisitor) VisitBinary(binary ast.Binary) error {
+	if err := binary.Accept(v.rule); err != nil {
+		return err
+	}
+	if err := v.Walk(binary.Left); err != nil {
+		return err
+	}
+	return v.Walk(binary.Right)
 }
 
-func (v walkVisitor) VisitUnary(_ ast.Unary) error {
-	return nil
+func (v walkVisitor) VisitUnary(unary ast.Unary) error {
+	if err := unary.Accept(v.rule); err != nil {
+		return err
+	}
+	return v.Walk(unary.Right)
 }
 
 func (v walkVisitor) VisitCallFunc(_ ast.Call) error {
@@ -202,20 +217,44 @@ func (v walkVisitor) VisitCollate(_ ast.Collate) error {
 	return nil
 }
 
-func (v walkVisitor) VisitIn(_ ast.In) error {
-	return nil
+func (v walkVisitor) VisitIn(in ast.In) error {
+	if err := in.Accept(v.rule); err != nil {
+		return err
+	}
+	if err := v.Walk(in.Ident); err != nil {
+		return err
+	}
+	return v.Walk(in.Value)
 }
 
-func (v walkVisitor) VisitIs(_ ast.Is) error {
-	return nil
+func (v walkVisitor) VisitIs(is ast.Is) error {
+	if err := is.Accept(v.rule); err != nil {
+		return err
+	}
+	if err := v.Walk(is.Ident); err != nil {
+		return err
+	}
+	return v.Walk(is.Value)
 }
 
-func (v walkVisitor) VisitExists(_ ast.Exists) error {
-	return nil
+func (v walkVisitor) VisitExists(exists ast.Exists) error {
+	if err := exists.Accept(v.rule); err != nil {
+		return err
+	}
+	return v.Walk(exists.Node)
 }
 
-func (v walkVisitor) VisitBetween(_ ast.Between) error {
-	return nil
+func (v walkVisitor) VisitBetween(between ast.Between) error {
+	if err := between.Accept(v.rule); err != nil {
+		return err
+	}
+	if err := v.Walk(between.Ident); err != nil {
+		return err
+	}
+	if err := v.Walk(between.Lower); err != nil {
+		return err
+	}
+	return v.Walk(between.Upper)
 }
 
 func (v walkVisitor) VisitAll(_ ast.All) error {
@@ -234,19 +273,25 @@ func (v walkVisitor) VisitCast(_ ast.Cast) error {
 	return nil
 }
 
-func (v walkVisitor) VisitValue(_ ast.Value) error {
-	return nil
+func (v walkVisitor) VisitValue(value ast.Value) error {
+	return value.Accept(v.rule)
 }
 
-func (v walkVisitor) VisitAlias(_ ast.Alias) error {
-	return nil
+func (v walkVisitor) VisitAlias(alias ast.Alias) error {
+	if err := alias.Accept(v.rule); err != nil {
+		return err
+	}
+	return v.Walk(alias.Node)
 }
 
-func (v walkVisitor) VisitName(_ ast.Name) error {
-	return nil
+func (v walkVisitor) VisitName(name ast.Name) error {
+	return name.Accept(v.rule)
 }
 
 func (v walkVisitor) VisitGroup(group ast.Group) error {
+	if err := group.Accept(v.rule); err != nil {
+		return err
+	}
 	return v.Walk(group.Node)
 }
 
