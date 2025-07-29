@@ -3,10 +3,8 @@ package lint
 import (
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
-	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -98,8 +96,9 @@ type cteUnused struct {
 	ast.Visitor
 	severity Severity
 
-	names   map[string]int
-	collect bool
+	names     map[string]int
+	positions map[string]token.Position
+	collect   bool
 }
 
 func CteUnused(level Severity) Rule {
@@ -115,6 +114,7 @@ func (_ *cteUnused) Name() string {
 
 func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 	r.names = make(map[string]int)
+	r.positions = make(map[string]token.Position)
 
 	err := stmt.Accept(Walk(r))
 	if errors.Is(err, errStop) {
@@ -122,12 +122,12 @@ func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 	}
 
 	var issues []Issue
-	for _, c := range r.names {
+	for n, c := range r.names {
 		if c > 0 {
 			continue
 		}
 		i := Issue{
-			// Position: stmt.Position,
+			Position: r.positions[n],
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "cte is defined but not used",
@@ -140,6 +140,7 @@ func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 
 func (r *cteUnused) VisitCte(stmt ast.CteStatement) error {
 	r.names[stmt.Ident] = 0
+	r.positions[stmt.Ident] = stmt.Position
 	return nil
 }
 
@@ -173,59 +174,6 @@ func (r *cteUnused) update(name string) {
 	}
 	if _, ok := r.names[name]; ok {
 		r.names[name]++
-	}
-}
-
-func (r cteUnused) verify(stmt ast.Node) ([]Issue, error) {
-	q, ok := stmt.(ast.WithStatement)
-	if !ok {
-		return nil, nil
-	}
-	var (
-		positions = make(map[string]token.Position)
-		names     = make(map[string]int)
-	)
-	for _, q := range q.Queries {
-		c, ok := q.(ast.CteStatement)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
-		}
-		names[c.Ident] = 0
-		positions[c.Ident] = c.Position
-	}
-	var (
-		all  = slices.Concat(q.Queries, slx.One(q.Node))
-		list []Issue
-	)
-	for _, q := range all {
-		if c, ok := q.(ast.CteStatement); ok {
-			q = c.Node
-		}
-		r.checkTables(q, names)
-	}
-	for n, c := range names {
-		if c > 0 {
-			continue
-		}
-		i := Issue{
-			Position: positions[n],
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "cte is defined but not used",
-		}
-		list = append(list, i)
-	}
-	return list, nil
-}
-
-func (r cteUnused) checkTables(q ast.Node, names map[string]int) {
-	for _, q := range getQueries(q) {
-		for _, n := range getTables(q) {
-			if _, ok := names[n]; !ok {
-				continue
-			}
-			names[n]++
-		}
 	}
 }
 
