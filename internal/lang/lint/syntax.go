@@ -202,7 +202,7 @@ func (r *setColumnsCount) checkColumnsCount(left, right ast.Node) error {
 			Position: q1.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "same number of columns should be returned by queries combined in compound query",
+			Reason:   "queries in compound statement should return the same number of columns",
 		}
 		r.issues = append(r.issues, i)
 	}
@@ -210,41 +210,69 @@ func (r *setColumnsCount) checkColumnsCount(left, right ast.Node) error {
 }
 
 type missingWhere struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func MissingWhere(level Severity) Rule {
-	return missingWhere{
+	return &missingWhere{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ missingWhere) Name() string {
+func (_ *missingWhere) Name() string {
 	return "missing-where"
 }
 
-func (r missingWhere) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
+func (r *missingWhere) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
 
-func (r missingWhere) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkMissingWhere)
-}
-
-func (r missingWhere) checkMissingWhere(q ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	for _, q := range getQueries(q) {
-		if q.Where == nil {
-			i := Issue{
-				Position: q.Position,
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "missing where clause from query",
-			}
-			list = append(list, i)
-		}
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
 	}
-	return list, nil
+	return r.issues, err
+}
+
+func (r *missingWhere) VisitSelect(stmt ast.SelectStatement) error {
+	if stmt.Where == nil {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "where is missing from select query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *missingWhere) VisitUpdate(stmt ast.UpdateStatement) error {
+	if stmt.Where == nil {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "where is missing from update query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *missingWhere) VisitDelete(stmt ast.DeleteStatement) error {
+	if stmt.Where == nil {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "where is missing from delete query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 type enforceType struct {
@@ -252,7 +280,7 @@ type enforceType struct {
 }
 
 func EnforceType(level Severity) Rule {
-	return missingWhere{
+	return enforceType{
 		severity: level,
 	}
 }

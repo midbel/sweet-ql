@@ -90,12 +90,29 @@ func (v walkVisitor) VisitInsert(_ ast.InsertStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitUpdate(_ ast.UpdateStatement) error {
-	return nil
+func (v walkVisitor) VisitUpdate(node ast.UpdateStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		return err
+	}
+	if err := v.Walk(node.Table); err != nil {
+		return err
+	}
+	for i := range node.List {
+		if err := v.Walk(node.List[i]); err != nil {
+			return err
+		}
+	}
+	return v.Walk(node.Where)
 }
 
-func (v walkVisitor) VisitDelete(_ ast.DeleteStatement) error {
-	return nil
+func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		return err
+	}
+	if err := v.Walk(node.Table); err != nil {
+		return err
+	}
+	return v.Walk(node.Where)
 }
 
 func (v walkVisitor) VisitTruncate(_ ast.TruncateStatement) error {

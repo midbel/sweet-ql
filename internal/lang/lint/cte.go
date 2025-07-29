@@ -95,21 +95,85 @@ func (r *cteDuplicate) VisitWith(with ast.WithStatement) error {
 }
 
 type cteUnused struct {
+	ast.Visitor
 	severity Severity
+
+	names   map[string]int
+	collect bool
 }
 
 func CteUnused(level Severity) Rule {
-	return cteUnused{
+	return &cteUnused{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ cteUnused) Name() string {
+func (_ *cteUnused) Name() string {
 	return "cte-unused"
 }
 
-func (r cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
+	r.names = make(map[string]int)
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+
+	var issues []Issue
+	for _, c := range r.names {
+		if c > 0 {
+			continue
+		}
+		i := Issue{
+			// Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "cte is defined but not used",
+		}
+		issues = append(issues, i)
+	}
+
+	return issues, err
+}
+
+func (r *cteUnused) VisitCte(stmt ast.CteStatement) error {
+	r.names[stmt.Ident] = 0
+	return nil
+}
+
+func (r *cteUnused) VisitSelect(stmt ast.SelectStatement) error {
+	r.begin()
+	defer r.end()
+
+	sub := Walk(r)
+	for _, t := range stmt.Tables {
+		t.Accept(sub)
+	}
+	return nil
+}
+
+func (r *cteUnused) VisitName(name ast.Name) error {
+	r.update(name.Name())
+	return nil
+}
+
+func (r *cteUnused) begin() {
+	r.collect = true
+}
+
+func (r *cteUnused) end() {
+	r.collect = false
+}
+
+func (r *cteUnused) update(name string) {
+	if !r.collect {
+		return
+	}
+	if _, ok := r.names[name]; ok {
+		r.names[name]++
+	}
 }
 
 func (r cteUnused) verify(stmt ast.Node) ([]Issue, error) {
