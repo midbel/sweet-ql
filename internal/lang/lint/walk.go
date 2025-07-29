@@ -26,6 +26,9 @@ func (v walkVisitor) Walk(node ast.Node) error {
 	if err != nil {
 		return err
 	}
+	if isLeaf(node) {
+		return nil
+	}
 	return node.Accept(v)
 }
 
@@ -138,12 +141,12 @@ func (v walkVisitor) VisitRevoke(_ ast.RevokeStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCommit(_ ast.Commit) error {
-	return nil
+func (v walkVisitor) VisitCommit(node ast.Commit) error {
+	return node.Accept(v.rule)
 }
 
-func (v walkVisitor) VisitRollback(_ ast.Rollback) error {
-	return nil
+func (v walkVisitor) VisitRollback(node ast.Rollback) error {
+	return node.Accept(v.rule)
 }
 
 func (v walkVisitor) VisitSetTransaction(_ ast.SetTransaction) error {
@@ -265,8 +268,11 @@ func (v walkVisitor) VisitAny(_ ast.Any) error {
 	return nil
 }
 
-func (v walkVisitor) VisitNot(_ ast.Not) error {
-	return nil
+func (v walkVisitor) VisitNot(not ast.Not) error {
+	if err := not.Accept(v.rule); err != nil {
+		return err
+	}
+	return v.Walk(not.Node)
 }
 
 func (v walkVisitor) VisitCast(_ ast.Cast) error {
@@ -433,4 +439,14 @@ func (v walkVisitor) VisitXmlComment(_ ast.XmlComment) error {
 
 func (v walkVisitor) VisitXmlAgg(_ ast.XmlAgg) error {
 	return nil
+}
+
+func isLeaf(n ast.Node) bool {
+	switch n.(type) {
+	case ast.Name:
+	case ast.Value:
+	default:
+		return false
+	}
+	return true
 }
