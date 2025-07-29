@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -10,80 +11,87 @@ import (
 )
 
 type noCte struct {
+	ast.Visitor
+	issues   []Issue
 	severity Severity
 }
 
 func NoCte(level Severity) Rule {
-	return noCte{
+	return &noCte{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ noCte) Name() string {
+func (_ *noCte) Name() string {
 	return "no-cte"
 }
 
-func (r noCte) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *noCte) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r noCte) verify(stmt ast.Node) ([]Issue, error) {
-	if w, ok := stmt.(ast.WithStatement); ok {
-		i := Issue{
-			Position: w.Position,
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use subquery instead of cte",
-		}
-		return slx.One(i), nil
+func (r *noCte) VisitWith(with ast.WithStatement) error {
+	i := Issue{
+		Position: with.Position,
+		Severity: r.severity,
+		Rule:     r.Name(),
+		Reason:   "prefer using subqueries over common table expression",
 	}
-	return nil, nil
+	r.issues = append(r.issues, i)
+	return errStop
 }
 
 type cteDuplicate struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func CteDuplicate(level Severity) Rule {
-	return cteDuplicate{
+	return &cteDuplicate{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ cteDuplicate) Name() string {
+func (_ *cteDuplicate) Name() string {
 	return "cte-duplicate"
 }
 
-func (r cteDuplicate) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *cteDuplicate) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r cteDuplicate) verify(stmt ast.Node) ([]Issue, error) {
-	q, ok := stmt.(ast.WithStatement)
-	if !ok {
-		return nil, nil
-	}
-	var (
-		names = make(map[string]struct{})
-		list  []Issue
-	)
-	for _, q := range q.Queries {
-		c, ok := q.(ast.CteStatement)
+func (r *cteDuplicate) VisitWith(with ast.WithStatement) error {
+	var names = make(map[string]struct{})
+	for _, q := range with.Queries {
+		q, ok := q.(ast.CteStatement)
 		if !ok {
-			return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+			return fmt.Errorf("%s: unexpected query type", r.Name())
 		}
-		if _, ok := names[c.Ident]; ok {
+		if _, ok := names[q.Ident]; ok {
 			i := Issue{
-				Position: c.Position,
+				Position: q.Position,
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "duplicate cte name",
+				Reason:   "duplicate identifier in with statement",
 			}
-			list = append(list, i)
+			r.issues = append(r.issues, i)
 		}
-		names[c.Ident] = struct{}{}
+		names[q.Ident] = struct{}{}
 	}
-	return list, nil
+	return errStop
 }
 
 type cteUnused struct {
