@@ -82,14 +82,65 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 		if p.ansiMode {
 			return nil, p.Unexpected("alter", notAnsiReason)
 		}
+		p.Next()
+		ident, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		action := ast.RenameTableAction{
+			Old: ident,
+		}
+		if !p.IsKeyword("TO") {
+			return nil, p.Unexpected("rename", defaultReason)
+		}
+		p.Next()
+		action.New, err = p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		stmt.Action = action
 	case p.IsKeyword("RENAME COLUMN"):
 		if p.ansiMode {
 			return nil, p.Unexpected("alter", notAnsiReason)
 		}
+		p.Next()
+		ident, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		action := ast.RenameColumnAction{
+			Old: ident,
+		}
+		if !p.IsKeyword("TO") {
+			return nil, p.Unexpected("rename", defaultReason)
+		}
+		p.Next()
+		action.New, err = p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		stmt.Action = action
 	case p.IsKeyword("RENAME CONSTRAINT"):
 		if p.ansiMode {
 			return nil, p.Unexpected("alter", notAnsiReason)
 		}
+		p.Next()
+		ident, err := p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		action := ast.RenameConstraintAction{
+			Old: ident,
+		}
+		if !p.IsKeyword("TO") {
+			return nil, p.Unexpected("rename", defaultReason)
+		}
+		p.Next()
+		action.New, err = p.ParseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+		stmt.Action = action
 	case p.IsKeyword("ADD") || p.IsKeyword("ADD COLUMN"):
 		p.Next()
 		def, err := p.ParseColumnDef(p)
