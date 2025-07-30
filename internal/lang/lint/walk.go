@@ -312,6 +312,9 @@ func (v walkVisitor) VisitName(name ast.Name) error {
 }
 
 func (v walkVisitor) VisitGroup(group ast.Group) error {
+	if stmt, ok := group.Node.(ast.SelectStatement); ok {
+		return v.VisitSelect(stmt)
+	}
 	if err := group.Accept(v.rule); err != nil {
 		return err
 	}

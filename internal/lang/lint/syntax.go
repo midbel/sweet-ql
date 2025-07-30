@@ -56,17 +56,17 @@ type duplicateField struct {
 }
 
 func DuplicateField(level Severity) Rule {
-	return duplicateField{
+	return &duplicateField{
 		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ duplicateField) Name() string {
+func (_ *duplicateField) Name() string {
 	return "duplicate-field"
 }
 
-func (r duplicateField) Verify(stmt ast.Node) ([]Issue, error) {
+func (r *duplicateField) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
 	err := stmt.Accept(Walk(r))
@@ -76,21 +76,20 @@ func (r duplicateField) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r duplicateField) VisitSelect(q ast.SelectStatement) error {
-	r.checkColumns(q)
-	q.Accept(Walk(r))
-	return errStop
+func (r *duplicateField) VisitSelect(stmt ast.SelectStatement) error {
+	r.checkColumns(stmt)
+	return nil
 }
 
-func (r duplicateField) checkColumns(q ast.SelectStatement) {
+func (r *duplicateField) checkColumns(stmt ast.SelectStatement) {
 	var names [][]ast.Identifier
-	for _, c := range q.Columns {
+	for _, q := range stmt.Columns {
 		var id []ast.Identifier
-		switch c := c.(type) {
+		switch q := q.(type) {
 		case ast.Name:
-			if c.All() && len(q.Columns) > 1 {
+			if q.All() && len(stmt.Columns) > 1 {
 				i := Issue{
-					Position: getPosition(c),
+					Position: q.Position,
 					Severity: r.severity,
 					Rule:     r.Name(),
 					Reason:   "implicit duplicated field because of *",
@@ -98,9 +97,9 @@ func (r duplicateField) checkColumns(q ast.SelectStatement) {
 				r.issues = append(r.issues, i)
 				continue
 			}
-			id = c.Parts
+			id = q.Parts
 		case ast.Alias:
-			id = slx.One(c.Identifier)
+			id = slx.One(q.Identifier)
 		default:
 			continue
 		}
@@ -109,7 +108,7 @@ func (r duplicateField) checkColumns(q ast.SelectStatement) {
 		})
 		if ok {
 			i := Issue{
-				Position: getPosition(c),
+				Position: getPosition(q),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "duplicated field",
