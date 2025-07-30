@@ -28,6 +28,7 @@ type Parser struct {
 	prefix   *stack[prefixFunc]
 
 	withAlias bool
+	ansiMode  bool
 
 	queries map[string]ast.Node
 	values  map[string]ast.Node

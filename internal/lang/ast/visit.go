@@ -95,6 +95,9 @@ type DefinitionVisitor interface {
 	VisitDropColumn(DropColumnAction) error
 	VisitAddConstraint(AddConstraintAction) error
 	VisitDropConstraint(DropConstraintAction) error
+	VisitRenameTable(RenameTableAction) error
+	VisitRenameColumn(RenameColumnAction) error
+	VisitRenameConstraint(RenameConstraintAction) error
 
 	VisitConstraint(Constraint) error
 	VisitPrimaryKey(PrimaryKeyConstraint) error
@@ -378,6 +381,18 @@ func (noopVisitor) VisitAddConstraint(AddConstraintAction) error {
 }
 
 func (noopVisitor) VisitDropConstraint(DropConstraintAction) error {
+	return nil
+}
+
+func (noopVisitor) VisitRenameTable(RenameTableAction) error {
+	return nil
+}
+
+func (noopVisitor) VisitRenameColumn(RenameColumnAction) error {
+	return nil
+}
+
+func (noopVisitor) VisitRenameConstraint(RenameConstraintAction) error {
 	return nil
 }
 

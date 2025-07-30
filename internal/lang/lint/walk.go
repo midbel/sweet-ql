@@ -406,6 +406,18 @@ func (v walkVisitor) VisitDropConstraint(_ ast.DropConstraintAction) error {
 	return nil
 }
 
+func (v walkVisitor) VisitRenameTable(_ ast.RenameTableAction) error {
+	return nil
+}
+
+func (v walkVisitor) VisitRenameColumn(_ ast.RenameColumnAction) error {
+	return nil
+}
+
+func (v walkVisitor) VisitRenameConstraint(_ ast.RenameConstraintAction) error {
+	return nil
+}
+
 func (v walkVisitor) VisitConstraint(_ ast.Constraint) error {
 	return nil
 }

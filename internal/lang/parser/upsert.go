@@ -142,7 +142,8 @@ func (p *Parser) ParseDelete() (ast.Node, error) {
 	if stmt.Where, err = p.ParseWhere(); err != nil {
 		return nil, err
 	}
-	return stmt, nil
+	stmt.Returning, err = p.ParseReturning()
+	return stmt, err
 }
 
 func (p *Parser) ParseTruncate() (ast.Node, error) {
@@ -207,6 +208,7 @@ func (p *Parser) ParseUpdate() (ast.Node, error) {
 	if stmt.Where, err = p.ParseWhere(); err != nil {
 		return nil, err
 	}
+	stmt.Returning, err = p.ParseReturning()
 	return stmt, err
 }
 
@@ -275,5 +277,36 @@ func (p *Parser) ParseInsert() (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return stmt, nil
+	stmt.Returning, err = p.ParseReturning()
+	return stmt, err
+}
+
+func (p *Parser) ParseReturning() (ast.Node, error) {
+	if !p.IsKeyword("RETURNING") {
+		return nil, nil
+	}
+	if p.ansiMode {
+		return nil, p.Unexpected("returning", notAnsiReason)
+	}
+	ret := ast.Returning{
+		Position: p.GetCurrPosition(),
+	}
+	p.Next()
+	if p.Is(token.Star) {
+		p.Next()
+	}
+	var list ast.List
+	for !p.Done() && !p.QueryEnds() {
+		expr, err := p.StartExpression()
+		if err != nil {
+			return nil, err
+		}
+		list.Values = append(list.Values, expr)
+		if !p.Is(token.Comma) {
+			return nil, p.Unexpected("returning", defaultReason)
+		}
+		p.Next()
+	}
+	ret.Node = list
+	return ret, nil
 }

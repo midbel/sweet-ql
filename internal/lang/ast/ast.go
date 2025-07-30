@@ -34,6 +34,15 @@ func (n CommentedNode) Get() Node {
 	return n
 }
 
+type Returning struct {
+	token.Position
+	Node
+}
+
+func (r Returning) VisitReturning(visit Visitor) error {
+	return nil
+}
+
 type Limit struct {
 	token.Position
 
@@ -268,6 +277,8 @@ type InsertStatement struct {
 	Table   Node
 	Columns []Node
 	Values  Node
+
+	Returning Node
 }
 
 func (s InsertStatement) Accept(visit Visitor) error {
@@ -280,6 +291,8 @@ type UpdateStatement struct {
 	Table Node
 	List  []Node
 	Where Node
+
+	Returning Node
 }
 
 func (s UpdateStatement) Accept(visit Visitor) error {
@@ -301,6 +314,8 @@ type DeleteStatement struct {
 
 	Table Node
 	Where Node
+
+	Returning Node
 }
 
 func (s DeleteStatement) Accept(visit Visitor) error {

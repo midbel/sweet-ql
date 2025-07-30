@@ -630,6 +630,9 @@ func (p *Parser) ParseLimit() (ast.Node, error) {
 
 	switch {
 	case p.IsKeyword("LIMIT"):
+		if p.ansiMode {
+			return nil, p.Unexpected("limit", notAnsiReason)
+		}
 		p.Next()
 		return p.parseItem(getLimit)
 	case p.IsKeyword("OFFSET") || p.IsKeyword("FETCH"):

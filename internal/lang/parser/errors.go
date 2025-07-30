@@ -19,6 +19,7 @@ const (
 	missingComma      = "missing comma"
 	unknownOperator   = "unknown operator"
 	syntaxError       = "syntax error"
+	notAnsiReason     = "syntax not defined in SQL ANSI standard"
 )
 
 func keywordExpected(kw ...string) string {

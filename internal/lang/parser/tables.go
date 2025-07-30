@@ -78,6 +78,18 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 		return nil, err
 	}
 	switch {
+	case p.IsKeyword("RENAME TO"):
+		if p.ansiMode {
+			return nil, p.Unexpected("alter", notAnsiReason)
+		}
+	case p.IsKeyword("RENAME COLUMN"):
+		if p.ansiMode {
+			return nil, p.Unexpected("alter", notAnsiReason)
+		}
+	case p.IsKeyword("RENAME CONSTRAINT"):
+		if p.ansiMode {
+			return nil, p.Unexpected("alter", notAnsiReason)
+		}
 	case p.IsKeyword("ADD") || p.IsKeyword("ADD COLUMN"):
 		p.Next()
 		def, err := p.ParseColumnDef(p)

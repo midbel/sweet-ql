@@ -52,6 +52,33 @@ func (a DropConstraintAction) Accept(visit Visitor) error {
 	return visit.VisitDropConstraint(a)
 }
 
+type RenameTableAction struct {
+	Old Node
+	New Node
+}
+
+func (a RenameTableAction) Accept(visit Visitor) error {
+	return visit.VisitRenameTable(a)
+}
+
+type RenameColumnAction struct {
+	Old Node
+	New Node
+}
+
+func (a RenameColumnAction) Accept(visit Visitor) error {
+	return visit.VisitRenameColumn(a)
+}
+
+type RenameConstraintAction struct {
+	Old Node
+	New Node
+}
+
+func (a RenameConstraintAction) Accept(visit Visitor) error {
+	return visit.VisitRenameConstraint(a)
+}
+
 type AlterTableStatement struct {
 	Name   Node
 	Action Node
