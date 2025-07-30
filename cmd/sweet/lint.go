@@ -36,6 +36,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"undefined-alias":          lint.UndefinedAlias,
 	"identifier-without-quote": lint.MissingIdentQuoted,
 	"identifier-with-quote":    lint.NoIdentQuoted,
+	"recommand-use-quote":      lint.RecommandedQuote,
 }
 
 func runLint(args []string) error {

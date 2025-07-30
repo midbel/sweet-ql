@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/slx"
@@ -296,214 +297,172 @@ func (r enforceType) verify(stmt ast.Node) ([]Issue, error) {
 	return nil, nil
 }
 
-type noIdentQuoted struct {
+type recommandedQuote struct {
+	ast.Visitor
 	severity Severity
-	options  RuleOptions
+	issues   []Issue
+}
+
+func RecommandedQuote(level Severity) Rule {
+	return &recommandedQuote{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *recommandedQuote) Name() string {
+	return "recommanded-quote"
+}
+
+func (r *recommandedQuote) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *recommandedQuote) VisitName(stmt ast.Name) error {
+	ok := slices.ContainsFunc(stmt.Parts, func(i ast.Identifier) bool {
+		return !i.Quoted && strings.ToLower(i.Name) != i.Name
+	})
+	if ok {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use of double quotes is recommanded around identifier",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *recommandedQuote) VisitAlias(stmt ast.Alias) error {
+	if !stmt.Quoted && strings.ToLower(stmt.Name) != stmt.Name {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use of double quotes is recommanded around alias",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+type noIdentQuoted struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
 }
 
 func NoIdentQuoted(level Severity) Rule {
-	return noIdentQuoted{
+	return &noIdentQuoted{
+		Visitor:  ast.Noop(),
 		severity: level,
-		options:  CheckFields | CheckTables,
 	}
 }
 
-func (_ noIdentQuoted) Name() string {
+func (_ *noIdentQuoted) Name() string {
 	return "no-ident-quoted"
 }
 
-func (r noIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *noIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r noIdentQuoted) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkQuotedIdentifiers)
+func (r *noIdentQuoted) VisitName(stmt ast.Name) error {
+	ok := slices.ContainsFunc(stmt.Parts, func(i ast.Identifier) bool {
+		return i.Quoted
+	})
+	if ok {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "Invalid use of double quotes around identifier",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
-func (r noIdentQuoted) checkQuotedIdentifiers(stmt ast.SelectStatement) ([]Issue, error) {
-	var (
-		queries = getQueries(stmt)
-		list    []Issue
-	)
-	for _, q := range queries {
-		issues, err := r.checkQuotes(q)
-		if err != nil {
-			return nil, err
+func (r *noIdentQuoted) VisitAlias(stmt ast.Alias) error {
+	if stmt.Quoted {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "Invalid use of double quotes around alias",
 		}
-		list = slices.Concat(list, issues)
+		r.issues = append(r.issues, i)
 	}
-	return list, nil
-}
-
-func (r noIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
-	var (
-		list  []Issue
-		check func(ast.Node) []Issue
-	)
-	check = func(q ast.Node) []Issue {
-		switch q := q.(type) {
-		case ast.Name:
-			for _, n := range q.Parts {
-				if n.Quoted {
-					i := Issue{
-						Position: q.Position,
-						Severity: r.severity,
-						Rule:     r.Name(),
-						Reason:   "identifier used with double quote",
-					}
-					return slx.One(i)
-				}
-			}
-		case ast.Alias:
-			var list []Issue
-			if q.Quoted {
-				i := Issue{
-					Position: q.Position,
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "alias used with double quote",
-				}
-				list = append(list, i)
-			}
-			list = slices.Concat(list, check(q.Node))
-		case ast.Join:
-			var (
-				list = check(q.Table)
-				all  []ast.Node
-			)
-			if gs, ok := q.Where.(interface{ GetStatement() []ast.Node }); ok {
-				all = gs.GetStatement()
-			} else {
-				all = slx.One(q.Where)
-			}
-			for _, s := range all {
-				list = slices.Concat(list, check(s))
-			}
-			return list
-		default:
-		}
-		return nil
-	}
-	for _, c := range slices.Concat(q.Columns, q.Tables, q.Groups) {
-		list = slices.Concat(list, check(c))
-	}
-	for _, c := range slx.Make(q.Where, q.Having) {
-		var all []ast.Node
-		if gs, ok := c.(interface{ GetStatement() []ast.Node }); ok {
-			all = gs.GetStatement()
-		} else {
-			all = slx.One(c)
-		}
-		for _, s := range all {
-			list = slices.Concat(list, check(s))
-		}
-	}
-	return list, nil
+	return nil
 }
 
 type missingIdentQuoted struct {
+	ast.Visitor
 	severity Severity
-	options  RuleOptions
+	issues   []Issue
 }
 
 func MissingIdentQuoted(level Severity) Rule {
-	return missingIdentQuoted{
+	return &missingIdentQuoted{
+		Visitor:  ast.Noop(),
 		severity: level,
-		options:  CheckFields | CheckTables,
 	}
 }
 
-func (_ missingIdentQuoted) Name() string {
+func (_ *missingIdentQuoted) Name() string {
 	return "missing-ident-quoted"
 }
 
-func (r missingIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *missingIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r missingIdentQuoted) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkMissingQuotes)
+func (r *missingIdentQuoted) VisitName(stmt ast.Name) error {
+	ok := slices.ContainsFunc(stmt.Parts, func(i ast.Identifier) bool {
+		return !i.Quoted
+	})
+	if ok {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "missing double quotes around identifier",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
-func (r missingIdentQuoted) checkMissingQuotes(stmt ast.SelectStatement) ([]Issue, error) {
-	var (
-		queries = getQueries(stmt)
-		list    []Issue
-	)
-	for _, q := range queries {
-		issues, err := r.checkQuotes(q)
-		if err != nil {
-			return nil, err
+func (r *missingIdentQuoted) VisitAlias(stmt ast.Alias) error {
+	if !stmt.Quoted {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "missing double quotes around alias",
 		}
-		list = slices.Concat(list, issues)
+		r.issues = append(r.issues, i)
 	}
-	return list, nil
-}
-
-func (r missingIdentQuoted) checkQuotes(q ast.SelectStatement) ([]Issue, error) {
-	var (
-		list  []Issue
-		check func(ast.Node) []Issue
-	)
-	check = func(q ast.Node) []Issue {
-		switch q := q.(type) {
-		case ast.Name:
-			for _, n := range q.Parts {
-				if !n.Quoted {
-					i := Issue{
-						Position: q.Position,
-						Severity: r.severity,
-						Rule:     r.Name(),
-						Reason:   "identifier used without double quote",
-					}
-					return slx.One(i)
-				}
-			}
-		case ast.Alias:
-			var list []Issue
-			if !q.Quoted {
-				i := Issue{
-					Position: q.Position,
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "alias used without double quote",
-				}
-				list = append(list, i)
-			}
-			list = slices.Concat(list, check(q.Node))
-		case ast.Join:
-			var (
-				list = check(q.Table)
-				all  []ast.Node
-			)
-			if gs, ok := q.Where.(interface{ GetStatement() []ast.Node }); ok {
-				all = gs.GetStatement()
-			} else {
-				all = slx.One(q.Where)
-			}
-			for _, s := range all {
-				list = slices.Concat(list, check(s))
-			}
-			return list
-		default:
-		}
-		return nil
-	}
-	for _, c := range slices.Concat(q.Columns, q.Tables, q.Groups) {
-		list = slices.Concat(list, check(c))
-	}
-	for _, c := range slx.Make(q.Where, q.Having) {
-		var all []ast.Node
-		if gs, ok := c.(interface{ GetStatement() []ast.Node }); ok {
-			all = gs.GetStatement()
-		} else {
-			all = slx.One(c)
-		}
-		for _, s := range all {
-			list = slices.Concat(list, check(s))
-		}
-	}
-	return list, nil
+	return nil
 }
 
 // avoid using literal value in join predicate

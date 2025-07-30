@@ -312,6 +312,7 @@ func (v walkVisitor) VisitName(name ast.Name) error {
 }
 
 func (v walkVisitor) VisitGroup(group ast.Group) error {
+	// Temporary workaround to prevent double visit of SELECT nodes
 	if stmt, ok := group.Node.(ast.SelectStatement); ok {
 		return v.VisitSelect(stmt)
 	}
