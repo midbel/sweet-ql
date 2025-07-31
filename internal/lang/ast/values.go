@@ -29,6 +29,7 @@ func (i List) Len() int {
 }
 
 type Group struct {
+	token.Position
 	Node
 }
 

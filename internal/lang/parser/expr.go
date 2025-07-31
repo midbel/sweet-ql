@@ -455,6 +455,7 @@ func (p *Parser) parseUnary() (ast.Node, error) {
 }
 
 func (p *Parser) parseGroupExpr() (ast.Node, error) {
+	pos := p.GetCurrPosition()
 	p.Next()
 	if p.IsKeyword("SELECT") || p.IsKeyword("VALUES") {
 		stmt, err := p.ParseStatement()
@@ -466,7 +467,8 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 		}
 		p.Next()
 		g := ast.Group{
-			Node: stmt,
+			Position: pos,
+			Node:     stmt,
 		}
 		return p.ParseAlias(g)
 	}
@@ -479,7 +481,8 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 	}
 	p.Next()
 	g := ast.Group{
-		Node: stmt,
+		Position: pos,
+		Node:     stmt,
 	}
 	return g, nil
 }

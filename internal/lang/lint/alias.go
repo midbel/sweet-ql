@@ -1,75 +1,73 @@
 package lint
 
 import (
-	"fmt"
+	"errors"
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/token"
 )
 
-type setAlias struct {
+type recommandedAlias struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
-func SetAlias(level Severity) Rule {
-	return setAlias{
+func RecommandedAlias(level Severity) Rule {
+	return &recommandedAlias{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (r setAlias) Name() string {
+func (r *recommandedAlias) Name() string {
 	return "set-alias"
 }
 
-func (r setAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
-
-func (r setAlias) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkAliasForCalculatedFields)
-}
-
-func (r setAlias) checkAliasForCalculatedFields(q ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	for _, c := range q.Columns {
-		switch c.(type) {
-		case ast.Call, ast.Binary:
-			i := Issue{
-				Position: getPosition(c),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "use alias for calculated field",
-			}
-			list = append(list, i)
-		default:
-		}
+func (r *recommandedAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
 	}
-	return list, nil
+	return r.issues, err
+}
+
+func (r *recommandedAlias) VisitSelect(stmt ast.SelectStatement) error {
+	for _, q := range stmt.Columns {
+		var pos token.Position
+		switch q := q.(type) {
+		case ast.Call:
+			pos = q.Position
+		case ast.Group:
+			pos = q.Position
+		case ast.Binary:
+			pos = q.Position
+		default:
+			continue
+		}
+		i := Issue{
+			Position: pos,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 type missingAlias struct {
+	ast.Visitor
 	severity Severity
-	options  RuleOptions
+	issues   []Issue
 }
 
 func MissingAlias(level Severity) Rule {
-	return missingAlias{
+	return &missingAlias{
+		Visitor:  ast.Noop(),
 		severity: level,
-		options:  CheckFields | CheckTables,
-	}
-}
-
-func MissingAliasOnFields(level Severity) Rule {
-	return missingAlias{
-		severity: level,
-		options:  CheckFields,
-	}
-}
-
-func MissingAliasOnTables(level Severity) Rule {
-	return missingAlias{
-		severity: level,
-		options:  CheckTables,
 	}
 }
 
@@ -77,205 +75,178 @@ func (_ missingAlias) Name() string {
 	return "missing-alias"
 }
 
-func (r missingAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *missingAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r missingAlias) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkMissingAlias)
-}
-
-func (r missingAlias) checkMissingAlias(stmt ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	if r.options.withCheckFields() {
-		for _, c := range stmt.Columns {
-			if _, ok := c.(ast.Alias); !ok {
-				i := Issue{
-					Position: getPosition(c),
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "field used without alias",
-				}
-				list = append(list, i)
+func (r *missingAlias) VisitSelect(stmt ast.SelectStatement) error {
+	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
+		if _, ok := c.(ast.Alias); !ok {
+			i := Issue{
+				Position: getPosition(c),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "prefer using alias to improve your query",
 			}
+			r.issues = append(r.issues, i)
 		}
 	}
-	if r.options.withCheckTables() {
-		for _, t := range stmt.Tables {
-			if _, ok := t.(ast.Alias); !ok {
-				i := Issue{
-					Position: getPosition(t),
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "table used without alias",
-				}
-				list = append(list, i)
-			}
-		}
-	}
-	return list, nil
+	return nil
 }
 
 type noAlias struct {
+	ast.Visitor
 	severity Severity
-	options  RuleOptions
+	issues   []Issue
 }
 
 func NoAlias(level Severity) Rule {
-	return noAlias{
+	return &noAlias{
+		Visitor:  ast.Noop(),
 		severity: level,
-		options:  CheckFields | CheckTables,
 	}
 }
 
-func NoAliasOnFields(level Severity) Rule {
-	return noAlias{
-		severity: level,
-		options:  CheckFields,
-	}
-}
-
-func NoAliasOnTables(level Severity) Rule {
-	return noAlias{
-		severity: level,
-		options:  CheckTables,
-	}
-}
-
-func (_ noAlias) Name() string {
+func (_ *noAlias) Name() string {
 	return "no-alias"
 }
 
-func (r noAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *noAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r noAlias) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkNoAlias)
-}
-
-func (r noAlias) checkNoAlias(stmt ast.SelectStatement) ([]Issue, error) {
-	var list []Issue
-	if r.options.withCheckFields() {
-		for _, c := range stmt.Columns {
-			if a, ok := c.(ast.Alias); ok {
-				i := Issue{
-					Position: a.Position,
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "field used with an alias",
-				}
-				list = append(list, i)
+func (r *noAlias) VisitSelect(stmt ast.SelectStatement) error {
+	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
+		if a, ok := c.(ast.Alias); ok {
+			i := Issue{
+				Position: a.Position,
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "aliases are not recommended unless needed",
 			}
+			r.issues = append(r.issues, i)
 		}
 	}
-	if r.options.withCheckTables() {
-		for _, t := range stmt.Tables {
-			if a, ok := t.(ast.Alias); ok {
-				i := Issue{
-					Position: a.Position,
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "table used with an alias",
-				}
-				list = append(list, i)
-			}
-		}
-	}
-	return list, nil
+	return nil
 }
 
 type invalidAlias struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
+
+	aliases [][]ast.Identifier
 }
 
 func InvalidAlias(level Severity) Rule {
-	return invalidAlias{
+	return &invalidAlias{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ invalidAlias) Name() string {
+func (_ *invalidAlias) Name() string {
 	return "invalid-alias"
 }
 
-func (r invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
-
-func (r invalidAlias) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkInvalidAlias)
-}
-
-func (r invalidAlias) checkInvalidAlias(q ast.SelectStatement) ([]Issue, error) {
-	if q.Where == nil {
-		return nil, nil
+func (r *invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
 	}
-	var aliases []string
-	for _, c := range q.Columns {
+	return r.issues, err
+}
+
+func (r *invalidAlias) VisitSelect(stmt ast.SelectStatement) error {
+	var aliases []ast.Identifier
+	for _, c := range stmt.Columns {
 		a, ok := c.(ast.Alias)
 		if ok {
-			aliases = append(aliases, a.Name)
+			aliases = append(aliases, a.Identifier)
 		}
 	}
-	if len(aliases) == 0 {
-		return nil, nil
+	r.push(aliases)
+	return nil
+}
+
+func (r *invalidAlias) VisitName(name ast.Name) error {
+	if r.exists(name) {
+		i := Issue{
+			Position: name.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "alias is not expected in group by/where/having clause of query",
+		}
+		r.issues = append(r.issues, i)
 	}
-	b, ok := q.Where.(ast.Binary)
-	if !ok {
-		return nil, fmt.Errorf("%s: unexpected query type", r.Name())
+	return nil
+}
+
+func (r *invalidAlias) push(list []ast.Identifier) {
+	r.aliases = append(r.aliases, list)
+}
+
+func (r *invalidAlias) pop() {
+	n := len(r.aliases)
+	if n > 0 {
+		r.aliases = r.aliases[:n-1]
 	}
-	var list []Issue
-	for _, n := range getNames(b) {
-		if ok := slices.Contains(aliases, n); ok {
-			i := Issue{
-				Position: b.Position,
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "alias used in \"where\" clause of query",
-			}
-			list = append(list, i)
+}
+
+func (r *invalidAlias) exists(name ast.Name) bool {
+	n := len(r.aliases)
+	if n == 0 || len(name.Parts) != 1 {
+		return false
+	}
+	for i := n - 1; i >= 0; i-- {
+		ok := slices.ContainsFunc(r.aliases[i], func(i ast.Identifier) bool {
+			return i.Name == name.Parts[0].Name
+		})
+		if ok {
+			return ok
 		}
 	}
-	for _, g := range q.Groups {
-		for _, n := range getNames(g) {
-			if ok := slices.Contains(aliases, n); ok {
-				i := Issue{
-					Position: getPosition(g),
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "alias used in \"group by\" clause of query",
-				}
-				list = append(list, i)
-			}
-		}
-	}
-	return list, nil
+	return false
 }
 
 type undefinedAlias struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func UndefinedAlias(level Severity) Rule {
-	return undefinedAlias{
+	return &undefinedAlias{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ undefinedAlias) Name() string {
+func (_ *undefinedAlias) Name() string {
 	return "undefined-alias"
 }
 
-func (r undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
+func (r *undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
 
-func (r undefinedAlias) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkUndefinedAlias)
-}
-
-func (r undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, error) {
+func (r *undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, error) {
 	var (
 		aliases []string
 		list    []Issue
