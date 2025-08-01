@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -22,7 +23,7 @@ func RecommandedAlias(level Severity) Rule {
 }
 
 func (r *recommandedAlias) Name() string {
-	return "set-alias"
+	return "recommanded-alias"
 }
 
 func (r *recommandedAlias) Verify(stmt ast.Node) ([]Issue, error) {
@@ -168,6 +169,11 @@ func (r *invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
+func (r *invalidAlias) VisitCte(stmt ast.CteStatement) error {
+	defer r.pop()
+	return stmt.Node.Accept(r)
+}
+
 func (r *invalidAlias) VisitSelect(stmt ast.SelectStatement) error {
 	var aliases []ast.Identifier
 	for _, c := range stmt.Columns {
@@ -177,7 +183,8 @@ func (r *invalidAlias) VisitSelect(stmt ast.SelectStatement) error {
 		}
 	}
 	r.push(aliases)
-	return nil
+	defer r.pop()
+	return r.visit(stmt)
 }
 
 func (r *invalidAlias) VisitName(name ast.Name) error {
@@ -191,6 +198,24 @@ func (r *invalidAlias) VisitName(name ast.Name) error {
 		r.issues = append(r.issues, i)
 	}
 	return nil
+}
+
+func (r *invalidAlias) visit(stmt ast.SelectStatement) error {
+	var (
+		where  = slx.One(stmt.Where)
+		having = slx.One(stmt.Having)
+		parts  = slices.Concat(stmt.Columns, stmt.Groups, where, having)
+		sub    = Walk(r)
+	)
+	for _, q := range parts {
+		if q == nil {
+			continue
+		}
+		if err := q.Accept(sub); err != nil {
+			return err
+		}
+	}
+	return errStop
 }
 
 func (r *invalidAlias) push(list []ast.Identifier) {
@@ -224,6 +249,7 @@ type undefinedAlias struct {
 	ast.Visitor
 	severity Severity
 	issues   []Issue
+	aliases  [][]ast.Identifier
 }
 
 func UndefinedAlias(level Severity) Rule {
@@ -246,32 +272,72 @@ func (r *undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *undefinedAlias) checkUndefinedAlias(stmt ast.SelectStatement) ([]Issue, error) {
-	var (
-		aliases []string
-		list    []Issue
-	)
+func (r *undefinedAlias) VisitSelect(stmt ast.SelectStatement) error {
+	var aliases []ast.Identifier
 	for _, t := range stmt.Tables {
 		if a, ok := t.(ast.Alias); ok {
-			aliases = append(aliases, a.Name)
+			aliases = append(aliases, a.Identifier)
 		}
 	}
+	r.push(aliases)
+	defer r.pop()
+	return r.visit(stmt)
+}
 
-	for _, c := range stmt.Columns {
-		ns := getNames(c)
-		if len(ns) <= 1 {
+func (r *undefinedAlias) VisitName(name ast.Name) error {
+	if !r.exists(name) {
+		i := Issue{
+			Position: name.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "alias is not defined in from clause of query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *undefinedAlias) visit(stmt ast.SelectStatement) error {
+	var (
+		where  = slx.One(stmt.Where)
+		having = slx.One(stmt.Having)
+		parts  = slices.Concat(stmt.Columns, stmt.Groups, where, having)
+		sub    = Walk(r)
+	)
+	for _, q := range parts {
+		if q == nil {
 			continue
 		}
-		ok := slices.Contains(aliases, ns[len(ns)-2])
-		if !ok || len(aliases) == 0 {
-			i := Issue{
-				Position: getPosition(c),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "undefined name",
-			}
-			list = append(list, i)
+		if err := q.Accept(sub); err != nil {
+			return err
 		}
 	}
-	return list, nil
+	return errStop
+}
+
+func (r *undefinedAlias) push(list []ast.Identifier) {
+	r.aliases = append(r.aliases, list)
+}
+
+func (r *undefinedAlias) pop() {
+	n := len(r.aliases)
+	if n > 0 {
+		r.aliases = r.aliases[:n-1]
+	}
+}
+
+func (r *undefinedAlias) exists(name ast.Name) bool {
+	n := len(r.aliases)
+	if n == 0 || len(name.Parts) <= 1 {
+		return true
+	}
+	for i := n - 1; i >= 0; i-- {
+		ok := slices.ContainsFunc(r.aliases[i], func(i ast.Identifier) bool {
+			return i.Name == name.Parts[0].Name
+		})
+		if ok {
+			return ok
+		}
+	}
+	return false
 }

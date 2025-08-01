@@ -53,6 +53,14 @@ func (v walkVisitor) VisitSelect(node ast.SelectStatement) error {
 	if err := v.Walk(node.Where); err != nil {
 		return err
 	}
+	for _, g := range node.Groups {
+		if err := v.Walk(g); err != nil {
+			return err
+		}
+	}
+	if err := v.Walk(node.Having); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -132,9 +140,6 @@ func (v walkVisitor) VisitWith(node ast.WithStatement) error {
 }
 
 func (v walkVisitor) VisitCte(node ast.CteStatement) error {
-	if err := node.Accept(v.rule); err != nil {
-		return err
-	}
 	return node.Node.Accept(v)
 }
 
