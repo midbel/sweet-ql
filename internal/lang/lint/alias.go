@@ -147,6 +147,7 @@ type invalidAlias struct {
 	issues   []Issue
 
 	aliases [][]ast.Identifier
+	depth   int
 }
 
 func InvalidAlias(level Severity) Rule {
@@ -162,16 +163,12 @@ func (_ *invalidAlias) Name() string {
 
 func (r *invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
+	r.depth++
 	err := stmt.Accept(Walk(r))
 	if errors.Is(err, errStop) {
 		err = nil
 	}
 	return r.issues, err
-}
-
-func (r *invalidAlias) VisitCte(stmt ast.CteStatement) error {
-	defer r.pop()
-	return stmt.Node.Accept(r)
 }
 
 func (r *invalidAlias) VisitSelect(stmt ast.SelectStatement) error {
@@ -215,17 +212,22 @@ func (r *invalidAlias) visit(stmt ast.SelectStatement) error {
 			return err
 		}
 	}
+	if r.depth > 1 {
+		return nil
+	}
 	return errStop
 }
 
 func (r *invalidAlias) push(list []ast.Identifier) {
 	r.aliases = append(r.aliases, list)
+	r.depth++
 }
 
 func (r *invalidAlias) pop() {
 	n := len(r.aliases)
 	if n > 0 {
 		r.aliases = r.aliases[:n-1]
+		r.depth--
 	}
 }
 
@@ -250,6 +252,8 @@ type undefinedAlias struct {
 	severity Severity
 	issues   []Issue
 	aliases  [][]ast.Identifier
+
+	depth int
 }
 
 func UndefinedAlias(level Severity) Rule {
@@ -265,6 +269,7 @@ func (_ *undefinedAlias) Name() string {
 
 func (r *undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
+	r.depth++
 	err := stmt.Accept(Walk(r))
 	if errors.Is(err, errStop) {
 		err = nil
@@ -312,16 +317,21 @@ func (r *undefinedAlias) visit(stmt ast.SelectStatement) error {
 			return err
 		}
 	}
+	if r.depth > 1 {
+		return nil
+	}
 	return errStop
 }
 
 func (r *undefinedAlias) push(list []ast.Identifier) {
+	r.depth++
 	r.aliases = append(r.aliases, list)
 }
 
 func (r *undefinedAlias) pop() {
 	n := len(r.aliases)
 	if n > 0 {
+		r.depth--
 		r.aliases = r.aliases[:n-1]
 	}
 }
