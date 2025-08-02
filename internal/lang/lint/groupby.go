@@ -2,8 +2,11 @@ package lint
 
 import (
 	"errors"
+	"slices"
 
+	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/token"
 )
 
 type groupbyColumns struct {
@@ -33,17 +36,46 @@ func (r *groupbyColumns) Verify(stmt ast.Node) ([]Issue, error) {
 }
 
 func (r *groupbyColumns) VisitSelect(stmt ast.SelectStatement) error {
-	var list []ast.Node
-	for _, g := range stmt.Groups {
-		_ = g
-	}
-	if len(list) == 0 {
-		return nil
-	}
-	for _, c := range stmt.Columns {
-		_ = c
-	}
+	r.checkColumns(stmt)
 	return nil
+}
+
+func (r *groupbyColumns) checkColumns(stmt ast.SelectStatement) {
+	for _, c := range stmt.Columns {
+		if a, ok := c.(ast.Alias); ok {
+			c = a.Node
+		}
+		call, ok := c.(ast.Call)
+		if ok && lang.IsAggregateFunc(call.GetIdent()) {
+			continue
+		}
+		var pos token.Position
+		switch n := c.(type) {
+		case ast.Name:
+			ok = slices.ContainsFunc(stmt.Groups, func(g ast.Node) bool {
+				x, ok := g.(ast.Name)
+				if !ok {
+					return false
+				}
+				return slices.Equal(n.Parts, x.Parts)
+			})
+			pos = n.Position
+		case ast.Value:
+			continue
+		case ast.Case:
+		case ast.Call:
+		default:
+		}
+		if !ok {
+			i := Issue{
+				Position: pos,
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "column must be included in group by clause or used in an aggregate function",
+			}
+			r.issues = append(r.issues, i)
+		}
+	}
 }
 
 type groupbyAggrFunc struct {
