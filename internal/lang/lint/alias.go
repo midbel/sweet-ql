@@ -147,7 +147,6 @@ type invalidAlias struct {
 	issues   []Issue
 
 	aliases [][]ast.Identifier
-	depth   int
 }
 
 func InvalidAlias(level Severity) Rule {
@@ -163,7 +162,6 @@ func (_ *invalidAlias) Name() string {
 
 func (r *invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	r.depth++
 	err := stmt.Accept(Walk(r))
 	if errors.Is(err, errStop) {
 		err = nil
@@ -201,7 +199,7 @@ func (r *invalidAlias) visit(stmt ast.SelectStatement) error {
 	var (
 		where  = slx.One(stmt.Where)
 		having = slx.One(stmt.Having)
-		parts  = slices.Concat(stmt.Columns, stmt.Groups, where, having)
+		parts  = slices.Concat(stmt.Columns, stmt.Tables, stmt.Groups, where, having)
 		sub    = Walk(r)
 	)
 	for _, q := range parts {
@@ -212,22 +210,17 @@ func (r *invalidAlias) visit(stmt ast.SelectStatement) error {
 			return err
 		}
 	}
-	if r.depth > 1 {
-		return nil
-	}
-	return errStop
+	return errVisit
 }
 
 func (r *invalidAlias) push(list []ast.Identifier) {
 	r.aliases = append(r.aliases, list)
-	r.depth++
 }
 
 func (r *invalidAlias) pop() {
 	n := len(r.aliases)
 	if n > 0 {
 		r.aliases = r.aliases[:n-1]
-		r.depth--
 	}
 }
 
@@ -251,9 +244,8 @@ type undefinedAlias struct {
 	ast.Visitor
 	severity Severity
 	issues   []Issue
-	aliases  [][]ast.Identifier
 
-	depth int
+	aliases [][]ast.Identifier
 }
 
 func UndefinedAlias(level Severity) Rule {
@@ -269,7 +261,6 @@ func (_ *undefinedAlias) Name() string {
 
 func (r *undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	r.depth++
 	err := stmt.Accept(Walk(r))
 	if errors.Is(err, errStop) {
 		err = nil
@@ -317,21 +308,16 @@ func (r *undefinedAlias) visit(stmt ast.SelectStatement) error {
 			return err
 		}
 	}
-	if r.depth > 1 {
-		return nil
-	}
-	return errStop
+	return errVisit
 }
 
 func (r *undefinedAlias) push(list []ast.Identifier) {
-	r.depth++
 	r.aliases = append(r.aliases, list)
 }
 
 func (r *undefinedAlias) pop() {
 	n := len(r.aliases)
 	if n > 0 {
-		r.depth--
 		r.aliases = r.aliases[:n-1]
 	}
 }
