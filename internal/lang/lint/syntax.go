@@ -467,106 +467,197 @@ func (r *missingIdentQuoted) VisitAlias(stmt ast.Alias) error {
 
 // avoid using literal value in join predicate
 type noLiteralJoin struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func NoLiteralInJoin(level Severity) Rule {
-	return noLiteralJoin{
+	return &noLiteralJoin{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ noLiteralJoin) Name() string {
+func (_ *noLiteralJoin) Name() string {
 	return "no-literal-join"
 }
 
-func (r noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
-}
+func (r *noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
 
-// prefer using offset fetch syntax over limit offset
-type offsetFetch struct {
-	severity Severity
-}
-
-func OffsetFetch(level Severity) Rule {
-	return offsetFetch{
-		severity: level,
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
 	}
-}
-
-func (_ offsetFetch) Name() string {
-	return "offset-and-fetch"
-}
-
-func (r offsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
+	return r.issues, err
 }
 
 // when using order by clause, specify offset fetch clause
 type orderOffsetFetch struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func OrderWithOffset(level Severity) Rule {
-	return orderOffsetFetch{
+	return &orderOffsetFetch{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ orderOffsetFetch) Name() string {
+func (_ *orderOffsetFetch) Name() string {
 	return "order-with-offset"
 }
 
-func (r orderOffsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
+func (r *orderOffsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *orderOffsetFetch) VisitSelect(stmt ast.SelectStatement) error {
+	if stmt.Limit != nil && len(stmt.Orders) == 0 {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use order by clause when using the offset clause un select statement",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 // check that only the second select in union/except/intersect has the order by clause
 type setOrderLast struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func SetOrderLast(level Severity) Rule {
-	return setOrderLast{
+	return &setOrderLast{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ setOrderLast) Name() string {
+func (_ *setOrderLast) Name() string {
 	return "set-order-last"
 }
 
-func (r setOrderLast) Verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
+func (r *setOrderLast) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *setOrderLast) VisitUnion(stmt ast.UnionStatement) error {
+	return r.checkStatement(stmt.Left, stmt.Right)
+}
+
+func (r *setOrderLast) VisitExcept(stmt ast.ExceptStatement) error {
+	return r.checkStatement(stmt.Left, stmt.Right)
+}
+
+func (r *setOrderLast) VisitIntersect(stmt ast.IntersectStatement) error {
+	return r.checkStatement(stmt.Left, stmt.Right)
+}
+
+func (r *setOrderLast) checkStatement(left, right ast.Node) error {
+	stmt, ok := left.(ast.SelectStatement)
+	if !ok {
+		return fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	if len(stmt.Orders) > 0 {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 // check that only the second select in union/except/intersect has the offset/fetch clause
 type setOffsetFetchLast struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 func SetOffsetFetchLast(level Severity) Rule {
-	return setOrderLast{
+	return &setOrderLast{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ setOffsetFetchLast) Name() string {
+func (_ *setOffsetFetchLast) Name() string {
 	return "set-offset-fetch-last"
 }
 
-func (r setOffsetFetchLast) Verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
+func (r *setOffsetFetchLast) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *setOffsetFetchLast) VisitUnion(stmt ast.UnionStatement) error {
+	return r.checkStatement(stmt.Left, stmt.Right)
+}
+
+func (r *setOffsetFetchLast) VisitExcept(stmt ast.ExceptStatement) error {
+	return r.checkStatement(stmt.Left, stmt.Right)
+}
+
+func (r *setOffsetFetchLast) VisitIntersect(stmt ast.IntersectStatement) error {
+	return r.checkStatement(stmt.Left, stmt.Right)
+}
+
+func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
+	stmt, ok := left.(ast.SelectStatement)
+	if !ok {
+		return fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	if len(stmt.Limit) != nil {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 type unconditionalMatch struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
 // check that only one unconditional match in a merge statement is present
 func UnconditionalMatch(level Severity) Rule {
 	return unconditionalMatch{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
@@ -576,5 +667,11 @@ func (_ unconditionalMatch) Name() string {
 }
 
 func (r unconditionalMatch) Verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }
