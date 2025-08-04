@@ -241,6 +241,10 @@ type Placeholder struct {
 	Node
 }
 
+func (p Placeholder) Pos() token.Position {
+	return p.Position
+}
+
 func (_ Placeholder) Accept(visit Visitor) error {
 	return nil
 }
@@ -248,6 +252,10 @@ func (_ Placeholder) Accept(visit Visitor) error {
 type Value struct {
 	token.Position
 	Literal string
+}
+
+func (v Value) Pos() token.Position {
+	return v.Position
 }
 
 func (v Value) Accept(visit Visitor) error {

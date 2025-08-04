@@ -136,6 +136,9 @@ func (v walkVisitor) VisitWith(node ast.WithStatement) error {
 }
 
 func (v walkVisitor) VisitCte(node ast.CteStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		return err
+	}
 	return node.Node.Accept(v)
 }
 
@@ -197,16 +200,39 @@ func (v walkVisitor) VisitJoin(join ast.Join) error {
 	return join.Where.Accept(v)
 }
 
-func (v walkVisitor) VisitOrder(_ ast.Order) error {
-	return nil
+func (v walkVisitor) VisitOrder(order ast.Order) error {
+	if err := order.Accept(v.rule); err != nil {
+		if errors.Is(err, errStop) {
+			err = nil
+		}
+		return err
+	}
+	return order.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitLimit(_ ast.Limit) error {
-	return nil
+func (v walkVisitor) VisitLimit(limit ast.Limit) error {
+	if err := limit.Accept(v.rule); err != nil {
+		if errors.Is(err, errStop) {
+			err = nil
+		}
+		return err
+	}
+	if err := limit.Count.Accept(v); err != nil {
+		return err
+	}
+	return limit.Offset.Accept(v)
 }
 
-func (v walkVisitor) VisitOffset(_ ast.Offset) error {
-	return nil
+func (v walkVisitor) VisitOffset(offset ast.Offset) error {
+	if err := offset.Accept(v.rule); err != nil {
+		if errors.Is(err, errStop) {
+			err = nil
+		}
+	}
+	if err := offset.Count.Accept(v); err != nil {
+		return err
+	}
+	return offset.Offset.Accept(v)
 }
 
 func (v walkVisitor) VisitBinary(binary ast.Binary) error {
@@ -313,9 +339,8 @@ func (v walkVisitor) VisitName(name ast.Name) error {
 }
 
 func (v walkVisitor) VisitGroup(group ast.Group) error {
-	// Temporary workaround to prevent double visit of SELECT nodes
-	if stmt, ok := group.Node.(ast.SelectStatement); ok {
-		return v.VisitSelect(stmt)
+	if err := group.Accept(v.rule); err != nil {
+		return err
 	}
 	return group.Node.Accept(v)
 }
@@ -470,14 +495,4 @@ func (v walkVisitor) VisitXmlComment(_ ast.XmlComment) error {
 
 func (v walkVisitor) VisitXmlAgg(_ ast.XmlAgg) error {
 	return nil
-}
-
-func isLeaf(n ast.Node) bool {
-	switch n.(type) {
-	case ast.Name:
-	case ast.Value:
-	default:
-		return false
-	}
-	return true
 }

@@ -5,14 +5,6 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-type Expr interface {
-	IsExpr() bool
-}
-
-type Stmt interface {
-	IsStmt() bool
-}
-
 type Node interface {
 	VisitableNode
 }
@@ -39,6 +31,10 @@ type Returning struct {
 	Node
 }
 
+func (r Returning) Pos() token.Position {
+	return r.Position
+}
+
 func (r Returning) VisitReturning(visit Visitor) error {
 	return nil
 }
@@ -48,6 +44,10 @@ type Limit struct {
 
 	Count  Node
 	Offset Node
+}
+
+func (i Limit) Pos() token.Position {
+	return i.Position
 }
 
 func (i Limit) Accept(visit Visitor) error {
@@ -62,6 +62,10 @@ type Offset struct {
 	Next   bool
 }
 
+func (o Offset) Pos() token.Position {
+	return o.Position
+}
+
 func (o Offset) Accept(visit Visitor) error {
 	return visit.VisitOffset(o)
 }
@@ -72,6 +76,10 @@ type Order struct {
 	Node
 	Dir   OrderDir
 	Nulls string
+}
+
+func (o Order) Pos() token.Position {
+	return o.Position
 }
 
 func (o Order) Accept(visit Visitor) error {
@@ -86,13 +94,22 @@ type Join struct {
 	Where Node
 }
 
+func (j Join) Pos() token.Position {
+	return j.Position
+}
+
 func (j Join) Accept(visit Visitor) error {
 	return visit.VisitJoin(j)
 }
 
 type WindowDefinition struct {
+	token.Position
 	Ident  Node
 	Window Node
+}
+
+func (w WindowDefinition) Pos() token.Position {
+	return w.Position
 }
 
 func (_ WindowDefinition) Accept(visit Visitor) error {
@@ -100,10 +117,16 @@ func (_ WindowDefinition) Accept(visit Visitor) error {
 }
 
 type Window struct {
+	token.Position
+
 	Ident      Node
 	Partitions []Node
 	Orders     []Node
 	Spec       FrameSpec
+}
+
+func (w Window) Pos() token.Position {
+	return w.Position
 }
 
 func (_ Window) Accept(visit Visitor) error {
@@ -111,11 +134,13 @@ func (_ Window) Accept(visit Visitor) error {
 }
 
 type FrameSpec struct {
+	token.Position
 	Row  FrameRow
 	Expr Node
 }
 
 type BetweenFrameSpec struct {
+	token.Position
 	Left    FrameSpec
 	Right   FrameSpec
 	Exclude FrameExclude
@@ -134,6 +159,10 @@ type CteStatement struct {
 	Node
 }
 
+func (s CteStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s CteStatement) Accept(visit Visitor) error {
 	return visit.VisitCte(s)
 }
@@ -144,6 +173,10 @@ type WithStatement struct {
 	Recursive bool
 	Queries   []Node
 	Node
+}
+
+func (s WithStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s WithStatement) Accept(visit Visitor) error {
@@ -165,6 +198,10 @@ type ValuesStatement struct {
 	Limit  Node
 }
 
+func (s ValuesStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s ValuesStatement) Accept(visit Visitor) error {
 	return visit.VisitValues(s)
 }
@@ -183,6 +220,10 @@ type SelectStatement struct {
 	Limit    Node
 }
 
+func (s SelectStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s SelectStatement) Accept(visit Visitor) error {
 	return visit.VisitSelect(s)
 }
@@ -194,6 +235,10 @@ type UnionStatement struct {
 	Right    Node
 	All      bool
 	Distinct bool
+}
+
+func (s UnionStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s UnionStatement) Accept(visit Visitor) error {
@@ -213,6 +258,10 @@ type IntersectStatement struct {
 	Distinct bool
 }
 
+func (s IntersectStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s IntersectStatement) Accept(visit Visitor) error {
 	return visit.VisitIntersect(s)
 }
@@ -230,6 +279,10 @@ type ExceptStatement struct {
 	Distinct bool
 }
 
+func (s ExceptStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s ExceptStatement) Accept(visit Visitor) error {
 	return visit.VisitExcept(s)
 }
@@ -245,6 +298,10 @@ type MatchStatement struct {
 	Node
 }
 
+func (s MatchStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s MatchStatement) Accept(visit Visitor) error {
 	return visit.VisitMatch(s)
 }
@@ -256,6 +313,10 @@ type MergeStatement struct {
 	Source  Node
 	Join    Node
 	Actions []Node
+}
+
+func (s MergeStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s MergeStatement) Accept(visit Visitor) error {
@@ -281,6 +342,10 @@ type InsertStatement struct {
 	Returning Node
 }
 
+func (s InsertStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s InsertStatement) Accept(visit Visitor) error {
 	return visit.VisitInsert(s)
 }
@@ -295,14 +360,24 @@ type UpdateStatement struct {
 	Returning Node
 }
 
+func (s UpdateStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s UpdateStatement) Accept(visit Visitor) error {
 	return visit.VisitUpdate(s)
 }
 
 type TruncateStatement struct {
+	token.Position
+
 	Tables   []Node
 	Cascade  CascadeMode
 	Identity IdentityMode
+}
+
+func (s TruncateStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s TruncateStatement) Accept(visit Visitor) error {
@@ -318,6 +393,10 @@ type DeleteStatement struct {
 	Returning Node
 }
 
+func (s DeleteStatement) Pos() token.Position {
+	return s.Position
+}
+
 func (s DeleteStatement) Accept(visit Visitor) error {
 	return visit.VisitDelete(s)
 }
@@ -327,6 +406,10 @@ type CallStatement struct {
 	Ident Node
 	Names []string
 	Args  []Node
+}
+
+func (s CallStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s CallStatement) Accept(visit Visitor) error {

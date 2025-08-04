@@ -20,13 +20,16 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"cte-duplicate":            lint.CteDuplicate,
 	"cte-name":                 lint.CteName,
 	"missing-where":            lint.MissingWhere,
+	"order-with-offset":        lint.OrderWithOffset,
 	"enforce-type":             lint.EnforceType,
+	"enforce-fetch":            lint.EnforceFetch,
+	"enforce-limit":            lint.EnforceFetch,
 	"set-columns-count":        lint.SetColumnsCount,
+	"set-offset-last":          lint.SetOffsetFetchLast,
+	"set-order-last":           lint.SetOrderLast,
 	"no-subquery":              lint.NoSubquery,
 	"subquery-columns-count":   lint.SubqueryColumnsCount,
 	"subquery-names":           lint.SubqueryNames,
-	"groupby-columns":          lint.GroupbyColumns,
-	"groupby-aggr-function":    lint.GroupbyAggrFunc,
 	"recommand-use-alias":      lint.RecommandedAlias,
 	"missing-alias":            lint.MissingAlias,
 	"no-alias":                 lint.NoAlias,
@@ -35,6 +38,9 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"identifier-without-quote": lint.MissingIdentQuoted,
 	"identifier-with-quote":    lint.NoIdentQuoted,
 	"recommand-use-quote":      lint.RecommandedQuote,
+	"no-literal-join":          lint.NoLiteralJoin,
+	"groupby-columns":          lint.GroupbyColumns,
+	"no-literal-groupby":       lint.NoLiteralGroupby,
 }
 
 func runLint(args []string) error {

@@ -6,11 +6,11 @@ import (
 )
 
 func (p *Parser) ParseGrant() (ast.Node, error) {
+	stmt := ast.GrantStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var (
-		stmt ast.GrantStatement
-		err  error
-	)
+	var err error
 	if stmt.Privileges, err = p.parsePrivileges(); err != nil {
 		return nil, err
 	}
@@ -36,11 +36,11 @@ func (p *Parser) ParseGrant() (ast.Node, error) {
 }
 
 func (p *Parser) ParseRevoke() (ast.Node, error) {
+	stmt := ast.RevokeStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var (
-		stmt ast.RevokeStatement
-		err  error
-	)
+	var err error
 	if stmt.Privileges, err = p.parsePrivileges(); err != nil {
 		return nil, err
 	}

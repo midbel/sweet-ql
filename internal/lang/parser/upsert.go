@@ -6,11 +6,11 @@ import (
 )
 
 func (p *Parser) ParseMerge() (ast.Node, error) {
+	stmt := ast.MergeStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var (
-		stmt ast.MergeStatement
-		err  error
-	)
+	var err error
 	if stmt.Target, err = p.ParseIdent(); err != nil {
 		return nil, err
 	}
@@ -128,11 +128,11 @@ func (p *Parser) parseMergeNotMatched(cdt ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) ParseDelete() (ast.Node, error) {
+	stmt := ast.DeleteStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var (
-		stmt ast.DeleteStatement
-		err  error
-	)
+	var err error
 	if !p.Is(token.Ident) {
 		return nil, p.Unexpected("delete", identExpected)
 	}
@@ -147,8 +147,10 @@ func (p *Parser) ParseDelete() (ast.Node, error) {
 }
 
 func (p *Parser) ParseTruncate() (ast.Node, error) {
+	stmt := ast.TruncateStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var stmt ast.TruncateStatement
 	if p.Is(token.Star) {
 		p.Next()
 		return stmt, nil
@@ -187,11 +189,11 @@ func (p *Parser) ParseTruncate() (ast.Node, error) {
 }
 
 func (p *Parser) ParseUpdate() (ast.Node, error) {
+	stmt := ast.UpdateStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var (
-		stmt ast.UpdateStatement
-		err  error
-	)
+	var err error
 	stmt.Table, err = p.ParseIdent()
 	if err != nil {
 		return nil, err
@@ -251,11 +253,11 @@ func (p *Parser) parseAssignment() (ast.Node, error) {
 }
 
 func (p *Parser) ParseInsert() (ast.Node, error) {
+	stmt := ast.InsertStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var (
-		stmt ast.InsertStatement
-		err  error
-	)
+	var err error
 	stmt.Table, err = p.ParseIdent()
 	if err != nil {
 		return nil, err

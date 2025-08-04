@@ -333,7 +333,7 @@ func (p *Parser) ParseGroupBy() ([]ast.Node, error) {
 	}
 
 	get := func() (ast.Node, error) {
-		stmt, err := p.ParseIdentifier()
+		stmt, err := p.StartExpression()
 		if err != nil {
 			return nil, err
 		}

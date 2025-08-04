@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -186,41 +187,43 @@ func (r subqueryNames) getExportedNames(j ast.Join) ([][]string, error) {
 }
 
 type noSubquery struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
+
+	depth int
 }
 
 func NoSubquery(level Severity) Rule {
-	return noSubquery{
+	return &noSubquery{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ noSubquery) Name() string {
+func (_ *noSubquery) Name() string {
 	return "no-subquery"
 }
 
-func (r noSubquery) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
+func (r *noSubquery) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
 
-func (r noSubquery) verify(stmt ast.Node) ([]Issue, error) {
-	return verify(stmt, r.checkSubquery)
-}
-
-func (r noSubquery) checkSubquery(stmt ast.SelectStatement) ([]Issue, error) {
-	queries := getQueries(stmt)
-	if len(queries) == 1 {
-		return nil, nil
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
 	}
-	var list []Issue
-	for _, q := range queries[1:] {
+	return r.issues, err
+}
+
+func (r *noSubquery) VisitGroup(group ast.Group) error {
+	if stmt, ok := group.Node.(ast.SelectStatement); ok {
 		i := Issue{
-			Position: q.Position,
+			Position: stmt.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "avoid using subquery",
+			Reason:   "consider rewriting subqueries with join and/or cte",
 		}
-		list = append(list, i)
+		r.issues = append(r.issues, i)
 	}
-	return list, nil
+	return nil
 }

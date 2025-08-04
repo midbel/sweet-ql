@@ -6,11 +6,11 @@ import (
 )
 
 func (p *Parser) ParseCreateProcedure() (ast.Node, error) {
-	var (
-		stmt ast.CreateProcedureStatement
-		err  error
-	)
+	stmt := ast.CreateProcedureStatement{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
+	var err error
 	if stmt.Name, err = p.ParseIdentifier(); err != nil {
 		return nil, err
 	}
@@ -73,6 +73,7 @@ func (p *Parser) ParseProcedureParameter() (ast.ProcedureParameter, error) {
 		param ast.ProcedureParameter
 		err   error
 	)
+	param.Position = p.GetCurrPosition()
 	switch {
 	case p.IsKeyword("IN"):
 		param.Mode = ast.ModeIn

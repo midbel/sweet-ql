@@ -12,6 +12,10 @@ type Return struct {
 	Values []Node
 }
 
+func (r Return) Pos() token.Position {
+	return r.Position
+}
+
 func (r Return) Accept(visit Visitor) error {
 	return visit.VisitReturn(r)
 }
@@ -20,6 +24,10 @@ type While struct {
 	token.Position
 	Cdt  Node
 	Body Node
+}
+
+func (w While) Pos() token.Position {
+	return w.Position
 }
 
 func (w While) Accept(visit Visitor) error {
@@ -33,6 +41,10 @@ type If struct {
 	Alt Node
 }
 
+func (i If) Pos() token.Position {
+	return i.Position
+}
+
 func (i If) Accept(visit Visitor) error {
 	return visit.VisitIf(i)
 }
@@ -44,6 +56,10 @@ type Declare struct {
 	Value Node
 }
 
+func (d Declare) Pos() token.Position {
+	return d.Position
+}
+
 func (d Declare) Accept(visit Visitor) error {
 	return visit.VisitDeclare(d)
 }
@@ -53,6 +69,10 @@ type Case struct {
 	Cdt  Node
 	Body []Node
 	Else Node
+}
+
+func (c Case) Pos() token.Position {
+	return c.Position
 }
 
 func (c Case) Accept(visit Visitor) error {
@@ -70,6 +90,10 @@ type When struct {
 	Body Node
 }
 
+func (w When) Pos() token.Position {
+	return w.Position
+}
+
 func (w When) Accept(visit Visitor) error {
 	return visit.VisitWhen(w)
 }
@@ -82,6 +106,10 @@ type Set struct {
 	token.Position
 	Ident string
 	Expr  Node
+}
+
+func (s Set) Pos() token.Position {
+	return s.Position
 }
 
 func (s Set) Accept(visit Visitor) error {

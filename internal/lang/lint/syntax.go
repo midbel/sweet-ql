@@ -326,7 +326,7 @@ func (r *recommandedQuote) Verify(stmt ast.Node) ([]Issue, error) {
 
 func (r *recommandedQuote) VisitName(stmt ast.Name) error {
 	ok := slices.ContainsFunc(stmt.Parts, func(i ast.Identifier) bool {
-		return !i.Quoted && strings.ToLower(i.Name) != i.Name
+		return !i.Quoted && strings.ToLower(i.Name) != i.Name && strings.ToUpper(i.Name) != i.Name
 	})
 	if ok {
 		i := Issue{
@@ -465,6 +465,49 @@ func (r *missingIdentQuoted) VisitAlias(stmt ast.Alias) error {
 	return nil
 }
 
+type ambiguousName struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func AmbiguousName(level Severity) Rule {
+	return &ambiguousName{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *ambiguousName) Name() string {
+	return "ambiguous-name"
+}
+
+func (r *ambiguousName) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+type literalVisitor struct {
+	ast.Visitor
+	check func(ast.Value) error
+}
+
+func visitLiteral(check func(ast.Value) error) ast.Visitor {
+	return &literalVisitor{
+		Visitor: ast.Noop(),
+		check:   check,
+	}
+}
+
+func (i *literalVisitor) VisitValue(value ast.Value) error {
+	return i.check(value)
+}
+
 // avoid using literal value in join predicate
 type noLiteralJoin struct {
 	ast.Visitor
@@ -472,7 +515,7 @@ type noLiteralJoin struct {
 	issues   []Issue
 }
 
-func NoLiteralInJoin(level Severity) Rule {
+func NoLiteralJoin(level Severity) Rule {
 	return &noLiteralJoin{
 		Visitor:  ast.Noop(),
 		severity: level,
@@ -491,6 +534,92 @@ func (r *noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
 		err = nil
 	}
 	return r.issues, err
+}
+
+func (r *noLiteralJoin) VisitJoin(join ast.Join) error {
+	var (
+		visit = visitLiteral(r.visitValue)
+		walk  = Walk(visit)
+	)
+	return join.Where.Accept(walk)
+}
+
+func (r *noLiteralJoin) visitValue(value ast.Value) error {
+	i := Issue{
+		Position: value.Pos(),
+		Severity: r.severity,
+		Rule:     r.Name(),
+		Reason:   "bouh",
+	}
+	r.issues = append(r.issues, i)
+	return nil
+}
+
+// enforce query to have a fetch clause with some amount of rows to be returned
+type enforceFetch struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func EnforceFetch(level Severity) Rule {
+	return &enforceFetch{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *enforceFetch) Name() string {
+	return "enforce-fetch"
+}
+
+func (r *enforceFetch) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *enforceFetch) VisitSelect(stmt ast.SelectStatement) error {
+	if stmt.Limit == nil {
+		i := Issue{
+			Position: stmt.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use fetch clause to limit the number of results returned by the query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *enforceFetch) VisitLimit(limit ast.Limit) error {
+	if limit.Count == nil {
+		i := Issue{
+			Position: limit.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use fetch clause to limit the number of results returned by the query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *enforceFetch) VisitOffset(offset ast.Offset) error {
+	if offset.Count == nil {
+		i := Issue{
+			Position: offset.Position,
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use fetch clause to limit the number of results returned by the query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 // when using order by clause, specify offset fetch clause
@@ -584,7 +713,7 @@ func (r *setOrderLast) checkStatement(left, right ast.Node) error {
 			Position: stmt.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "",
+			Reason:   "order by clause is only allowed in the final select of union/intersect/except query",
 		}
 		r.issues = append(r.issues, i)
 	}
@@ -599,7 +728,7 @@ type setOffsetFetchLast struct {
 }
 
 func SetOffsetFetchLast(level Severity) Rule {
-	return &setOrderLast{
+	return &setOffsetFetchLast{
 		Visitor:  ast.Noop(),
 		severity: level,
 	}
@@ -636,12 +765,12 @@ func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
 	if !ok {
 		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
-	if len(stmt.Limit) != nil {
+	if stmt.Limit != nil {
 		i := Issue{
 			Position: stmt.Position,
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "",
+			Reason:   "offset/fetch clause is only allowed in the final select of union/intersect/except query",
 		}
 		r.issues = append(r.issues, i)
 	}
