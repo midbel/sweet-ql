@@ -20,6 +20,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"cte-duplicate":            lint.CteDuplicate,
 	"cte-name":                 lint.CteName,
 	"std-operator":             lint.StdOperator,
+	"self-compare":             lint.SelfCompare,
 	"missing-where":            lint.MissingWhere,
 	"order-with-offset":        lint.OrderWithOffset,
 	"enforce-type":             lint.EnforceType,

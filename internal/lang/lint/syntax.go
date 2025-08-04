@@ -809,6 +809,49 @@ func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
 	return nil
 }
 
+type selfCompare struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func SelfCompare(level Severity) Rule {
+	return &selfCompare{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *selfCompare) Name() string {
+	return "self-compare"
+}
+
+func (r *selfCompare) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *selfCompare) VisitBinary(binary ast.Binary) error {
+	if binary.IsRelation() {
+		return nil
+	}
+	if binary.Left == binary.Right {
+		i := Issue{
+			Position: binary.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "comparing same value",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
 type stdOperator struct {
 	ast.Visitor
 	severity Severity
