@@ -555,6 +555,38 @@ func (r *noLiteralJoin) visitValue(value ast.Value) error {
 	return nil
 }
 
+// check that all join made in from clauses are used in other clauses of the query
+type unusedJoin struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func JoinUnused(level Severity) Rule {
+	return &unusedJoin{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *unusedJoin) Name() string {
+	return "unused-join"
+}
+
+func (r *unusedJoin) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *unusedJoin) VisitSelect(stmt ast.SelectStatement) error {
+	return nil
+}
+
 // enforce query to have a fetch clause with some amount of rows to be returned
 type enforceFetch struct {
 	ast.Visitor

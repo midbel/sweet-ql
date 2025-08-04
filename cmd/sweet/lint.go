@@ -41,6 +41,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"identifier-with-quote":    lint.NoIdentQuoted,
 	"recommand-use-quote":      lint.RecommandedQuote,
 	"no-literal-join":          lint.NoLiteralJoin,
+	"unused-join":              lint.JoinUnused,
 	"groupby-columns":          lint.GroupbyColumns,
 	"no-literal-groupby":       lint.NoLiteralGroupby,
 }
