@@ -777,6 +777,58 @@ func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
 	return nil
 }
 
+type stdOperator struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func StdOperator(level Severity) Rule {
+	return &stdOperator{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *stdOperator) Name() string {
+	return "std-operator"
+}
+
+func (r *stdOperator) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *stdOperator) VisitBinary(binary ast.Binary) error {
+	if binary.IsRelation() {
+		return nil
+	}
+	if binary.Op == "!=" {
+		i := Issue{
+			Position: binary.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use <> as not equal operator",
+		}
+		r.issues = append(r.issues, i)
+	}
+	if n, ok := binary.Right.(ast.Value); ok && n.Constant() && binary.IsEquality() {
+		i := Issue{
+			Position: binary.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use is operator to compare with null/true/false",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
 type unconditionalMatch struct {
 	ast.Visitor
 	severity Severity

@@ -9,6 +9,51 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+type selfAlias struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func SelfAlias(level Severity) Rule {
+	return &selfAlias{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *selfAlias) Name() string {
+	return "self-alias"
+}
+
+func (r *selfAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *selfAlias) VisitAlias(alias ast.Alias) error {
+	n, ok := alias.Node.(ast.Name)
+	if !ok {
+		return nil
+	}
+	x := len(n.Parts) - 1
+	if n.Parts[x] == alias.Identifier {
+		i := Issue{
+			Position: alias.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "avoid using column's name as alias",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
 type recommandedAlias struct {
 	ast.Visitor
 	severity Severity

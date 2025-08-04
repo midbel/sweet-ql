@@ -155,12 +155,20 @@ type Binary struct {
 	Op    string
 }
 
+func (b Binary) Pos() token.Position {
+	return b.Position
+}
+
 func (b Binary) Accept(visit Visitor) error {
 	return visit.VisitBinary(b)
 }
 
 func (b Binary) GetStatement() []Node {
 	return slx.Make(b.Left, b.Right)
+}
+
+func (b Binary) IsEquality() bool {
+	return b.Op == "=" || b.Op == "!=" || b.Op == "<>"
 }
 
 func (b Binary) IsRelation() bool {
@@ -305,6 +313,10 @@ type Alias struct {
 	Node
 	Identifier
 	Columns []Node
+}
+
+func (a Alias) Pos() token.Position {
+	return a.Position
 }
 
 func (a Alias) Accept(visit Visitor) error {
