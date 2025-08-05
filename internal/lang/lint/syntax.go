@@ -109,7 +109,7 @@ func (r *duplicateField) checkColumns(stmt ast.SelectStatement) {
 		})
 		if ok {
 			i := Issue{
-				Position: getPosition(q),
+				Position: q.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "duplicated field",

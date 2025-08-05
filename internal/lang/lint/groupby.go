@@ -6,7 +6,6 @@ import (
 
 	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
-	"github.com/midbel/sweet/internal/token"
 )
 
 type groupbyColumns struct {
@@ -43,25 +42,19 @@ func (r *groupbyColumns) VisitSelect(stmt ast.SelectStatement) error {
 		if a, ok := c.(ast.Alias); ok {
 			c = a
 		}
-		var (
-			ok  bool
-			pos token.Position
-		)
+		var ok bool
 		switch c := c.(type) {
 		case ast.Name:
 			ok = r.exists(c, stmt)
-			pos = c.Pos()
 		case ast.Call:
 			if lang.IsAggregateFunc(c.GetIdent()) {
 				ok = true
 			}
-			pos = c.Pos()
 		default:
-			pos = getPosition(c)
 		}
 		if !ok {
 			i := Issue{
-				Position: pos,
+				Position: c.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "column must be used in group by clause if not used in aggregate function",

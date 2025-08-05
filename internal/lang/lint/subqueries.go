@@ -67,7 +67,7 @@ func (r subqueryColumnsCount) checkColumns(q ast.SelectStatement) ([]Issue, erro
 		}
 	default:
 		i := Issue{
-			Position: getPosition(q.Columns[0]),
+			Position: q.Columns[0].Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "invalid columns count used by subquery",
@@ -144,7 +144,7 @@ func (r subqueryNames) checkNames(stmt ast.Node, names [][]string) ([]Issue, err
 		})
 		if !ok {
 			i := Issue{
-				Position: getPosition(stmt),
+				Position: stmt.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "name not exported by subquery",

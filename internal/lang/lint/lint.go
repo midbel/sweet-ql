@@ -229,24 +229,6 @@ func getNames2(q ast.Node) [][]string {
 	}
 }
 
-func getPosition(stmt ast.Node) token.Position {
-	var pos token.Position
-	switch q := stmt.(type) {
-	case ast.Name:
-		return q.Position
-	case ast.Call:
-		return q.Position
-	case ast.Value:
-		return q.Position
-	case ast.Group:
-		return getPosition(q.Node)
-	case ast.Binary:
-		return q.Position
-	default:
-		return pos
-	}
-}
-
 func getQueries(stmt ast.Node) []ast.SelectStatement {
 	if a, ok := stmt.(ast.Alias); ok {
 		return getQueries(a.Node)

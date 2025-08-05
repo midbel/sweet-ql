@@ -6,7 +6,6 @@ import (
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/slx"
-	"github.com/midbel/sweet/internal/token"
 )
 
 type selfAlias struct {
@@ -127,24 +126,17 @@ func (r *recommandedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 
 func (r *recommandedAlias) VisitSelect(stmt ast.SelectStatement) error {
 	for _, q := range stmt.Columns {
-		var pos token.Position
-		switch q := q.(type) {
-		case ast.Call:
-			pos = q.Pos()
-		case ast.Group:
-			pos = q.Pos()
-		case ast.Binary:
-			pos = q.Pos()
+		switch q.(type) {
+		case ast.Call, ast.Group, ast.Binary:
+			i := Issue{
+				Position: q.Pos(),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "",
+			}
+			r.issues = append(r.issues, i)
 		default:
-			continue
 		}
-		i := Issue{
-			Position: pos,
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "",
-		}
-		r.issues = append(r.issues, i)
 	}
 	return nil
 }
@@ -179,7 +171,7 @@ func (r *missingAlias) VisitSelect(stmt ast.SelectStatement) error {
 	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
 		if _, ok := c.(ast.Alias); !ok {
 			i := Issue{
-				Position: getPosition(c),
+				Position: c.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "prefer using alias to improve your query",
