@@ -195,11 +195,12 @@ func (p *Parser) parseIn(ident ast.Node) (ast.Node, error) {
 	if p.Is(token.Lparen) && p.PeekIs(token.Keyword) && p.GetPeekLiteral() == "SELECT" {
 		in.Value, err = p.parseExpression(powLowest)
 	} else if p.Is(token.Lparen) {
-		p.Next()
 		var (
 			list ast.List
 			val  ast.Node
 		)
+		list.Position = p.GetCurrPosition()
+		p.Next()
 		for !p.Done() && !p.Is(token.Rparen) {
 			val, err = p.parseExpression(powLowest)
 			if err != nil {

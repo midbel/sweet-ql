@@ -5,13 +5,14 @@ import (
 )
 
 type ColumnDef struct {
+	token.Position
 	Name        Node
 	Type        Type
 	Constraints []Node
 }
 
 func (c ColumnDef) Pos() token.Position {
-	return c.Name.Pos()
+	return c.Position
 }
 
 func (c ColumnDef) Accept(visit Visitor) error {

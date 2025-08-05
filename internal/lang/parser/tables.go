@@ -12,11 +12,12 @@ type CreateTableParser interface {
 }
 
 func (p *Parser) ParseDropTable() (ast.Node, error) {
-	p.Next()
 	var (
 		stmt ast.DropTableStatement
 		err  error
 	)
+	stmt.Position = p.GetCurrPosition()
+	p.Next()
 	for !p.QueryEnds() && !p.Done() {
 		n, err := p.ParseIdentifier()
 		if err != nil {
@@ -40,11 +41,12 @@ func (p *Parser) ParseDropTable() (ast.Node, error) {
 }
 
 func (p *Parser) ParseDropView() (ast.Node, error) {
-	p.Next()
 	var (
 		stmt ast.DropViewStatement
 		err  error
 	)
+	stmt.Position = p.GetCurrPosition()
+	p.Next()
 	for !p.QueryEnds() && !p.Done() {
 		n, err := p.ParseIdentifier()
 		if err != nil {
@@ -68,16 +70,17 @@ func (p *Parser) ParseDropView() (ast.Node, error) {
 }
 
 func (p *Parser) ParseAlterTable() (ast.Node, error) {
-	p.Next()
 	var (
 		stmt ast.AlterTableStatement
 		err  error
 	)
+	stmt.Position = p.GetCurrPosition()
+	p.Next()
 	stmt.Name, err = p.ParseIdentifier()
 	if err != nil {
 		return nil, err
 	}
-	switch {
+	switch pos := p.GetCurrPosition(); {
 	case p.IsKeyword("RENAME TO"):
 		if p.ansiMode {
 			return nil, p.Unexpected("alter", notAnsiReason)
@@ -88,7 +91,8 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			return nil, err
 		}
 		action := ast.RenameTableAction{
-			Old: ident,
+			Old:      ident,
+			Position: pos,
 		}
 		if !p.IsKeyword("TO") {
 			return nil, p.Unexpected("rename", defaultReason)
@@ -109,7 +113,8 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			return nil, err
 		}
 		action := ast.RenameColumnAction{
-			Old: ident,
+			Old:      ident,
+			Position: pos,
 		}
 		if !p.IsKeyword("TO") {
 			return nil, p.Unexpected("rename", defaultReason)
@@ -130,7 +135,8 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			return nil, err
 		}
 		action := ast.RenameConstraintAction{
-			Old: ident,
+			Old:      ident,
+			Position: pos,
 		}
 		if !p.IsKeyword("TO") {
 			return nil, p.Unexpected("rename", defaultReason)
@@ -148,7 +154,8 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			return nil, err
 		}
 		stmt.Action = ast.AddColumnAction{
-			Def: def,
+			Def:      def,
+			Position: pos,
 		}
 	case p.IsKeyword("ADD CONSTRAINT"):
 		cst, err := p.parseConstraintWithKeyword("ADD CONSTRAINT", true, false)
@@ -157,6 +164,7 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 		}
 		stmt.Action = ast.AddConstraintAction{
 			Constraint: cst,
+			Position:   pos,
 		}
 	case p.IsKeyword("ALTER") || p.IsKeyword("ALTER COLUMN"):
 		p.Next()
@@ -164,6 +172,7 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			action ast.AlterColumnAction
 			err    error
 		)
+		action.Position = pos
 		action.Name, err = p.ParseIdentifier()
 		if err != nil {
 			return nil, err
@@ -177,7 +186,8 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			return nil, err
 		}
 		action := ast.DropConstraintAction{
-			Name: ident,
+			Position: pos,
+			Name:     ident,
 		}
 		if p.IsKeyword("CASCADE") {
 			action.Cascade = ast.Cascade
@@ -194,7 +204,8 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			return nil, err
 		}
 		action := ast.DropColumnAction{
-			Name: ident,
+			Position: pos,
+			Name:     ident,
 		}
 		if p.IsKeyword("CASCADE") {
 			action.Cascade = ast.Cascade
@@ -215,11 +226,12 @@ func (p *Parser) ParseCreateTable() (ast.Node, error) {
 }
 
 func (p *Parser) ParseCreateTableStatement(ctp CreateTableParser) (ast.Node, error) {
-	p.Next()
 	var (
 		stmt ast.CreateTableStatement
 		err  error
 	)
+	stmt.Position = p.GetCurrPosition()
+	p.Next()
 	if stmt.Name, err = ctp.ParseTableName(); err != nil {
 		return nil, err
 	}
@@ -250,11 +262,12 @@ func (p *Parser) ParseCreateTableStatement(ctp CreateTableParser) (ast.Node, err
 }
 
 func (p *Parser) ParseCreateView() (ast.Node, error) {
-	p.Next()
 	var (
 		stmt ast.CreateViewStatement
 		err  error
 	)
+	stmt.Position = p.GetCurrPosition()
+	p.Next()
 	if stmt.Name, err = p.ParseTableName(); err != nil {
 		return nil, err
 	}
@@ -282,6 +295,7 @@ func (p *Parser) ParseColumnDef(ctp CreateTableParser) (ast.Node, error) {
 		def ast.ColumnDef
 		err error
 	)
+	def.Position = p.GetCurrPosition()
 	def.Name, err = p.ParseIdentifier()
 	if err != nil {
 		return nil, err
@@ -311,6 +325,7 @@ func (p *Parser) parseConstraintWithKeyword(keyword string, required, column boo
 		cst ast.Constraint
 		err error
 	)
+	cst.Position = p.GetCurrPosition()
 	if p.IsKeyword(keyword) {
 		p.Next()
 		cst.Name = p.GetCurrLiteral()
@@ -348,8 +363,10 @@ func (p *Parser) parseConstraintWithKeyword(keyword string, required, column boo
 }
 
 func (p *Parser) ParsePrimaryKeyConstraint(short bool) (ast.Node, error) {
+	cst := ast.PrimaryKeyConstraint{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var cst ast.PrimaryKeyConstraint
 	if short {
 		return cst, nil
 	}
@@ -373,7 +390,9 @@ func (p *Parser) ParsePrimaryKeyConstraint(short bool) (ast.Node, error) {
 }
 
 func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Node, error) {
-	var cst ast.ForeignKeyConstraint
+	cst := ast.ForeignKeyConstraint{
+		Position: p.GetCurrPosition(),
+	}
 	if p.IsKeyword("FOREIGN KEY") {
 		p.Next()
 		if err := p.Expect("foreign key", token.Lparen); err != nil {
@@ -425,8 +444,10 @@ func (p *Parser) ParseForeignKeyConstraint(short bool) (ast.Node, error) {
 }
 
 func (p *Parser) ParseUniqueConstraint(short bool) (ast.Node, error) {
+	cst := ast.UniqueConstraint{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var cst ast.UniqueConstraint
 	if short {
 		return cst, nil
 	}
@@ -450,8 +471,10 @@ func (p *Parser) ParseUniqueConstraint(short bool) (ast.Node, error) {
 }
 
 func (p *Parser) ParseNotNullConstraint() (ast.Node, error) {
+	cst := ast.NotNullConstraint{
+		Position: p.GetCurrPosition(),
+	}
 	p.Next()
-	var cst ast.NotNullConstraint
 	if !p.IsKeyword("NULL") {
 		return nil, p.Unexpected("not null", keywordExpected("NULL"))
 	}
@@ -460,27 +483,32 @@ func (p *Parser) ParseNotNullConstraint() (ast.Node, error) {
 }
 
 func (p *Parser) ParseCheckConstraint() (ast.Node, error) {
-	p.Next()
 	var (
 		cst ast.CheckConstraint
 		err error
 	)
+	cst.Position = p.GetCurrPosition()
+	p.Next()
 	cst.Expr, err = p.StartExpression()
 	return cst, err
 }
 
 func (p *Parser) ParseDefaultConstraint() (ast.Node, error) {
-	p.Next()
 	var (
 		cst ast.DefaultConstraint
 		err error
 	)
+	cst.Position = p.GetCurrPosition()
+	p.Next()
 	cst.Expr, err = p.StartExpression()
 	return cst, err
 }
 
 func (p *Parser) ParseGeneratedAlwaysConstraint() (ast.Node, error) {
-	by := p.IsKeyword("GENERATED BY DEFAULT")
+	var (
+		by  = p.IsKeyword("GENERATED BY DEFAULT")
+		pos = p.GetCurrPosition()
+	)
 	p.Next()
 	if !p.IsKeyword("AS") {
 		return nil, p.Unexpected("generated always", keywordExpected("AS"))
@@ -490,6 +518,7 @@ func (p *Parser) ParseGeneratedAlwaysConstraint() (ast.Node, error) {
 		cst ast.GeneratedConstraint
 		err error
 	)
+	cst.Position = pos
 	cst.Default = by
 	if cst.Expr, err = p.StartExpression(); err != nil {
 		return nil, err
