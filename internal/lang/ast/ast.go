@@ -7,13 +7,18 @@ import (
 
 type Node interface {
 	VisitableNode
-	// Pos() token.Position
+	Pos() token.Position
 }
 
 type CommentedNode struct {
 	Node
 	Before []string
 	After  string
+}
+
+func (n CommentedNode) Pos() token.Position {
+	var p token.Position
+	return p
 }
 
 func (n CommentedNode) Accept(visit Visitor) error {
@@ -145,6 +150,10 @@ type BetweenFrameSpec struct {
 	Left    FrameSpec
 	Right   FrameSpec
 	Exclude FrameExclude
+}
+
+func (b BetweenFrameSpec) Pos() token.Position {
+	return b.Position
 }
 
 func (_ BetweenFrameSpec) Accept(visit Visitor) error {
@@ -325,8 +334,14 @@ func (s MergeStatement) Accept(visit Visitor) error {
 }
 
 type Assignment struct {
+	token.Position
+
 	Field Node
 	Value Node
+}
+
+func (a Assignment) Pos() token.Position {
+	return a.Position
 }
 
 func (a Assignment) Accept(visit Visitor) error {

@@ -1,10 +1,17 @@
 package ast
 
-import "github.com/midbel/sweet/internal/token"
+import (
+	"github.com/midbel/sweet/internal/token"
+)
 
 type XmlAttribute struct {
+	token.Position
 	Name  Node
 	Value Node
+}
+
+func (x XmlAttribute) Pos() token.Position {
+	return x.Position
 }
 
 func (x XmlAttribute) Accept(visit Visitor) error {
@@ -12,8 +19,13 @@ func (x XmlAttribute) Accept(visit Visitor) error {
 }
 
 type XmlNamespace struct {
+	token.Position
 	Name Node
 	Uri  Node
+}
+
+func (x XmlNamespace) Pos() token.Position {
+	return x.Position
 }
 
 func (x XmlNamespace) Accept(visit Visitor) error {
@@ -31,14 +43,23 @@ type XmlRoot struct {
 	Standalone string
 }
 
+func (x XmlRoot) Pos() token.Position {
+	return x.Position
+}
+
 func (_ XmlRoot) Accept(visit Visitor) error {
 	return nil
 }
 
 type XmlPi struct {
+	token.Position
 	Ident Node
 	Name  Node
 	Body  Node
+}
+
+func (x XmlPi) Pos() token.Position {
+	return x.Position
 }
 
 func (_ XmlPi) Accept(visit Visitor) error {
@@ -54,6 +75,10 @@ type XmlElement struct {
 	Children   []Node
 }
 
+func (x XmlElement) Pos() token.Position {
+	return x.Position
+}
+
 func (x XmlElement) Accept(visit Visitor) error {
 	return visit.VisitXmlElement(x)
 }
@@ -62,6 +87,10 @@ type XmlText struct {
 	token.Position
 	Ident Node
 	Text  Node
+}
+
+func (x XmlText) Pos() token.Position {
+	return x.Position
 }
 
 func (x XmlText) Accept(visit Visitor) error {
@@ -74,6 +103,10 @@ type XmlComment struct {
 	Text  Node
 }
 
+func (x XmlComment) Pos() token.Position {
+	return x.Position
+}
+
 func (x XmlComment) Accept(visit Visitor) error {
 	return visit.VisitXmlComment(x)
 }
@@ -82,6 +115,10 @@ type XmlAgg struct {
 	token.Position
 	Ident Node
 	Body  Node
+}
+
+func (x XmlAgg) Pos() token.Position {
+	return x.Position
 }
 
 func (x XmlAgg) Accept(visit Visitor) error {
@@ -94,6 +131,10 @@ type XmlForest struct {
 	Args  []Node
 }
 
+func (x XmlForest) Pos() token.Position {
+	return x.Position
+}
+
 func (_ XmlForest) Accept(visit Visitor) error {
 	return nil
 }
@@ -102,6 +143,10 @@ type XmlConcat struct {
 	token.Position
 	Ident Node
 	Args  []Node
+}
+
+func (x XmlConcat) Pos() token.Position {
+	return x.Position
 }
 
 func (_ XmlConcat) Accept(visit Visitor) error {

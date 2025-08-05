@@ -1,9 +1,17 @@
 package ast
 
+import (
+	"github.com/midbel/sweet/internal/token"
+)
+
 type ColumnDef struct {
 	Name        Node
 	Type        Type
 	Constraints []Node
+}
+
+func (c ColumnDef) Pos() token.Position {
+	return c.Name.Pos()
 }
 
 func (c ColumnDef) Accept(visit Visitor) error {
@@ -11,7 +19,12 @@ func (c ColumnDef) Accept(visit Visitor) error {
 }
 
 type AddColumnAction struct {
+	token.Position
 	Def Node
+}
+
+func (a AddColumnAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a AddColumnAction) Accept(visit Visitor) error {
@@ -19,7 +32,12 @@ func (a AddColumnAction) Accept(visit Visitor) error {
 }
 
 type AlterColumnAction struct {
+	token.Position
 	Name Node
+}
+
+func (a AlterColumnAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a AlterColumnAction) Accept(visit Visitor) error {
@@ -27,8 +45,13 @@ func (a AlterColumnAction) Accept(visit Visitor) error {
 }
 
 type DropColumnAction struct {
+	token.Position
 	Name    Node
 	Cascade CascadeMode
+}
+
+func (a DropColumnAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a DropColumnAction) Accept(visit Visitor) error {
@@ -36,7 +59,12 @@ func (a DropColumnAction) Accept(visit Visitor) error {
 }
 
 type AddConstraintAction struct {
+	token.Position
 	Constraint Node
+}
+
+func (a AddConstraintAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a AddConstraintAction) Accept(visit Visitor) error {
@@ -44,8 +72,13 @@ func (a AddConstraintAction) Accept(visit Visitor) error {
 }
 
 type DropConstraintAction struct {
+	token.Position
 	Name    Node
 	Cascade CascadeMode
+}
+
+func (a DropConstraintAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a DropConstraintAction) Accept(visit Visitor) error {
@@ -53,8 +86,13 @@ func (a DropConstraintAction) Accept(visit Visitor) error {
 }
 
 type RenameTableAction struct {
+	token.Position
 	Old Node
 	New Node
+}
+
+func (a RenameTableAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a RenameTableAction) Accept(visit Visitor) error {
@@ -62,8 +100,13 @@ func (a RenameTableAction) Accept(visit Visitor) error {
 }
 
 type RenameColumnAction struct {
+	token.Position
 	Old Node
 	New Node
+}
+
+func (a RenameColumnAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a RenameColumnAction) Accept(visit Visitor) error {
@@ -71,8 +114,13 @@ func (a RenameColumnAction) Accept(visit Visitor) error {
 }
 
 type RenameConstraintAction struct {
+	token.Position
 	Old Node
 	New Node
+}
+
+func (a RenameConstraintAction) Pos() token.Position {
+	return a.Position
 }
 
 func (a RenameConstraintAction) Accept(visit Visitor) error {
@@ -80,8 +128,13 @@ func (a RenameConstraintAction) Accept(visit Visitor) error {
 }
 
 type AlterTableStatement struct {
+	token.Position
 	Name   Node
 	Action Node
+}
+
+func (s AlterTableStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s AlterTableStatement) Accept(visit Visitor) error {
@@ -89,8 +142,13 @@ func (s AlterTableStatement) Accept(visit Visitor) error {
 }
 
 type DropViewStatement struct {
+	token.Position
 	Names   []Node
 	Cascade CascadeMode
+}
+
+func (s DropViewStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s DropViewStatement) Accept(visit Visitor) error {
@@ -98,8 +156,13 @@ func (s DropViewStatement) Accept(visit Visitor) error {
 }
 
 type DropTableStatement struct {
+	token.Position
 	Names   []Node
 	Cascade CascadeMode
+}
+
+func (s DropTableStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s DropTableStatement) Accept(visit Visitor) error {
@@ -107,9 +170,14 @@ func (s DropTableStatement) Accept(visit Visitor) error {
 }
 
 type CreateViewStatement struct {
+	token.Position
 	Name    Node
 	Columns []Node
 	Select  Node
+}
+
+func (s CreateViewStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s CreateViewStatement) Accept(visit Visitor) error {
@@ -117,9 +185,14 @@ func (s CreateViewStatement) Accept(visit Visitor) error {
 }
 
 type CreateTableStatement struct {
+	token.Position
 	Name        Node
 	Columns     []Node
 	Constraints []Node
+}
+
+func (s CreateTableStatement) Pos() token.Position {
+	return s.Position
 }
 
 func (s CreateTableStatement) Accept(visit Visitor) error {
@@ -127,7 +200,12 @@ func (s CreateTableStatement) Accept(visit Visitor) error {
 }
 
 type PrimaryKeyConstraint struct {
+	token.Position
 	Columns []Node
+}
+
+func (c PrimaryKeyConstraint) Pos() token.Position {
+	return c.Position
 }
 
 func (c PrimaryKeyConstraint) Accept(visit Visitor) error {
@@ -135,6 +213,7 @@ func (c PrimaryKeyConstraint) Accept(visit Visitor) error {
 }
 
 type ForeignKeyConstraint struct {
+	token.Position
 	Locals   []Node
 	Remotes  []Node
 	Table    Node
@@ -142,12 +221,21 @@ type ForeignKeyConstraint struct {
 	OnUpdate Node
 }
 
+func (c ForeignKeyConstraint) Pos() token.Position {
+	return c.Position
+}
+
 func (c ForeignKeyConstraint) Accept(visit Visitor) error {
 	return visit.VisitForeignKey(c)
 }
 
 type NotNullConstraint struct {
+	token.Position
 	Column Node
+}
+
+func (c NotNullConstraint) Pos() token.Position {
+	return c.Position
 }
 
 func (c NotNullConstraint) Accept(visit Visitor) error {
@@ -155,7 +243,12 @@ func (c NotNullConstraint) Accept(visit Visitor) error {
 }
 
 type UniqueConstraint struct {
+	token.Position
 	Columns []Node
+}
+
+func (c UniqueConstraint) Pos() token.Position {
+	return c.Position
 }
 
 func (c UniqueConstraint) Accept(visit Visitor) error {
@@ -163,7 +256,12 @@ func (c UniqueConstraint) Accept(visit Visitor) error {
 }
 
 type CheckConstraint struct {
+	token.Position
 	Expr Node
+}
+
+func (c CheckConstraint) Pos() token.Position {
+	return c.Position
 }
 
 func (c CheckConstraint) Accept(visit Visitor) error {
@@ -171,7 +269,12 @@ func (c CheckConstraint) Accept(visit Visitor) error {
 }
 
 type DefaultConstraint struct {
+	token.Position
 	Expr Node
+}
+
+func (c DefaultConstraint) Pos() token.Position {
+	return c.Position
 }
 
 func (c DefaultConstraint) Accept(visit Visitor) error {
@@ -179,8 +282,13 @@ func (c DefaultConstraint) Accept(visit Visitor) error {
 }
 
 type GeneratedConstraint struct {
+	token.Position
 	Expr    Node
 	Default bool
+}
+
+func (c GeneratedConstraint) Pos() token.Position {
+	return c.Position
 }
 
 func (c GeneratedConstraint) Accept(visit Visitor) error {
@@ -188,8 +296,13 @@ func (c GeneratedConstraint) Accept(visit Visitor) error {
 }
 
 type Constraint struct {
+	token.Position
 	Name string
 	Node
+}
+
+func (c Constraint) Pos() token.Position {
+	return c.Position
 }
 
 func (c Constraint) Accept(visit Visitor) error {

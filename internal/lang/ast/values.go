@@ -9,7 +9,12 @@ import (
 )
 
 type Body struct {
+	token.Position
 	Values []Node
+}
+
+func (b Body) Pos() token.Position {
+	return b.Position
 }
 
 func (b Body) Accept(visit Visitor) error {
@@ -17,7 +22,12 @@ func (b Body) Accept(visit Visitor) error {
 }
 
 type List struct {
+	token.Position
 	Values []Node
+}
+
+func (i List) Pos() token.Position {
+	return i.Position
 }
 
 func (i List) Accept(visit Visitor) error {
@@ -52,6 +62,10 @@ type Cast struct {
 	Type Type
 }
 
+func (c Cast) Pos() token.Position {
+	return c.Position
+}
+
 func (c Cast) Accept(visit Visitor) error {
 	return visit.VisitCast(c)
 }
@@ -64,9 +78,17 @@ type Type struct {
 	Precision int
 }
 
+func (t Type) Pos() token.Position {
+	return t.Position
+}
+
 type Not struct {
 	token.Position
 	Node
+}
+
+func (n Not) Pos() token.Position {
+	return n.Position
 }
 
 func (n Not) Accept(visit Visitor) error {
@@ -83,6 +105,10 @@ type Collate struct {
 	Value Node
 }
 
+func (c Collate) Pos() token.Position {
+	return c.Position
+}
+
 func (_ Collate) Accept(visit Visitor) error {
 	return nil
 }
@@ -90,6 +116,10 @@ func (_ Collate) Accept(visit Visitor) error {
 type Exists struct {
 	token.Position
 	Node
+}
+
+func (e Exists) Pos() token.Position {
+	return e.Position
 }
 
 func (e Exists) Accept(visit Visitor) error {
@@ -134,6 +164,10 @@ type Row struct {
 	Values []Node
 }
 
+func (r Row) Pos() token.Position {
+	return r.Position
+}
+
 func (_ Row) Accept(visit Visitor) error {
 	return nil
 }
@@ -146,6 +180,10 @@ type Unary struct {
 	token.Position
 	Right Node
 	Op    string
+}
+
+func (u Unary) Pos() token.Position {
+	return u.Position
 }
 
 func (u Unary) Accept(visit Visitor) error {
@@ -188,6 +226,10 @@ type All struct {
 	Node
 }
 
+func (a All) Pos() token.Position {
+	return a.Position
+}
+
 func (a All) Accept(visit Visitor) error {
 	return visit.VisitAll(a)
 }
@@ -199,6 +241,10 @@ func (a All) GetStatement() []Node {
 type Any struct {
 	token.Position
 	Node
+}
+
+func (a Any) Pos() token.Position {
+	return a.Position
 }
 
 func (a Any) Accept(visit Visitor) error {
@@ -215,6 +261,10 @@ type Is struct {
 	Value Node
 }
 
+func (i Is) Pos() token.Position {
+	return i.Position
+}
+
 func (i Is) Accept(visit Visitor) error {
 	return visit.VisitIs(i)
 }
@@ -227,6 +277,10 @@ type In struct {
 	token.Position
 	Ident Node
 	Value Node
+}
+
+func (i In) Pos() token.Position {
+	return i.Position
 }
 
 func (i In) Accept(visit Visitor) error {
@@ -242,6 +296,10 @@ type Between struct {
 	Ident Node
 	Lower Node
 	Upper Node
+}
+
+func (b Between) Pos() token.Position {
+	return b.Position
 }
 
 func (b Between) Accept(visit Visitor) error {
