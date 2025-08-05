@@ -36,7 +36,7 @@ func (r *noCte) Verify(stmt ast.Node) ([]Issue, error) {
 
 func (r *noCte) VisitWith(with ast.WithStatement) error {
 	i := Issue{
-		Position: with.Position,
+		Position: with.Pos(),
 		Severity: r.severity,
 		Rule:     r.Name(),
 		Reason:   "prefer using subqueries over common table expression",
@@ -80,7 +80,7 @@ func (r *cteDuplicate) VisitWith(with ast.WithStatement) error {
 		}
 		if _, ok := names[q.Ident]; ok {
 			i := Issue{
-				Position: q.Position,
+				Position: q.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "duplicate identifier in with statement",
@@ -140,7 +140,7 @@ func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 
 func (r *cteUnused) VisitCte(stmt ast.CteStatement) error {
 	r.names[stmt.Ident] = 0
-	r.positions[stmt.Ident] = stmt.Position
+	r.positions[stmt.Ident] = stmt.Pos()
 	return nil
 }
 
@@ -217,7 +217,7 @@ func (r *cteColumns) VisitWith(with ast.WithStatement) error {
 func (r *cteColumns) VisitCte(cte ast.CteStatement) error {
 	if len(cte.Columns) == 0 {
 		i := Issue{
-			Position: cte.Position,
+			Position: cte.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "specify column names explicitly in common table expression",
@@ -286,7 +286,7 @@ func (r *cteColumnsCount) VisitCte(cte ast.CteStatement) error {
 	}
 	if count != len(cte.Columns) {
 		i := Issue{
-			Position: cte.Position,
+			Position: cte.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "number of columns returned by select does not match number of columns declared by common table expression",

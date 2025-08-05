@@ -7,6 +7,7 @@ import (
 
 type Node interface {
 	VisitableNode
+	// Pos() token.Position
 }
 
 type CommentedNode struct {

@@ -504,6 +504,7 @@ var operandMapping = OpSet{
 	token.Star:   "*",
 	token.Eq:     "=",
 	token.Ne:     "<>",
+	token.Neb:    "!=",
 	token.Gt:     ">",
 	token.Ge:     ">=",
 	token.Lt:     "<",

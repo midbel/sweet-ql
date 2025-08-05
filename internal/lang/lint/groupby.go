@@ -50,12 +50,12 @@ func (r *groupbyColumns) VisitSelect(stmt ast.SelectStatement) error {
 		switch c := c.(type) {
 		case ast.Name:
 			ok = r.exists(c, stmt)
-			pos = c.Position
+			pos = c.Pos()
 		case ast.Call:
 			if lang.IsAggregateFunc(c.GetIdent()) {
 				ok = true
 			}
-			pos = c.Position
+			pos = c.Pos()
 		default:
 			pos = getPosition(c)
 		}
@@ -79,6 +79,58 @@ func (r *groupbyColumns) exists(name ast.Name, stmt ast.SelectStatement) bool {
 		}
 		return false
 	})
+}
+
+// check that when group by clause is used and no aggregate functions are used in select clause, prefer select distinct
+type groupbyDistinct struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func GroupbyDistinct(level Severity) Rule {
+	return &groupbyDistinct{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *groupbyDistinct) Name() string {
+	return "groupby-distinct"
+}
+
+func (r *groupbyDistinct) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *groupbyDistinct) VisitSelect(stmt ast.SelectStatement) error {
+	if len(stmt.Groups) == 0 {
+		return nil
+	}
+	ok := slices.ContainsFunc(stmt.Columns, func(c ast.Node) bool {
+		if a, ok := c.(ast.Alias); ok {
+			c = a.Node
+		}
+		if c, ok := c.(ast.Call); ok && lang.IsAggregateFunc(c.GetIdent()) {
+			return true
+		}
+		return false
+	})
+	if !ok && !stmt.Distinct {
+		i := Issue{
+			Position: stmt.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use distinct in select clause if no aggregate functions are used",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 type noLiteralGroupby struct {
@@ -109,9 +161,9 @@ func (r *noLiteralGroupby) Verify(stmt ast.Node) ([]Issue, error) {
 
 func (r *noLiteralGroupby) VisitSelect(stmt ast.SelectStatement) error {
 	for _, g := range stmt.Groups {
-		if v, ok := g.(ast.Value); ok {
+		if v, ok := g.(ast.Value); ok && !v.Number() {
 			i := Issue{
-				Position: v.Position,
+				Position: v.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "use explicit columns name or expression from select clause in group by",
@@ -122,6 +174,7 @@ func (r *noLiteralGroupby) VisitSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
+// check that when aggregate functions are used in select clause, group by list is not empty
 type groupbyAggrFunc struct {
 	ast.Visitor
 	severity Severity

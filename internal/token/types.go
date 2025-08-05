@@ -29,6 +29,7 @@ const (
 	Rshift
 	Eq
 	Ne
+	Neb
 	Lt
 	Le
 	Gt

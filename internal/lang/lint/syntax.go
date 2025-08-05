@@ -40,7 +40,7 @@ func (r *noStar) Verify(stmt ast.Node) ([]Issue, error) {
 func (r *noStar) VisitName(name ast.Name) error {
 	if name.All() {
 		i := Issue{
-			Position: name.Position,
+			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "avoid using * in select statement; prefer specifying columns name",
@@ -90,7 +90,7 @@ func (r *duplicateField) checkColumns(stmt ast.SelectStatement) {
 		case ast.Name:
 			if q.All() && len(stmt.Columns) > 1 {
 				i := Issue{
-					Position: q.Position,
+					Position: q.Pos(),
 					Severity: r.severity,
 					Rule:     r.Name(),
 					Reason:   "implicit duplicated field because of *",
@@ -171,7 +171,7 @@ func (r *setColumnsCount) checkColumnsCount(left, right ast.Node) error {
 	})
 	if ok {
 		i := Issue{
-			Position: q1.Position,
+			Position: q1.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "avoid using * in select statement",
@@ -190,7 +190,7 @@ func (r *setColumnsCount) checkColumnsCount(left, right ast.Node) error {
 	})
 	if ok {
 		i := Issue{
-			Position: q2.Position,
+			Position: q2.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "avoid using * in select statement",
@@ -199,7 +199,7 @@ func (r *setColumnsCount) checkColumnsCount(left, right ast.Node) error {
 	}
 	if len(q1.Columns) != len(q2.Columns) {
 		i := Issue{
-			Position: q1.Position,
+			Position: q1.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "queries in compound statement should return the same number of columns",
@@ -239,7 +239,7 @@ func (r *missingWhere) Verify(stmt ast.Node) ([]Issue, error) {
 func (r *missingWhere) VisitSelect(stmt ast.SelectStatement) error {
 	if stmt.Where == nil {
 		i := Issue{
-			Position: stmt.Position,
+			Position: stmt.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "where is missing from select query",
@@ -252,7 +252,7 @@ func (r *missingWhere) VisitSelect(stmt ast.SelectStatement) error {
 func (r *missingWhere) VisitUpdate(stmt ast.UpdateStatement) error {
 	if stmt.Where == nil {
 		i := Issue{
-			Position: stmt.Position,
+			Position: stmt.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "where is missing from update query",
@@ -265,7 +265,7 @@ func (r *missingWhere) VisitUpdate(stmt ast.UpdateStatement) error {
 func (r *missingWhere) VisitDelete(stmt ast.DeleteStatement) error {
 	if stmt.Where == nil {
 		i := Issue{
-			Position: stmt.Position,
+			Position: stmt.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "where is missing from delete query",
@@ -297,24 +297,24 @@ func (r enforceType) verify(stmt ast.Node) ([]Issue, error) {
 	return nil, nil
 }
 
-type recommandedQuote struct {
+type recommandedQuoted struct {
 	ast.Visitor
 	severity Severity
 	issues   []Issue
 }
 
-func RecommandedQuote(level Severity) Rule {
-	return &recommandedQuote{
+func RecommandedQuoted(level Severity) Rule {
+	return &recommandedQuoted{
 		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ *recommandedQuote) Name() string {
+func (_ *recommandedQuoted) Name() string {
 	return "recommanded-quote"
 }
 
-func (r *recommandedQuote) Verify(stmt ast.Node) ([]Issue, error) {
+func (r *recommandedQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
 	err := stmt.Accept(Walk(r))
@@ -324,13 +324,13 @@ func (r *recommandedQuote) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *recommandedQuote) VisitName(stmt ast.Name) error {
-	ok := slices.ContainsFunc(stmt.Parts, func(i ast.Identifier) bool {
+func (r *recommandedQuoted) VisitName(name ast.Name) error {
+	ok := slices.ContainsFunc(name.Parts, func(i ast.Identifier) bool {
 		return !i.Quoted && strings.ToLower(i.Name) != i.Name && strings.ToUpper(i.Name) != i.Name
 	})
 	if ok {
 		i := Issue{
-			Position: stmt.Position,
+			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "use of double quotes is recommanded around identifier",
@@ -340,10 +340,10 @@ func (r *recommandedQuote) VisitName(stmt ast.Name) error {
 	return nil
 }
 
-func (r *recommandedQuote) VisitAlias(stmt ast.Alias) error {
-	if !stmt.Quoted && strings.ToLower(stmt.Name) != stmt.Name {
+func (r *recommandedQuoted) VisitAlias(alias ast.Alias) error {
+	if !alias.Quoted && strings.ToLower(alias.Name) != alias.Name && strings.ToUpper(alias.Name) != alias.Name {
 		i := Issue{
-			Position: stmt.Position,
+			Position: alias.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "use of double quotes is recommanded around alias",
@@ -380,13 +380,13 @@ func (r *noIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noIdentQuoted) VisitName(stmt ast.Name) error {
-	ok := slices.ContainsFunc(stmt.Parts, func(i ast.Identifier) bool {
+func (r *noIdentQuoted) VisitName(name ast.Name) error {
+	ok := slices.ContainsFunc(name.Parts, func(i ast.Identifier) bool {
 		return i.Quoted
 	})
 	if ok {
 		i := Issue{
-			Position: stmt.Position,
+			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "Invalid use of double quotes around identifier",
@@ -396,10 +396,10 @@ func (r *noIdentQuoted) VisitName(stmt ast.Name) error {
 	return nil
 }
 
-func (r *noIdentQuoted) VisitAlias(stmt ast.Alias) error {
-	if stmt.Quoted {
+func (r *noIdentQuoted) VisitAlias(alias ast.Alias) error {
+	if alias.Quoted {
 		i := Issue{
-			Position: stmt.Position,
+			Position: alias.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "Invalid use of double quotes around alias",
@@ -436,13 +436,13 @@ func (r *missingIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *missingIdentQuoted) VisitName(stmt ast.Name) error {
-	ok := slices.ContainsFunc(stmt.Parts, func(i ast.Identifier) bool {
+func (r *missingIdentQuoted) VisitName(name ast.Name) error {
+	ok := slices.ContainsFunc(name.Parts, func(i ast.Identifier) bool {
 		return !i.Quoted
 	})
 	if ok {
 		i := Issue{
-			Position: stmt.Position,
+			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "missing double quotes around identifier",
@@ -452,10 +452,10 @@ func (r *missingIdentQuoted) VisitName(stmt ast.Name) error {
 	return nil
 }
 
-func (r *missingIdentQuoted) VisitAlias(stmt ast.Alias) error {
-	if !stmt.Quoted {
+func (r *missingIdentQuoted) VisitAlias(alias ast.Alias) error {
+	if !alias.Quoted {
 		i := Issue{
-			Position: stmt.Position,
+			Position: alias.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "missing double quotes around alias",
@@ -618,7 +618,7 @@ func (r *enforceFetch) Verify(stmt ast.Node) ([]Issue, error) {
 func (r *enforceFetch) VisitSelect(stmt ast.SelectStatement) error {
 	if stmt.Limit == nil {
 		i := Issue{
-			Position: stmt.Position,
+			Position: stmt.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "use fetch clause to limit the number of results returned by the query",
@@ -631,7 +631,7 @@ func (r *enforceFetch) VisitSelect(stmt ast.SelectStatement) error {
 func (r *enforceFetch) VisitLimit(limit ast.Limit) error {
 	if limit.Count == nil {
 		i := Issue{
-			Position: limit.Position,
+			Position: limit.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "use fetch clause to limit the number of results returned by the query",
@@ -644,7 +644,7 @@ func (r *enforceFetch) VisitLimit(limit ast.Limit) error {
 func (r *enforceFetch) VisitOffset(offset ast.Offset) error {
 	if offset.Count == nil {
 		i := Issue{
-			Position: offset.Position,
+			Position: offset.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "use fetch clause to limit the number of results returned by the query",
@@ -685,7 +685,7 @@ func (r *orderOffsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
 func (r *orderOffsetFetch) VisitSelect(stmt ast.SelectStatement) error {
 	if stmt.Limit != nil && len(stmt.Orders) == 0 {
 		i := Issue{
-			Position: stmt.Position,
+			Position: stmt.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "use order by clause when using the offset clause un select statement",
@@ -742,7 +742,7 @@ func (r *setOrderLast) checkStatement(left, right ast.Node) error {
 	}
 	if len(stmt.Orders) > 0 {
 		i := Issue{
-			Position: stmt.Position,
+			Position: stmt.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "order by clause is only allowed in the final select of union/intersect/except query",
@@ -799,7 +799,7 @@ func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
 	}
 	if stmt.Limit != nil {
 		i := Issue{
-			Position: stmt.Position,
+			Position: stmt.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "offset/fetch clause is only allowed in the final select of union/intersect/except query",
@@ -840,12 +840,20 @@ func (r *selfCompare) VisitBinary(binary ast.Binary) error {
 	if binary.IsRelation() {
 		return nil
 	}
-	if binary.Left == binary.Right {
+	n1, ok := binary.Left.(ast.Name)
+	if !ok {
+		return nil
+	}
+	n2, ok := binary.Right.(ast.Name)
+	if !ok {
+		return nil
+	}
+	if slices.Equal(n1.Parts, n2.Parts) {
 		i := Issue{
 			Position: binary.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "comparing same value",
+			Reason:   "comparing value with itself",
 		}
 		r.issues = append(r.issues, i)
 	}

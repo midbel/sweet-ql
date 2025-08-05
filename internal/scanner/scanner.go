@@ -314,7 +314,7 @@ func (s *Scanner) scanOperator(tok *token.Token) {
 		tok.Type = token.Invalid
 		if k := s.Peek(); k == equal {
 			s.Read()
-			tok.Type = token.Ne
+			tok.Type = token.Neb
 		}
 	case slash:
 		tok.Type = token.Slash

@@ -106,7 +106,10 @@ func (v walkVisitor) VisitUpdate(node ast.UpdateStatement) error {
 			return err
 		}
 	}
-	return node.Where.Accept(v)
+	if node.Where != nil {
+		return node.Where.Accept(v)
+	}
+	return nil
 }
 
 func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
@@ -116,7 +119,10 @@ func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
 	if err := node.Table.Accept(v); err != nil {
 		return err
 	}
-	return node.Where.Accept(v)
+	if node.Where != nil {
+		return node.Where.Accept(v)
+	}
+	return nil
 }
 
 func (v walkVisitor) VisitTruncate(_ ast.TruncateStatement) error {

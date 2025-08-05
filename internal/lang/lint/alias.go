@@ -54,6 +54,51 @@ func (r *selfAlias) VisitAlias(alias ast.Alias) error {
 	return nil
 }
 
+// check that alias is not the same identifier as the function aliased
+type ambiguousAlias struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func AmbiguousAlias(level Severity) Rule {
+	return &ambiguousAlias{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *ambiguousAlias) Name() string {
+	return "ambiguous-alias"
+}
+
+func (r *ambiguousAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *ambiguousAlias) VisitAlias(alias ast.Alias) error {
+	c, ok := alias.Node.(ast.Call)
+	if !ok {
+		return nil
+	}
+	if c.GetIdent() == alias.Identifier.Name {
+		i := Issue{
+			Position: c.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use a different identifier of the function as alias to avoid ambiguouity",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
 type recommandedAlias struct {
 	ast.Visitor
 	severity Severity
@@ -85,11 +130,11 @@ func (r *recommandedAlias) VisitSelect(stmt ast.SelectStatement) error {
 		var pos token.Position
 		switch q := q.(type) {
 		case ast.Call:
-			pos = q.Position
+			pos = q.Pos()
 		case ast.Group:
-			pos = q.Position
+			pos = q.Pos()
 		case ast.Binary:
-			pos = q.Position
+			pos = q.Pos()
 		default:
 			continue
 		}
@@ -175,7 +220,7 @@ func (r *noAlias) VisitSelect(stmt ast.SelectStatement) error {
 	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
 		if a, ok := c.(ast.Alias); ok {
 			i := Issue{
-				Position: a.Position,
+				Position: a.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "aliases are not recommended unless needed",
@@ -230,7 +275,7 @@ func (r *invalidAlias) VisitSelect(stmt ast.SelectStatement) error {
 func (r *invalidAlias) VisitName(name ast.Name) error {
 	if r.exists(name) {
 		i := Issue{
-			Position: name.Position,
+			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "alias is not expected in group by/where/having clause of query",
@@ -328,7 +373,7 @@ func (r *undefinedAlias) VisitSelect(stmt ast.SelectStatement) error {
 func (r *undefinedAlias) VisitName(name ast.Name) error {
 	if !r.exists(name) {
 		i := Issue{
-			Position: name.Position,
+			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "alias is not defined in from clause of query",

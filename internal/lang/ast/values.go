@@ -33,6 +33,10 @@ type Group struct {
 	Node
 }
 
+func (g Group) Pos() token.Position {
+	return g.Position
+}
+
 func (g Group) Accept(visit Visitor) error {
 	return visit.VisitGroup(g)
 }
@@ -97,12 +101,16 @@ func (e Exists) GetStatement() []Node {
 }
 
 type Call struct {
-	Position token.Position
+	token.Position
 	Distinct bool
 	Ident    Node
 	Args     []Node
 	Filter   Node
 	Over     Node
+}
+
+func (c Call) Pos() token.Position {
+	return c.Position
 }
 
 func (c Call) Accept(visit Visitor) error {
@@ -335,6 +343,10 @@ func (i Identifier) Star() bool {
 type Name struct {
 	token.Position
 	Parts []Identifier
+}
+
+func (n Name) Pos() token.Position {
+	return n.Position
 }
 
 func (n Name) Accept(visit Visitor) error {

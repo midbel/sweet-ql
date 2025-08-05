@@ -58,7 +58,7 @@ func (r subqueryColumnsCount) checkColumns(q ast.SelectStatement) ([]Issue, erro
 		n, ok := q.Columns[0].(ast.Name)
 		if ok && n.All() {
 			i := Issue{
-				Position: getPosition(q.Columns[0]),
+				Position: n.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
 				Reason:   "unknown columns count because of use of '*'",
@@ -216,9 +216,9 @@ func (r *noSubquery) Verify(stmt ast.Node) ([]Issue, error) {
 }
 
 func (r *noSubquery) VisitGroup(group ast.Group) error {
-	if stmt, ok := group.Node.(ast.SelectStatement); ok {
+	if _, ok := group.Node.(ast.SelectStatement); ok {
 		i := Issue{
-			Position: stmt.Position,
+			Position: group.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
 			Reason:   "consider rewriting subqueries with join and/or cte",

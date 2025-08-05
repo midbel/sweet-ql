@@ -36,15 +36,17 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"missing-alias":            lint.MissingAlias,
 	"no-alias":                 lint.NoAlias,
 	"self-alias":               lint.SelfAlias,
+	"ambiguous-alias":          lint.AmbiguousAlias,
 	"invalid-alias":            lint.InvalidAlias,
 	"undefined-alias":          lint.UndefinedAlias,
 	"identifier-without-quote": lint.MissingIdentQuoted,
 	"identifier-with-quote":    lint.NoIdentQuoted,
-	"recommand-use-quote":      lint.RecommandedQuote,
+	"recommand-use-quote":      lint.RecommandedQuoted,
 	"no-literal-join":          lint.NoLiteralJoin,
 	"unused-join":              lint.JoinUnused,
 	"groupby-columns":          lint.GroupbyColumns,
 	"no-literal-groupby":       lint.NoLiteralGroupby,
+	"groupby-distinct":         lint.GroupbyDistinct,
 }
 
 func runLint(args []string) error {

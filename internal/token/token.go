@@ -103,7 +103,7 @@ func (t Token) String() string {
 		return "<arrow>"
 	case Eq:
 		return "<equal>"
-	case Ne:
+	case Ne, Neb:
 		return "<not-equal>"
 	case Lt:
 		return "<lesser-than>"

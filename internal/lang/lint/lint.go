@@ -3,7 +3,6 @@ package lint
 import (
 	"errors"
 	"io"
-	"maps"
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
@@ -228,63 +227,6 @@ func getNames2(q ast.Node) [][]string {
 	default:
 		return nil
 	}
-}
-
-func getNames(q ast.Node) []string {
-	switch q := q.(type) {
-	case ast.Name:
-		var parts []string
-		for i := range q.Parts {
-			parts = append(parts, q.Parts[i].Name)
-		}
-		return parts
-	case ast.Alias:
-		return getNames(q.Node)
-	case ast.Call:
-		var list []string
-		for i := range q.Args {
-			list = slices.Concat(list, getNames(q.Args[i]))
-		}
-		return list
-	case ast.Binary:
-		list := slices.Concat(getNames(q.Left), getNames(q.Right))
-		return list
-	default:
-		return nil
-	}
-}
-
-func getTables(stmt ast.Node) []string {
-	q, ok := stmt.(ast.SelectStatement)
-	if !ok {
-		return nil
-	}
-	var (
-		get   func(ast.Node) string
-		names = make(map[string]struct{})
-	)
-	get = func(stmt ast.Node) string {
-		switch q := stmt.(type) {
-		case ast.Join:
-			return get(q.Table)
-		case ast.Name:
-			return q.Name()
-		case ast.Alias:
-			return get(q.Node)
-		case ast.Group:
-			return get(q.Node)
-		default:
-			return ""
-		}
-	}
-	for _, t := range q.Tables {
-		n := get(t)
-		if n == "" {
-			continue
-		}
-		names[n] = struct{}{}
-	}
-	return slices.Collect(maps.Keys(names))
 }
 
 func getPosition(stmt ast.Node) token.Position {

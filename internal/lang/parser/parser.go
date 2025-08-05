@@ -389,6 +389,7 @@ func (p *Parser) setDefaultFuncSet() {
 	infix.Register("", token.Concat, p.parseInfixExpr)
 	infix.Register("", token.Eq, p.parseInfixExpr)
 	infix.Register("", token.Ne, p.parseInfixExpr)
+	infix.Register("", token.Neb, p.parseInfixExpr)
 	infix.Register("", token.Lt, p.parseInfixExpr)
 	infix.Register("", token.Le, p.parseInfixExpr)
 	infix.Register("", token.Gt, p.parseInfixExpr)
