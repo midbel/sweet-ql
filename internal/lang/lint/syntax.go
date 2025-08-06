@@ -584,6 +584,9 @@ func (r *unusedJoin) Verify(stmt ast.Node) ([]Issue, error) {
 }
 
 func (r *unusedJoin) VisitSelect(stmt ast.SelectStatement) error {
+	if len(stmt.Tables) == 1 {
+		return nil
+	}
 	return nil
 }
 

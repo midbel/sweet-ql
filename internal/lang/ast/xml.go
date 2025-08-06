@@ -38,7 +38,6 @@ func (x XmlNamespace) IsDefault() bool {
 
 type XmlRoot struct {
 	token.Position
-	Ident      Node
 	Version    string
 	Standalone string
 }
@@ -53,9 +52,8 @@ func (_ XmlRoot) Accept(visit Visitor) error {
 
 type XmlPi struct {
 	token.Position
-	Ident Node
-	Name  Node
-	Body  Node
+	Name Node
+	Body Node
 }
 
 func (x XmlPi) Pos() token.Position {
@@ -68,7 +66,6 @@ func (_ XmlPi) Accept(visit Visitor) error {
 
 type XmlElement struct {
 	token.Position
-	Ident      Node
 	Name       Node
 	Attributes []Node
 	Namespaces []Node
@@ -85,8 +82,7 @@ func (x XmlElement) Accept(visit Visitor) error {
 
 type XmlText struct {
 	token.Position
-	Ident Node
-	Text  Node
+	Text Node
 }
 
 func (x XmlText) Pos() token.Position {
@@ -99,8 +95,7 @@ func (x XmlText) Accept(visit Visitor) error {
 
 type XmlComment struct {
 	token.Position
-	Ident Node
-	Text  Node
+	Text Node
 }
 
 func (x XmlComment) Pos() token.Position {
@@ -113,8 +108,7 @@ func (x XmlComment) Accept(visit Visitor) error {
 
 type XmlAgg struct {
 	token.Position
-	Ident Node
-	Body  Node
+	Body Node
 }
 
 func (x XmlAgg) Pos() token.Position {
@@ -127,8 +121,7 @@ func (x XmlAgg) Accept(visit Visitor) error {
 
 type XmlForest struct {
 	token.Position
-	Ident Node
-	Args  []Node
+	Args []Node
 }
 
 func (x XmlForest) Pos() token.Position {
@@ -141,8 +134,7 @@ func (_ XmlForest) Accept(visit Visitor) error {
 
 type XmlConcat struct {
 	token.Position
-	Ident Node
-	Args  []Node
+	Args []Node
 }
 
 func (x XmlConcat) Pos() token.Position {

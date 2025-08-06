@@ -64,8 +64,8 @@ func (p *Parser) ParseXmlElement(left ast.Node) (ast.Node, error) {
 	}
 	p.Next()
 	xml := ast.XmlElement{
-		Ident: left,
-		Name:  name,
+		Position: left.Pos(),
+		Name:     name,
 	}
 	if !p.Is(token.Rparen) {
 		ns, err := p.ParseXmlNamespaces()
@@ -131,7 +131,9 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Node, error) {
 		if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 			needAs = true
 		}
-		var attr ast.XmlAttribute
+		attr := ast.XmlAttribute{
+			Position: p.GetCurrPosition(),
+		}
 		if attr.Value, err = p.StartExpression(); err != nil {
 			return nil, err
 		}
@@ -269,8 +271,8 @@ func (p *Parser) ParseXmlInstruction(left ast.Node) (ast.Node, error) {
 	}
 	p.Next()
 	xml := ast.XmlPi{
-		Ident: left,
-		Name:  name,
+		Position: left.Pos(),
+		Name:     name,
 	}
 	body, err := p.StartExpression()
 	if err != nil {
@@ -291,7 +293,7 @@ func (p *Parser) ParseXmlForest(left ast.Node) (ast.Node, error) {
 func (p *Parser) ParseXmlConcat(left ast.Node) (ast.Node, error) {
 	p.Next()
 	xml := ast.XmlConcat{
-		Ident: left,
+		Position: left.Pos(),
 	}
 	for !p.Done() && !p.Is(token.Rparen) {
 		arg, err := p.StartExpression()
@@ -313,7 +315,7 @@ func (p *Parser) ParseXmlConcat(left ast.Node) (ast.Node, error) {
 func (p *Parser) ParseXmlAgg(left ast.Node) (ast.Node, error) {
 	p.Next()
 	xml := ast.XmlAgg{
-		Ident: left,
+		Position: left.Pos(),
 	}
 	body, err := p.StartExpression()
 	if err != nil {
@@ -343,8 +345,8 @@ func (p *Parser) ParseXmlText(left ast.Node) (ast.Node, error) {
 	}
 	p.Next()
 	xml := ast.XmlText{
-		Ident: left,
-		Text:  stmt,
+		Position: left.Pos(),
+		Text:     stmt,
 	}
 	return xml, nil
 }
@@ -364,8 +366,8 @@ func (p *Parser) ParseXmlComment(left ast.Node) (ast.Node, error) {
 	}
 	p.Next()
 	xml := ast.XmlComment{
-		Ident: left,
-		Text:  text,
+		Position: left.Pos(),
+		Text:     text,
 	}
 	return xml, nil
 }
