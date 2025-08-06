@@ -34,7 +34,8 @@ func (a AddColumnAction) Accept(visit Visitor) error {
 
 type AlterColumnAction struct {
 	token.Position
-	Name Node
+	Name   Node
+	Action Node
 }
 
 func (a AlterColumnAction) Pos() token.Position {
@@ -308,4 +309,66 @@ func (c Constraint) Pos() token.Position {
 
 func (c Constraint) Accept(visit Visitor) error {
 	return visit.VisitConstraint(c)
+}
+
+type SetDefaultConstraint struct {
+	token.Position
+	Expr Node
+}
+
+func (c SetDefaultConstraint) Pos() token.Position {
+	return c.Position
+}
+
+func (c SetDefaultConstraint) Accept(visit Visitor) error {
+	return nil
+}
+
+type DropDefaultConstraint struct {
+	token.Position
+}
+
+func (c DropDefaultConstraint) Pos() token.Position {
+	return c.Position
+}
+
+func (c DropDefaultConstraint) Accept(visit Visitor) error {
+	return nil
+}
+
+type SetNotNullConstraint struct {
+	token.Position
+}
+
+func (c SetNotNullConstraint) Pos() token.Position {
+	return c.Position
+}
+
+func (c SetNotNullConstraint) Accept(visit Visitor) error {
+	return nil
+}
+
+type DropNotNullConstraint struct {
+	token.Position
+}
+
+func (c DropNotNullConstraint) Pos() token.Position {
+	return c.Position
+}
+
+func (c DropNotNullConstraint) Accept(visit Visitor) error {
+	return nil
+}
+
+type SetTypeConstraint struct {
+	token.Position
+	Type
+}
+
+func (c SetTypeConstraint) Pos() token.Position {
+	return c.Position
+}
+
+func (c SetTypeConstraint) Accept(visit Visitor) error {
+	return nil
 }

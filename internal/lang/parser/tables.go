@@ -167,13 +167,7 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 			Position:   pos,
 		}
 	case p.IsKeyword("ALTER") || p.IsKeyword("ALTER COLUMN"):
-		p.Next()
-		var (
-			action ast.AlterColumnAction
-			err    error
-		)
-		action.Position = pos
-		action.Name, err = p.ParseIdentifier()
+		action, err := p.ParseAlterColumn()
 		if err != nil {
 			return nil, err
 		}
@@ -219,6 +213,80 @@ func (p *Parser) ParseAlterTable() (ast.Node, error) {
 		return nil, p.Unexpected("alter table", defaultReason)
 	}
 	return stmt, nil
+}
+
+func (p *Parser) ParseAlterColumn() (ast.Node, error) {
+	var (
+		action ast.AlterColumnAction
+		err    error
+	)
+	action.Position = p.GetCurrPosition()
+	p.Next()
+	action.Name, err = p.ParseIdentifier()
+	if err != nil {
+		return nil, err
+	}
+	switch pos := p.GetCurrPosition(); {
+	case p.IsKeyword("SET"):
+		p.Next()
+		if p.IsKeyword("DEFAULT") {
+			a := ast.SetDefaultConstraint{
+				Position: pos,
+			}
+			p.Next()
+			expr, err := p.StartExpression()
+			if err != nil {
+				return nil, err
+			}
+			a.Expr = expr
+			action.Action = a
+		} else if p.IsKeyword("NOT NULL") {
+			action.Action = ast.SetNotNullConstraint{
+				Position: pos,
+			}
+			p.Next()
+		} else {
+			return nil, p.Unexpected("alter column", defaultReason)
+		}
+	case p.IsKeyword("DROP"):
+		p.Next()
+		if p.IsKeyword("DEFAULT") {
+			action.Action = ast.DropDefaultConstraint{
+				Position: pos,
+			}
+		} else if p.IsKeyword("NOT NULL") {
+			action.Action = ast.DropNotNullConstraint{
+				Position: pos,
+			}
+		} else {
+			return nil, p.Unexpected("alter column", defaultReason)
+		}
+		p.Next()
+	case p.IsKeyword("SET DATA"):
+		p.Next()
+		if p.IsKeyword("TYPE") {
+			p.Next()
+		}
+		typ, err := p.ParseType()
+		if err != nil {
+			return nil, err
+		}
+		action.Action = ast.SetTypeConstraint{
+			Type: typ,
+		}
+	case p.IsKeyword("TYPE"):
+		p.Next()
+		typ, err := p.ParseType()
+		if err != nil {
+			return nil, err
+		}
+		action.Action = ast.SetTypeConstraint{
+			Type: typ,
+		}
+	default:
+		return nil, p.Unexpected("alter column", defaultReason)
+	}
+	return action, nil
 }
 
 func (p *Parser) ParseCreateTable() (ast.Node, error) {
