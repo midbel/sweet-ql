@@ -18,7 +18,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"cte-columns-count":        lint.CteColumnsCount,
 	"cte-unused":               lint.CteUnused,
 	"cte-duplicate":            lint.CteDuplicate,
-	"cte-name":                 lint.CteName,
+	"cte-name":                 lint.CteNames,
 	"std-operator":             lint.StdOperator,
 	"self-compare":             lint.SelfCompare,
 	"missing-where":            lint.MissingWhere,

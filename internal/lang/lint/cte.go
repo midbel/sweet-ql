@@ -297,24 +297,29 @@ func (r *cteColumnsCount) VisitCte(cte ast.CteStatement) error {
 }
 
 // check that fields qualified by cte are exposed by it
-type cteName struct {
+type cteNames struct {
+	ast.Visitor
 	severity Severity
+	issues   []Issue
 }
 
-func CteName(level Severity) Rule {
-	return cteName{
+func CteNames(level Severity) Rule {
+	return &cteNames{
+		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ cteName) Name() string {
+func (_ *cteNames) Name() string {
 	return "cte-name"
 }
 
-func (r cteName) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
+func (r *cteNames) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
 
-func (r cteName) verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
 }

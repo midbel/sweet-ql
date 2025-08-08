@@ -113,6 +113,10 @@ func (r *subqueryNames) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
+func (r *subqueryNames) VisitJoin(join ast.Join) error {
+	return nil
+}
+
 func (r *subqueryNames) VisitGroup(group ast.Group) error {
 	if _, ok := group.Node.(ast.SelectStatement); ok {
 
