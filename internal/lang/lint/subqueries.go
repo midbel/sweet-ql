@@ -40,9 +40,16 @@ func (r *subqueryColumnsCount) VisitJoin(join ast.Join) error {
 			severity: r.severity,
 			Visitor:  ast.Noop(),
 		}
-		sub = Walk(&other)
+		sub   = Walk(&other)
+		entry = join.Table
 	)
-	if err := join.Table.Accept(sub); err != nil {
+	if a, ok := entry.(ast.Alias); ok {
+		entry = a.Node
+	}
+	if g, ok := entry.(ast.Group); ok {
+		entry = g.Node
+	}
+	if err := entry.Accept(sub); err != nil {
 		return err
 	}
 	if err := join.Where.Accept(sub); err != nil {
