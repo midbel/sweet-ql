@@ -198,6 +198,9 @@ func (v walkVisitor) VisitRollbackSavepoint(_ ast.RollbackSavepoint) error {
 
 func (v walkVisitor) VisitJoin(join ast.Join) error {
 	if err := join.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
 		return err
 	}
 	if err := join.Table.Accept(v); err != nil {

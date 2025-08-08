@@ -7,7 +7,6 @@ import (
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/lang/parser"
-	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -156,105 +155,4 @@ func (i *Linter) Lint(stmt ast.Node) ([]Issue, error) {
 		list = slices.Concat(list, issues)
 	}
 	return list, nil
-}
-
-type checkSelectFunc func(ast.SelectStatement) ([]Issue, error)
-
-func verify(stmt ast.Node, check checkSelectFunc) ([]Issue, error) {
-	switch q := stmt.(type) {
-	case ast.WithStatement:
-		var (
-			list []Issue
-			all  = slices.Clone(q.Queries)
-		)
-		all = append(all, q.Node)
-		for _, q := range all {
-			issues, err := verify(q, check)
-			if err != nil {
-				return nil, err
-			}
-			list = slices.Concat(list, issues)
-		}
-		return list, nil
-	case ast.CteStatement:
-		return verify(q.Node, check)
-	case ast.Group:
-		return verify(q.Node, check)
-	case ast.UnionStatement:
-		return verifyList(slx.Make(q.Left, q.Right), check)
-	case ast.IntersectStatement:
-		return verifyList(slx.Make(q.Left, q.Right), check)
-	case ast.ExceptStatement:
-		return verifyList(slx.Make(q.Left, q.Right), check)
-	case ast.SelectStatement:
-		return check(q)
-	default:
-		return nil, nil
-	}
-}
-
-func verifyList(stmts []ast.Node, check checkSelectFunc) ([]Issue, error) {
-	var list []Issue
-	for _, s := range stmts {
-		issues, err := verify(s, check)
-		if err != nil {
-			return nil, err
-		}
-		list = slices.Concat(list, issues)
-	}
-	return list, nil
-}
-
-func getNames2(q ast.Node) [][]string {
-	switch q := q.(type) {
-	case ast.Name:
-		var parts []string
-		for i := range q.Parts {
-			parts = append(parts, q.Parts[i].Name)
-		}
-		return slx.One(parts)
-	case ast.Alias:
-		return getNames2(q.Node)
-	case ast.Call:
-		var list [][]string
-		for i := range q.Args {
-			list = slices.Concat(list, getNames2(q.Args[i]))
-		}
-		return list
-	case ast.Binary:
-		list := slices.Concat(getNames2(q.Left), getNames2(q.Right))
-		return list
-	default:
-		return nil
-	}
-}
-
-func getQueries(stmt ast.Node) []ast.SelectStatement {
-	if a, ok := stmt.(ast.Alias); ok {
-		return getQueries(a.Node)
-	}
-	if gs, ok := stmt.(interface{ GetStatement() []ast.Node }); ok {
-		var res []ast.SelectStatement
-		for _, s := range gs.GetStatement() {
-			res = slices.Concat(res, getQueries(s))
-		}
-		return res
-	}
-	q, ok := stmt.(ast.SelectStatement)
-	if !ok {
-		return nil
-	}
-	list := slx.One(q)
-	for _, c := range q.Columns {
-		list = slices.Concat(list, getQueries(c))
-	}
-	for _, t := range q.Tables {
-		if j, ok := t.(ast.Join); ok {
-			t = j.Table
-		}
-		list = slices.Concat(list, getQueries(t))
-	}
-	list = slices.Concat(list, getQueries(q.Where))
-	list = slices.Concat(list, getQueries(q.Having))
-	return list
 }
