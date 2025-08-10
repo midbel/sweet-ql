@@ -41,21 +41,6 @@ type Issue struct {
 	Cause  string
 }
 
-type RuleOptions uint64
-
-const (
-	CheckFields RuleOptions = 1 << iota
-	CheckTables
-)
-
-func (r RuleOptions) withCheckFields() bool {
-	return r&CheckFields == CheckFields
-}
-
-func (r RuleOptions) withCheckTables() bool {
-	return r&CheckFields == CheckTables
-}
-
 type Rule interface {
 	Verify(ast.Node) ([]Issue, error)
 	Name() string

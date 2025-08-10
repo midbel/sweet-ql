@@ -290,10 +290,6 @@ func (_ enforceType) Name() string {
 }
 
 func (r enforceType) Verify(stmt ast.Node) ([]Issue, error) {
-	return r.verify(stmt)
-}
-
-func (r enforceType) verify(stmt ast.Node) ([]Issue, error) {
 	return nil, nil
 }
 

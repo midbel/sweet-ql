@@ -127,12 +127,12 @@ func (r *recommandedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 func (r *recommandedAlias) VisitSelect(stmt ast.SelectStatement) error {
 	for _, q := range stmt.Columns {
 		switch q.(type) {
-		case ast.Call, ast.Group, ast.Binary:
+		case ast.Call, ast.Group, ast.Binary, ast.Unary:
 			i := Issue{
 				Position: q.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "",
+				Reason:   "alias is recommanded for function call, subquery, binary and/or unary expression",
 			}
 			r.issues = append(r.issues, i)
 		default:
