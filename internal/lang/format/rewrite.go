@@ -4,62 +4,66 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) Rewrite(stmt ast.Node) (ast.Node, error) {
-	if w.Rules.KeepAsIs() {
-		return stmt, nil
-	}
-	return w.rewrite(stmt)
+// rewrite operator to std one like != to <> and = true to is true
+type rewriteStdOperator struct {
+	ast.Visitor
 }
 
-func (w *Writer) rewrite(stmt ast.Node) (ast.Node, error) {
-	return stmt, nil
-}
-
-// rewrite != to <> and x = null|true|false to x is null|true|false
-func (w *Writer) rewriteStdOperator(stmt ast.Node) (ast.Node, error) {
+func (r rewriteStdOperator) VisitBinary(binary ast.Binary) error {
 	return nil
 }
 
-// replace any subqueries in a sql query in a with statement
-func rewriteSubqueryAsCte(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// transform all subqueries to an equivalent cte
+type rewriteSubqueryToCte struct {
+	ast.Visitor
 }
 
-// replace all cte from a with statement and put it as subqueries
-func rewriteCteAsSubquery(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// transform all cte to subquery where they are used
+type rewriteCteToSubquery struct {
+	ast.Visitor
 }
 
-// add in fields list missing names present in the group by clause
-func rewriteGroupBy(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// add fields not use in aggregate function in the select clause into the group by
+type rewriteGroupbyFields struct {
+	ast.Visitor
 }
 
-// simplify boolean expression x is true becomes x
-func rewriteBooleanExpr(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// when position are used in group by, replace by the identifier
+type rewriteGroupbyPosField struct {
+	ast.Visitor
 }
 
-// set as keyword to all fields in select and in tables
-func rewriteAlias(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// simplify some boolean expression when they can be evaluate with only the identifier
+type rewriteBooleanExpr struct {
+	ast.Visitor
 }
 
-// for all fields and tables without aliases, create one
-func rewriteMissingAlias(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// set the as keyword
+type rewriteSetAs struct {
+	ast.Visitor
 }
 
-// foreach cte in a with statement, add a columns list definition if not set
-func rewriteMissingCteColumns(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// add alias to all columns in select clause
+type rewriteMissingAlias struct {
+	ast.Visitor
 }
 
-// add a columns list definition if not set in a create view statement
-func rewriteMissingViewColumns(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// add columns definition list to cte
+type rewriteMissingCteColumns struct {
+	ast.Visitor
 }
 
-func replaceLiteralWithPlaceholder(stmt ast.Node) (ast.Node, error) {
-	return nil, nil
+// add columns definition list to create view
+type rewriteMissingViewColumns struct {
+	ast.Visitor
+}
+
+// rewrite literal value in join with placeholders
+type rewriteLiteralWithPlaceholderJoin struct {
+	ast.Visitor
+}
+
+// rewrite literal value in expression with placeholders
+type rewriteLiteralWithPlaceholderExpr struct {
+	ast.Visitor
 }

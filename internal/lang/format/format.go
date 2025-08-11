@@ -80,9 +80,6 @@ func (w *Writer) Format(r io.Reader) error {
 			}
 			return err
 		}
-		if stmt, err = w.Rewrite(stmt); err != nil {
-			return err
-		}
 		if err = w.FormatStatement(stmt); err != nil {
 			return err
 		}
