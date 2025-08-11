@@ -321,7 +321,7 @@ func (c SetDefaultConstraint) Pos() token.Position {
 }
 
 func (c SetDefaultConstraint) Accept(visit Visitor) error {
-	return nil
+	return visit.VisitSetDefaultConstraint(c)
 }
 
 type DropDefaultConstraint struct {
@@ -333,7 +333,7 @@ func (c DropDefaultConstraint) Pos() token.Position {
 }
 
 func (c DropDefaultConstraint) Accept(visit Visitor) error {
-	return nil
+	return visit.VisitDropDefaultConstraint(c)
 }
 
 type SetNotNullConstraint struct {
@@ -345,7 +345,7 @@ func (c SetNotNullConstraint) Pos() token.Position {
 }
 
 func (c SetNotNullConstraint) Accept(visit Visitor) error {
-	return nil
+	return visit.VisitSetNotNullConstraint(c)
 }
 
 type DropNotNullConstraint struct {
@@ -357,7 +357,7 @@ func (c DropNotNullConstraint) Pos() token.Position {
 }
 
 func (c DropNotNullConstraint) Accept(visit Visitor) error {
-	return nil
+	return visit.VisitDropNotNullConstraint(c)
 }
 
 type SetTypeConstraint struct {
@@ -370,5 +370,5 @@ func (c SetTypeConstraint) Pos() token.Position {
 }
 
 func (c SetTypeConstraint) Accept(visit Visitor) error {
-	return nil
+	return visit.VisitSetTypeConstraint(c)
 }

@@ -164,6 +164,9 @@ func (s *queryIdentUsage) VisitName(name ast.Name) error {
 		return nil
 	}
 	ok := slices.ContainsFunc(s.names, func(n ast.Name) bool {
+		if n.Pos() == name.Pos() {
+			return true
+		}
 		return n.Parts[len(n.Parts)-1] == name.Parts[len(name.Parts)-1]
 	})
 	if !ok {

@@ -454,6 +454,26 @@ func (v walkVisitor) VisitConstraint(_ ast.Constraint) error {
 	return nil
 }
 
+func (v walkVisitor) VisitSetDefaultConstraint(_ ast.SetDefaultConstraint) error {
+	return nil
+}
+
+func (v walkVisitor) VisitDropDefaultConstraint(_ ast.DropDefaultConstraint) error {
+	return nil
+}
+
+func (v walkVisitor) VisitSetNotNullConstraint(_ ast.SetNotNullConstraint) error {
+	return nil
+}
+
+func (v walkVisitor) VisitDropNotNullConstraint(_ ast.DropNotNullConstraint) error {
+	return nil
+}
+
+func (v walkVisitor) VisitSetTypeConstraint(_ ast.SetTypeConstraint) error {
+	return nil
+}
+
 func (v walkVisitor) VisitPrimaryKey(_ ast.PrimaryKeyConstraint) error {
 	return nil
 }
