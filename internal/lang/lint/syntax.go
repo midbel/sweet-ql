@@ -385,7 +385,7 @@ func (r *noIdentQuoted) VisitName(name ast.Name) error {
 			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "Invalid use of double quotes around identifier",
+			Reason:   "invalid use of double quotes around identifier",
 		}
 		r.issues = append(r.issues, i)
 	}
@@ -398,7 +398,7 @@ func (r *noIdentQuoted) VisitAlias(alias ast.Alias) error {
 			Position: alias.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "Invalid use of double quotes around alias",
+			Reason:   "invalid use of double quotes around alias",
 		}
 		r.issues = append(r.issues, i)
 	}
@@ -494,7 +494,7 @@ func (r *ambiguousName) VisitName(name ast.Name) error {
 			Position: name.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "use a qualified name to avoid ambiguity between identifier",
+			Reason:   "qualify an identifier with its table or alias to eliminate possible ambiguity",
 		}
 		r.issues = append(r.issues, i)
 	}

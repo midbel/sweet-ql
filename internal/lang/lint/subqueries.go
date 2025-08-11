@@ -156,30 +156,6 @@ type queryIdentUsage struct {
 	alias  ast.Identifier
 }
 
-func (s *queryIdentUsage) VisitSelect(stmt ast.SelectStatement) error {
-	for _, c := range stmt.Columns {
-		if err := c.Accept(s); err != nil {
-			return err
-		}
-	}
-	if stmt.Where != nil {
-		if err := stmt.Where.Accept(s); err != nil {
-			return err
-		}
-	}
-	for _, g := range stmt.Groups {
-		if err := g.Accept(s); err != nil {
-			return err
-		}
-	}
-	if stmt.Having != nil {
-		if err := stmt.Having.Accept(s); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (s *queryIdentUsage) VisitName(name ast.Name) error {
 	if len(name.Parts) <= 1 {
 		return nil
@@ -193,7 +169,7 @@ func (s *queryIdentUsage) VisitName(name ast.Name) error {
 	if !ok {
 		i := Issue{
 			Position: name.Pos(),
-			Reason:   "identifier is not defined in subquery",
+			Reason:   "the identifier is not declared or returned by subquery",
 		}
 		s.issues = append(s.issues, i)
 	}
