@@ -38,6 +38,7 @@ func (x XmlNamespace) IsDefault() bool {
 
 type XmlRoot struct {
 	token.Position
+	Root       Node
 	Version    string
 	Standalone string
 }

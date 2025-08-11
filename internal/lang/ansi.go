@@ -238,6 +238,9 @@ var ansi = [][]string{
 	{"with", "grant", "option"},
 	{"revoke"},
 	{"all", "privileges"},
+	{"yes"},
+	{"no"},
+	{"no", "value"},
 }
 
 func GetKeywords() *keywords.Trie {

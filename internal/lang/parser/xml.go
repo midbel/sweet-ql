@@ -42,7 +42,45 @@ func (p *Parser) ParseXML(name ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) ParseXmlRoot(left ast.Node) (ast.Node, error) {
-	return nil, nil
+	xml := ast.XmlRoot{
+		Position: left.Pos(),
+	}
+	p.Next()
+	root, err := p.StartExpression()
+	if err != nil {
+		return nil, err
+	}
+	xml.Root = root
+	if !p.Is(token.Comma) {
+
+	}
+	p.Next()
+	if !p.IsIdent("VERSION") {
+		return nil, p.Unexpected("xmlroot", defaultReason)
+	}
+	p.Next()
+	if !p.Is(token.Keyword) && !p.Is(token.Literal) {
+		return nil, p.Unexpected("xmlroot", defaultReason)
+	}
+	xml.Version = p.GetCurrLiteral()
+	p.Next()
+	if p.Is(token.Comma) {
+		p.Next()
+		if !p.IsIdent("STANDALONE") {
+			return nil, p.Unexpected("xmlroot", defaultReason)
+		}
+		p.Next()
+		if !p.Is(token.Keyword) {
+			return nil, p.Unexpected("xmlroot", defaultReason)
+		}
+		xml.Standalone = p.GetCurrLiteral()
+		p.Next()
+	}
+	if !p.Is(token.Rparen) {
+		return nil, p.Unexpected("xmlroot", missingCloseParen)
+	}
+	p.Next()
+	return xml, nil
 }
 
 func (p *Parser) ParseXmlElement(left ast.Node) (ast.Node, error) {
