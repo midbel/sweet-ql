@@ -241,6 +241,9 @@ var ansi = [][]string{
 	{"yes"},
 	{"no"},
 	{"no", "value"},
+	{"element", "name"},
+	{"null", "on ", "null"},
+	{"absent", "on", "null"},
 }
 
 func GetKeywords() *keywords.Trie {

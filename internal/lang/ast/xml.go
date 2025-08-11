@@ -47,8 +47,8 @@ func (x XmlRoot) Pos() token.Position {
 	return x.Position
 }
 
-func (_ XmlRoot) Accept(visit Visitor) error {
-	return nil
+func (x XmlRoot) Accept(visit Visitor) error {
+	return visit.VisitXmlRoot(x)
 }
 
 type XmlPi struct {
@@ -61,8 +61,8 @@ func (x XmlPi) Pos() token.Position {
 	return x.Position
 }
 
-func (_ XmlPi) Accept(visit Visitor) error {
-	return nil
+func (x XmlPi) Accept(visit Visitor) error {
+	return visit.VisitXmlPi(x)
 }
 
 type XmlElement struct {
@@ -120,6 +120,28 @@ func (x XmlAgg) Accept(visit Visitor) error {
 	return visit.VisitXmlAgg(x)
 }
 
+type ForestOnNull int8
+
+const (
+	NullOnNull ForestOnNull = 1 << iota
+	AbsentOnNull
+)
+
+type XmlForestItem struct {
+	token.Position
+	Name Node
+	Node
+	OnNull ForestOnNull
+}
+
+func (x XmlForestItem) Pos() token.Position {
+	return x.Position
+}
+
+func (_ XmlForestItem) Accept(visit Visitor) error {
+	return nil
+}
+
 type XmlForest struct {
 	token.Position
 	Args []Node
@@ -129,8 +151,8 @@ func (x XmlForest) Pos() token.Position {
 	return x.Position
 }
 
-func (_ XmlForest) Accept(visit Visitor) error {
-	return nil
+func (x XmlForest) Accept(visit Visitor) error {
+	return visit.VisitXmlForest(x)
 }
 
 type XmlConcat struct {
@@ -142,6 +164,6 @@ func (x XmlConcat) Pos() token.Position {
 	return x.Position
 }
 
-func (_ XmlConcat) Accept(visit Visitor) error {
-	return nil
+func (x XmlConcat) Accept(visit Visitor) error {
+	return visit.VisitXmlConcat(x)
 }

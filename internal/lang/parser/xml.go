@@ -325,7 +325,56 @@ func (p *Parser) ParseXmlInstruction(left ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) ParseXmlForest(left ast.Node) (ast.Node, error) {
-	return nil, nil
+	xml := ast.XmlForest{
+		Position: left.Pos(),
+	}
+	p.Next()
+	for !p.Done() && !p.Is(token.Rparen) {
+		item, err := p.parseForestItem()
+		if err != nil {
+			return nil, err
+		}
+		xml.Args = append(xml.Args, item)
+		if err := p.EnsureEnd("xmlforest", token.Comma, token.Rparen); err != nil {
+			return nil, err
+		}
+	}
+	if !p.Is(token.Rparen) {
+		return nil, p.Unexpected("xmlforest", missingCloseParen)
+	}
+	p.Next()
+	return xml, nil
+}
+
+func (p *Parser) parseForestItem() (ast.Node, error) {
+	var (
+		item ast.XmlForestItem
+		err  error
+	)
+	item.Position = p.GetCurrPosition()
+	if p.IsKeyword("ELEMENT NAME") {
+		p.Next()
+		item.Name, err = p.StartExpression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if item.Node, err = p.StartExpression(); err != nil {
+		return nil, err
+	}
+	switch {
+	case p.IsKeyword("NULL ON NULL"):
+		p.Next()
+		item.OnNull = ast.NullOnNull
+	case p.IsKeyword("ABSENT ON NULL"):
+		p.Next()
+		item.OnNull = ast.AbsentOnNull
+	default:
+	}
+	if p.IsKeyword("AS") {
+		return p.ParseAlias(item)
+	}
+	return item, nil
 }
 
 func (p *Parser) ParseXmlConcat(left ast.Node) (ast.Node, error) {

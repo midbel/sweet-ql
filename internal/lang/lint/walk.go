@@ -522,6 +522,22 @@ func (v walkVisitor) VisitXmlComment(_ ast.XmlComment) error {
 	return nil
 }
 
+func (v walkVisitor) VisitXmlPi(_ ast.XmlPi) error {
+	return nil
+}
+
+func (v walkVisitor) VisitXmlConcat(_ ast.XmlConcat) error {
+	return nil
+}
+
 func (v walkVisitor) VisitXmlAgg(_ ast.XmlAgg) error {
+	return nil
+}
+
+func (v walkVisitor) VisitXmlRoot(_ ast.XmlRoot) error {
+	return nil
+}
+
+func (v walkVisitor) VisitXmlForest(_ ast.XmlForest) error {
 	return nil
 }

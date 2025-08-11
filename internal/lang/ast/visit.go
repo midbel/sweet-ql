@@ -77,7 +77,11 @@ type XmlVisitor interface {
 	VisitXmlNamespace(XmlNamespace) error
 	VisitXmlText(XmlText) error
 	VisitXmlComment(XmlComment) error
+	VisitXmlPi(XmlPi) error
+	VisitXmlConcat(XmlConcat) error
 	VisitXmlAgg(XmlAgg) error
+	VisitXmlRoot(XmlRoot) error
+	VisitXmlForest(XmlForest) error
 }
 
 type DefinitionVisitor interface {
@@ -474,6 +478,22 @@ func (noopVisitor) VisitXmlComment(XmlComment) error {
 	return nil
 }
 
+func (noopVisitor) VisitXmlPi(XmlPi) error {
+	return nil
+}
+
+func (noopVisitor) VisitXmlConcat(XmlConcat) error {
+	return nil
+}
+
 func (noopVisitor) VisitXmlAgg(XmlAgg) error {
+	return nil
+}
+
+func (noopVisitor) VisitXmlRoot(XmlRoot) error {
+	return nil
+}
+
+func (noopVisitor) VisitXmlForest(XmlForest) error {
 	return nil
 }
