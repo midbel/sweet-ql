@@ -488,6 +488,19 @@ func (r *ambiguousName) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
+func (r *ambiguousName) VisitName(name ast.Name) error {
+	if len(name.Parts) == 1 {
+		i := Issue{
+			Position: name.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use a qualified name to avoid ambiguity between identifier",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
 type literalVisitor struct {
 	ast.Visitor
 	check func(ast.Value) error
