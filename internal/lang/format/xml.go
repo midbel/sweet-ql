@@ -116,11 +116,16 @@ func (w *Writer) VisitXmlPi(elem ast.XmlPi) error {
 	w.WriteKeyword("name")
 	w.WriteBlank()
 	elem.Name.Accept(w)
+	if elem.Body != nil {
+		w.WriteComma()
+		w.WriteNL()
+		w.WritePrefix()
+		elem.Body.Accept(w)
+	}
 	w.WriteNL()
 	w.Leave()
 	w.WritePrefix()
 	w.WriteString(")")
-	return nil
 	return nil
 }
 
