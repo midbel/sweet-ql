@@ -242,7 +242,7 @@ var ansi = [][]string{
 	{"no"},
 	{"no", "value"},
 	{"element", "name"},
-	{"null", "on ", "null"},
+	{"null", "on", "null"},
 	{"absent", "on", "null"},
 }
 

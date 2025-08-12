@@ -18,6 +18,13 @@ const (
 	DescOrder
 )
 
+type OnNull int8
+
+const (
+	NullOnNull OnNull = 1 << iota
+	AbsentOnNull
+)
+
 type FrameRow int
 
 const (

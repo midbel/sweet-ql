@@ -107,6 +107,58 @@ func (w *Writer) VisitXmlNamespace(elem ast.XmlNamespace) error {
 	return nil
 }
 
+func (w *Writer) VisitXmlPi(elem ast.XmlPi) error {
+	w.WriteCall("xmlpi")
+	w.WriteString("(")
+	w.WriteNL()
+	w.Enter()
+	w.WritePrefix()
+	w.WriteKeyword("name")
+	w.WriteBlank()
+	elem.Name.Accept(w)
+	w.WriteNL()
+	w.Leave()
+	w.WritePrefix()
+	w.WriteString(")")
+	return nil
+	return nil
+}
+
+func (w *Writer) VisitXmlRoot(elem ast.XmlRoot) error {
+	w.WriteCall("xmlroot")
+	w.WriteString("(")
+	w.WriteNL()
+	w.Enter()
+	w.WritePrefix()
+	elem.Root.Accept(w)
+	if elem.Version != "" {
+		w.WriteComma()
+		w.WriteNL()
+		w.WritePrefix()
+		w.WriteKeyword("version")
+		w.WriteBlank()
+		if elem.Version == "NO VALUE" {
+			w.WriteKeyword(elem.Version)
+		} else {
+			w.WriteQuoted(elem.Version)
+
+		}
+	}
+	if elem.Standalone != "" {
+		w.WriteComma()
+		w.WriteNL()
+		w.WritePrefix()
+		w.WriteKeyword("standalone")
+		w.WriteBlank()
+		w.WriteKeyword(elem.Standalone)
+	}
+	w.WriteNL()
+	w.Leave()
+	w.WritePrefix()
+	w.WriteString(")")
+	return nil
+}
+
 func (w *Writer) VisitXmlText(elem ast.XmlText) error {
 	w.WriteCall("xmltext")
 	w.WriteString("(")
@@ -132,6 +184,73 @@ func (w *Writer) VisitXmlAgg(elem ast.XmlAgg) error {
 	elem.Body.Accept(w)
 	w.WriteNL()
 	w.Leave()
+	w.WritePrefix()
+	w.WriteString(")")
+	return nil
+}
+
+func (w *Writer) VisitXmlConcat(elem ast.XmlConcat) error {
+	w.WriteCall("xmlconcat")
+	w.WriteString("(")
+	w.Enter()
+	for i, n := range elem.Args {
+		if i > 0 {
+			w.WriteComma()
+		}
+		w.WriteNL()
+		w.WritePrefix()
+		n.Accept(w)
+	}
+	w.Leave()
+	w.WriteNL()
+	w.WritePrefix()
+	w.WriteString(")")
+	return nil
+}
+
+func (w *Writer) VisitXmlForest(elem ast.XmlForest) error {
+	w.WriteCall("xmlforest")
+	w.WriteString("(")
+	w.Enter()
+	for j, n := range elem.Args {
+		if j > 0 {
+			w.WriteComma()
+		}
+		i, ok := n.(ast.XmlForestItem)
+		if !ok {
+			continue
+		}
+		w.WriteNL()
+		w.WritePrefix()
+		if i.Name != nil {
+			w.WriteKeyword("element")
+			w.WriteBlank()
+			w.WriteKeyword("name")
+			w.WriteBlank()
+			i.Name.Accept(w)
+			w.WriteBlank()
+		}
+		i.Node.Accept(w)
+		switch i.OnNull {
+		case ast.NullOnNull:
+			w.WriteBlank()
+			w.WriteKeyword("null")
+			w.WriteBlank()
+			w.WriteKeyword("on")
+			w.WriteBlank()
+			w.WriteKeyword("null")
+		case ast.AbsentOnNull:
+			w.WriteBlank()
+			w.WriteKeyword("absent")
+			w.WriteBlank()
+			w.WriteKeyword("on")
+			w.WriteBlank()
+			w.WriteKeyword("null")
+		default:
+		}
+	}
+	w.Leave()
+	w.WriteNL()
 	w.WritePrefix()
 	w.WriteString(")")
 	return nil

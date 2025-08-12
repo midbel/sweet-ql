@@ -120,18 +120,11 @@ func (x XmlAgg) Accept(visit Visitor) error {
 	return visit.VisitXmlAgg(x)
 }
 
-type ForestOnNull int8
-
-const (
-	NullOnNull ForestOnNull = 1 << iota
-	AbsentOnNull
-)
-
 type XmlForestItem struct {
 	token.Position
 	Name Node
 	Node
-	OnNull ForestOnNull
+	OnNull OnNull
 }
 
 func (x XmlForestItem) Pos() token.Position {
