@@ -8,6 +8,7 @@ const (
 	TypeText
 	TypeDate
 	TypeBool
+	TypeXml
 	TypeNull
 )
 

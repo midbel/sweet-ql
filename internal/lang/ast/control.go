@@ -1,9 +1,6 @@
 package ast
 
 import (
-	"slices"
-
-	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -79,11 +76,6 @@ func (c Case) Accept(visit Visitor) error {
 	return visit.VisitCase(c)
 }
 
-func (c Case) GetStatement() []Node {
-	all := slx.One(c.Cdt)
-	return slices.Concat(all, c.Body, slx.One(c.Else))
-}
-
 type When struct {
 	token.Position
 	Cdt  Node
@@ -96,10 +88,6 @@ func (w When) Pos() token.Position {
 
 func (w When) Accept(visit Visitor) error {
 	return visit.VisitWhen(w)
-}
-
-func (w When) GetStatement() []Node {
-	return slx.Make(w.Cdt, w.Body)
 }
 
 type Set struct {

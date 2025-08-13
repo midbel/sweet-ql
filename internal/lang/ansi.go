@@ -17,6 +17,35 @@ type Parser interface {
 	Query() string
 }
 
+type FunctionType int8
+
+const (
+	TypeDefault FunctionType = 1 << iota
+	TypeAggr
+	TypeWindow
+)
+
+func (t FunctionType) IsAggregate() bool {
+	return t&TypeAggr == TypeAggr
+}
+
+func (t FunctionType) IsWindow() bool {
+	return t&TypeWindow == TypeWindow
+}
+
+type FunctionArg struct {
+	Name string
+	Type ast.StaticType
+}
+
+type Function struct {
+	Name       string
+	Type       FunctionType
+	Args       []FunctionArg
+	Variadic   bool
+	ReturnType ast.StaticType
+}
+
 var AggregateFunctions = []string{
 	"MAX",
 	"MIN",

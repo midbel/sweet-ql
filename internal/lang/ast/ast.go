@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -16,6 +15,13 @@ type CommentedNode struct {
 	After  string
 }
 
+func (n CommentedNode) Get() Node {
+	if len(n.Before) == 0 && n.After == "" {
+		return n.Node
+	}
+	return n
+}
+
 func (n CommentedNode) Pos() token.Position {
 	var p token.Position
 	return p
@@ -23,13 +29,6 @@ func (n CommentedNode) Pos() token.Position {
 
 func (n CommentedNode) Accept(visit Visitor) error {
 	return nil
-}
-
-func (n CommentedNode) Get() Node {
-	if len(n.Before) == 0 && n.After == "" {
-		return n.Node
-	}
-	return n
 }
 
 type Returning struct {
@@ -193,13 +192,6 @@ func (s WithStatement) Accept(visit Visitor) error {
 	return visit.VisitWith(s)
 }
 
-func (s WithStatement) Get() Node {
-	if len(s.Queries) == 0 {
-		return s.Node
-	}
-	return s
-}
-
 type ValuesStatement struct {
 	token.Position
 
@@ -255,10 +247,6 @@ func (s UnionStatement) Accept(visit Visitor) error {
 	return visit.VisitUnion(s)
 }
 
-func (s UnionStatement) GetNode() []Node {
-	return slx.Make(s.Left, s.Right)
-}
-
 type IntersectStatement struct {
 	token.Position
 
@@ -276,10 +264,6 @@ func (s IntersectStatement) Accept(visit Visitor) error {
 	return visit.VisitIntersect(s)
 }
 
-func (s IntersectStatement) GetNode() []Node {
-	return slx.Make(s.Left, s.Right)
-}
-
 type ExceptStatement struct {
 	token.Position
 
@@ -295,10 +279,6 @@ func (s ExceptStatement) Pos() token.Position {
 
 func (s ExceptStatement) Accept(visit Visitor) error {
 	return visit.VisitExcept(s)
-}
-
-func (s ExceptStatement) GetNode() []Node {
-	return slx.Make(s.Left, s.Right)
 }
 
 type MatchStatement struct {

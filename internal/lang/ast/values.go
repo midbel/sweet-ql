@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -51,10 +50,6 @@ func (g Group) Accept(visit Visitor) error {
 	return visit.VisitGroup(g)
 }
 
-func (g Group) GetStatement() []Node {
-	return slx.One(g.Node)
-}
-
 type Cast struct {
 	token.Position
 
@@ -95,10 +90,6 @@ func (n Not) Accept(visit Visitor) error {
 	return visit.VisitNot(n)
 }
 
-func (n Not) GetStatement() []Node {
-	return slx.One(n.Node)
-}
-
 type Collate struct {
 	token.Position
 	Ident Node
@@ -126,10 +117,6 @@ func (e Exists) Accept(visit Visitor) error {
 	return visit.VisitExists(e)
 }
 
-func (e Exists) GetStatement() []Node {
-	return slx.One(e.Node)
-}
-
 type Call struct {
 	token.Position
 	Distinct bool
@@ -145,10 +132,6 @@ func (c Call) Pos() token.Position {
 
 func (c Call) Accept(visit Visitor) error {
 	return visit.VisitCallFunc(c)
-}
-
-func (c Call) GetStatement() []Node {
-	return c.Args
 }
 
 func (c Call) GetIdent() string {
@@ -172,10 +155,6 @@ func (_ Row) Accept(visit Visitor) error {
 	return nil
 }
 
-func (r Row) GetStatement() []Node {
-	return r.Values
-}
-
 type Unary struct {
 	token.Position
 	Right Node
@@ -188,10 +167,6 @@ func (u Unary) Pos() token.Position {
 
 func (u Unary) Accept(visit Visitor) error {
 	return visit.VisitUnary(u)
-}
-
-func (u Unary) GetStatement() []Node {
-	return slx.One(u.Right)
 }
 
 type Binary struct {
@@ -207,10 +182,6 @@ func (b Binary) Pos() token.Position {
 
 func (b Binary) Accept(visit Visitor) error {
 	return visit.VisitBinary(b)
-}
-
-func (b Binary) GetStatement() []Node {
-	return slx.Make(b.Left, b.Right)
 }
 
 func (b Binary) IsEquality() bool {
@@ -234,10 +205,6 @@ func (a All) Accept(visit Visitor) error {
 	return visit.VisitAll(a)
 }
 
-func (a All) GetStatement() []Node {
-	return slx.One(a.Node)
-}
-
 type Any struct {
 	token.Position
 	Node
@@ -249,10 +216,6 @@ func (a Any) Pos() token.Position {
 
 func (a Any) Accept(visit Visitor) error {
 	return visit.VisitAny(a)
-}
-
-func (a Any) GetStatement() []Node {
-	return slx.One(a.Node)
 }
 
 type Is struct {
@@ -269,10 +232,6 @@ func (i Is) Accept(visit Visitor) error {
 	return visit.VisitIs(i)
 }
 
-func (i Is) GetStatement() []Node {
-	return slx.One(i.Value)
-}
-
 type In struct {
 	token.Position
 	Ident Node
@@ -285,10 +244,6 @@ func (i In) Pos() token.Position {
 
 func (i In) Accept(visit Visitor) error {
 	return visit.VisitIn(i)
-}
-
-func (i In) GetStatement() []Node {
-	return slx.One(i.Value)
 }
 
 type Between struct {
@@ -304,10 +259,6 @@ func (b Between) Pos() token.Position {
 
 func (b Between) Accept(visit Visitor) error {
 	return visit.VisitBetween(b)
-}
-
-func (b Between) GetStatement() []Node {
-	return slx.Make(b.Lower, b.Upper)
 }
 
 type Placeholder struct {
