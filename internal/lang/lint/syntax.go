@@ -558,7 +558,7 @@ func (r *noLiteralJoin) visitValue(value ast.Value) error {
 		Position: value.Pos(),
 		Severity: r.severity,
 		Rule:     r.Name(),
-		Reason:   "bouh",
+		Reason:   "avoid using literal values in join",
 	}
 	r.issues = append(r.issues, i)
 	return nil
@@ -922,32 +922,4 @@ func (r *stdOperator) VisitBinary(binary ast.Binary) error {
 		r.issues = append(r.issues, i)
 	}
 	return nil
-}
-
-type unconditionalMatch struct {
-	ast.Visitor
-	severity Severity
-	issues   []Issue
-}
-
-// check that only one unconditional match in a merge statement is present
-func UnconditionalMatch(level Severity) Rule {
-	return unconditionalMatch{
-		Visitor:  ast.Noop(),
-		severity: level,
-	}
-}
-
-func (_ unconditionalMatch) Name() string {
-	return "merge-unconditional-match"
-}
-
-func (r unconditionalMatch) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
-		err = nil
-	}
-	return r.issues, err
 }

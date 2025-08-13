@@ -235,7 +235,7 @@ func TestDuplicateField(t *testing.T) {
 	runTests(t, tests, DuplicateField(Warning))
 }
 
-func TestNoStarRule(t *testing.T) {
+func TestNoStar(t *testing.T) {
 	tests := []TestCase{
 		{
 			Query:  "select id, foo from foobar",
