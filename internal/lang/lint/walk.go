@@ -21,7 +21,18 @@ func Walk(rule ast.Visitor) ast.Visitor {
 	}
 }
 
-func (v walkVisitor) VisitValues(_ ast.ValuesStatement) error {
+func (v walkVisitor) VisitValues(node ast.ValuesStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
+		return err
+	}
+	for i := range node.List {
+		if err := node.List[i].Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -90,7 +101,29 @@ func (v walkVisitor) VisitExcept(node ast.ExceptStatement) error {
 	return node.Right.Accept(v)
 }
 
-func (v walkVisitor) VisitInsert(_ ast.InsertStatement) error {
+func (v walkVisitor) VisitInsert(node ast.InsertStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
+		return err
+	}
+	if err := node.Table.Accept(v); err != nil {
+		return err
+	}
+	for i := range node.Columns {
+		if err := node.Columns[i].Accept(v); err != nil {
+			return err
+		}
+	}
+	if err := node.Values.Accept(v); err != nil {
+		return err
+	}
+	if node.Returning != nil {
+		if err := node.Returning.Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

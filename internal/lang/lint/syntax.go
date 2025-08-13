@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/midbel/sweet/internal/lang/ast"
-	"github.com/midbel/sweet/internal/slx"
 )
 
 type noStar struct {
@@ -97,6 +96,10 @@ func (r *duplicatedField) checkColumns(columns []ast.Node) {
 	for _, q := range columns {
 		var id []ast.Identifier
 		switch q := q.(type) {
+		default:
+			continue
+		case ast.Alias:
+			id = append(id, q.Identifier)
 		case ast.Name:
 			if q.All() && len(columns) > 1 {
 				i := Issue{
@@ -106,13 +109,8 @@ func (r *duplicatedField) checkColumns(columns []ast.Node) {
 					Reason:   "implicit duplicated field because of *",
 				}
 				r.issues = append(r.issues, i)
-				continue
 			}
 			id = q.Parts
-		case ast.Alias:
-			id = slx.One(q.Identifier)
-		default:
-			continue
 		}
 		ok := slices.ContainsFunc(names, func(n []ast.Identifier) bool {
 			return slices.Equal(id, n)
