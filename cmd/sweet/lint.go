@@ -12,7 +12,7 @@ import (
 
 var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"no-star":                  lint.NoStar,
-	"duplicate-field":          lint.DuplicateField,
+	"duplicated-field":         lint.DuplicatedField,
 	"ambiguous-name":           lint.AmbiguousName,
 	"no-cte":                   lint.NoCte,
 	"cte-columns":              lint.CteColumns,
@@ -27,7 +27,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"enforce-type":             lint.EnforceType,
 	"enforce-fetch":            lint.EnforceFetch,
 	"enforce-limit":            lint.EnforceFetch,
-	"set-columns-count":        lint.SetColumnsCount,
+	"columns-count":            lint.ColumnsCount,
 	"set-offset-last":          lint.SetOffsetFetchLast,
 	"set-order-last":           lint.SetOrderLast,
 	"no-subquery":              lint.NoSubquery,

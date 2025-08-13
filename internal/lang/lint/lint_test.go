@@ -141,7 +141,7 @@ func TestRecommandedQuoted(t *testing.T) {
 	runTests(t, tests, RecommandedQuoted(Warning))
 }
 
-func TestSetColumnsCount(t *testing.T) {
+func TestColumnsCount(t *testing.T) {
 	tests := []TestCase{
 		{
 			Query:  "select id, name from foo union select id, name from bar",
@@ -164,7 +164,7 @@ func TestSetColumnsCount(t *testing.T) {
 			Issues: 1,
 		},
 	}
-	runTests(t, tests, SetColumnsCount(Warning))
+	runTests(t, tests, ColumnsCount(Warning))
 }
 
 func TestMissingWhere(t *testing.T) {
@@ -232,7 +232,7 @@ func TestDuplicateField(t *testing.T) {
 			Issues: 1,
 		},
 	}
-	runTests(t, tests, DuplicateField(Warning))
+	runTests(t, tests, DuplicatedField(Warning))
 }
 
 func TestNoStar(t *testing.T) {
