@@ -452,7 +452,23 @@ func (v walkVisitor) VisitCreateProcedure(_ ast.CreateProcedureStatement) error 
 	return nil
 }
 
-func (v walkVisitor) VisitCreateTable(_ ast.CreateTableStatement) error {
+func (v walkVisitor) VisitCreateTable(node ast.CreateTableStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		return doneVisiting(err)
+	}
+	if err := node.Name.Accept(v); err != nil {
+		return err
+	}
+	for i := range node.Columns {
+		if err := node.Columns[i].Accept(v); err != nil {
+			return err
+		}
+	}
+	for i := range node.Constraints {
+		if err := node.Constraints[i].Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

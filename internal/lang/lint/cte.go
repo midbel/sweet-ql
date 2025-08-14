@@ -2,7 +2,6 @@ package lint
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/token"
@@ -42,53 +41,6 @@ func (r *noCte) VisitWith(with ast.WithStatement) error {
 		Reason:   "prefer using subqueries over common table expression",
 	}
 	r.issues = append(r.issues, i)
-	return errStop
-}
-
-type cteDuplicate struct {
-	ast.Visitor
-	severity Severity
-	issues   []Issue
-}
-
-func CteDuplicate(level Severity) Rule {
-	return &cteDuplicate{
-		Visitor:  ast.Noop(),
-		severity: level,
-	}
-}
-
-func (_ *cteDuplicate) Name() string {
-	return "cte-duplicate"
-}
-
-func (r *cteDuplicate) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
-		err = nil
-	}
-	return r.issues, err
-}
-
-func (r *cteDuplicate) VisitWith(with ast.WithStatement) error {
-	var names = make(map[string]struct{})
-	for _, q := range with.Queries {
-		q, ok := q.(ast.CteStatement)
-		if !ok {
-			return fmt.Errorf("%s: unexpected query type", r.Name())
-		}
-		if _, ok := names[q.Ident]; ok {
-			i := Issue{
-				Position: q.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "duplicate identifier in with statement",
-			}
-			r.issues = append(r.issues, i)
-		}
-		names[q.Ident] = struct{}{}
-	}
 	return errStop
 }
 
@@ -175,125 +127,6 @@ func (r *cteUnused) update(name string) {
 	if _, ok := r.names[name]; ok {
 		r.names[name]++
 	}
-}
-
-type cteColumns struct {
-	ast.Visitor
-	severity Severity
-	issues   []Issue
-}
-
-func CteColumns(level Severity) Rule {
-	return &cteColumns{
-		Visitor:  ast.Noop(),
-		severity: level,
-	}
-}
-
-func (_ *cteColumns) Name() string {
-	return "cte-columns"
-}
-
-func (r *cteColumns) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
-		err = nil
-	}
-	return r.issues, err
-}
-
-func (r *cteColumns) VisitWith(with ast.WithStatement) error {
-	sub := Walk(r)
-	for _, q := range with.Queries {
-		err := q.Accept(sub)
-		if err != nil {
-			return err
-		}
-	}
-	return errStop
-}
-
-func (r *cteColumns) VisitCte(cte ast.CteStatement) error {
-	if len(cte.Columns) == 0 {
-		i := Issue{
-			Position: cte.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "specify column names explicitly in common table expression",
-		}
-		r.issues = append(r.issues, i)
-	}
-	return errStop
-}
-
-type cteColumnsCount struct {
-	ast.Visitor
-	severity Severity
-	issues   []Issue
-}
-
-func CteColumnsCount(level Severity) Rule {
-	return &cteColumnsCount{
-		Visitor:  ast.Noop(),
-		severity: level,
-	}
-}
-
-func (_ cteColumnsCount) Name() string {
-	return "cte-columns-count"
-}
-
-func (r *cteColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
-		err = nil
-	}
-	return r.issues, err
-}
-
-func (r *cteColumnsCount) VisitWith(with ast.WithStatement) error {
-	sub := Walk(r)
-	for _, q := range with.Queries {
-		err := q.Accept(sub)
-		if err != nil && !errors.Is(err, errStop) {
-			return err
-		}
-	}
-	return errStop
-}
-
-func (r *cteColumnsCount) VisitCte(cte ast.CteStatement) error {
-	var get func(ast.Node) (int, error)
-	get = func(q ast.Node) (int, error) {
-		switch c := q.(type) {
-		case ast.SelectStatement:
-			return len(c.Columns), nil
-		case ast.UnionStatement:
-			return get(c.Left)
-		case ast.ExceptStatement:
-			return get(c.Left)
-		case ast.IntersectStatement:
-			return get(c.Left)
-		default:
-			return 0, fmt.Errorf("%s: unexpected query type", r.Name())
-		}
-	}
-	count, err := get(cte.Node)
-	if err != nil {
-		return err
-	}
-	if count != len(cte.Columns) {
-		i := Issue{
-			Position: cte.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "number of columns returned by select does not match number of columns declared by common table expression",
-		}
-		r.issues = append(r.issues, i)
-	}
-	return errStop
 }
 
 // check that fields qualified by cte are exposed by it

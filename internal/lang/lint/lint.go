@@ -113,10 +113,7 @@ func LintDefault(r io.Reader) ([]Issue, error) {
 func DefaultLinter() *Linter {
 	rules := []Rule{
 		NoStar(Error),
-		CteColumns(Error),
-		CteColumnsCount(Error),
 		CteUnused(Warning),
-		CteDuplicate(Error),
 		NoSubquery(Warning),
 		GroupbyColumns(Error),
 	}

@@ -12,13 +12,10 @@ import (
 
 var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"no-star":                  lint.NoStar,
-	"duplicated-field":         lint.DuplicatedField,
+	"duplicated-name":          lint.DuplicatedName,
 	"ambiguous-name":           lint.AmbiguousName,
 	"no-cte":                   lint.NoCte,
-	"cte-columns":              lint.CteColumns,
-	"cte-columns-count":        lint.CteColumnsCount,
 	"cte-unused":               lint.CteUnused,
-	"cte-duplicate":            lint.CteDuplicate,
 	"cte-name":                 lint.CteNames,
 	"std-operator":             lint.StdOperator,
 	"self-compare":             lint.SelfCompare,
@@ -28,6 +25,7 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"enforce-fetch":            lint.EnforceFetch,
 	"enforce-limit":            lint.EnforceFetch,
 	"columns-count":            lint.ColumnsCount,
+	"columns-names":            lint.ColumnsNames,
 	"set-offset-last":          lint.SetOffsetFetchLast,
 	"set-order-last":           lint.SetOrderLast,
 	"no-subquery":              lint.NoSubquery,

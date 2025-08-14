@@ -49,24 +49,24 @@ func (r *noStar) VisitName(name ast.Name) error {
 	return nil
 }
 
-type duplicatedField struct {
+type duplicatedName struct {
 	ast.Visitor
 	issues   []Issue
 	severity Severity
 }
 
-func DuplicatedField(level Severity) Rule {
-	return &duplicatedField{
+func DuplicatedName(level Severity) Rule {
+	return &duplicatedName{
 		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ *duplicatedField) Name() string {
-	return "duplicated-field"
+func (_ *duplicatedName) Name() string {
+	return "duplicated-name"
 }
 
-func (r *duplicatedField) Verify(stmt ast.Node) ([]Issue, error) {
+func (r *duplicatedName) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
 	err := stmt.Accept(Walk(r))
@@ -76,22 +76,52 @@ func (r *duplicatedField) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *duplicatedField) VisitInsert(stmt ast.InsertStatement) error {
+func (r *duplicatedName) VisitCreateTable(stmt ast.CreateTableStatement) error {
+	return nil
+}
+
+func (r *duplicatedName) VisitCreateView(stmt ast.CreateViewStatement) error {
 	r.checkColumns(stmt.Columns)
 	return nil
 }
 
-func (r *duplicatedField) VisitCte(stmt ast.CteStatement) error {
+func (r *duplicatedName) VisitInsert(stmt ast.InsertStatement) error {
 	r.checkColumns(stmt.Columns)
 	return nil
 }
 
-func (r *duplicatedField) VisitSelect(stmt ast.SelectStatement) error {
+func (r *duplicatedName) VisitWith(stmt ast.WithStatement) error {
+	names := make(map[string]struct{})
+	for _, q := range stmt.Queries {
+		q, ok := q.(ast.CteStatement)
+		if !ok {
+			return fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		if _, ok := names[q.Ident]; ok {
+			i := Issue{
+				Position: q.Pos(),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "duplicated name",
+			}
+			r.issues = append(r.issues, i)
+		}
+		names[q.Ident] = struct{}{}
+	}
+	return nil
+}
+
+func (r *duplicatedName) VisitCte(stmt ast.CteStatement) error {
 	r.checkColumns(stmt.Columns)
 	return nil
 }
 
-func (r *duplicatedField) checkColumns(columns []ast.Node) {
+func (r *duplicatedName) VisitSelect(stmt ast.SelectStatement) error {
+	r.checkColumns(stmt.Columns)
+	return nil
+}
+
+func (r *duplicatedName) checkColumns(columns []ast.Node) {
 	var names [][]ast.Identifier
 	for _, q := range columns {
 		var id []ast.Identifier
@@ -106,7 +136,7 @@ func (r *duplicatedField) checkColumns(columns []ast.Node) {
 					Position: q.Pos(),
 					Severity: r.severity,
 					Rule:     r.Name(),
-					Reason:   "implicit duplicated field because of *",
+					Reason:   "implicit duplicated name because of *",
 				}
 				r.issues = append(r.issues, i)
 			}
@@ -120,13 +150,66 @@ func (r *duplicatedField) checkColumns(columns []ast.Node) {
 				Position: q.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "duplicated field",
+				Reason:   "duplicated name",
 			}
 			r.issues = append(r.issues, i)
 		} else {
 			names = append(names, id)
 		}
 	}
+}
+
+type columnsNames struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func ColumnsNames(level Severity) Rule {
+	return &columnsNames{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *columnsNames) Name() string {
+	return "columns-name"
+}
+
+func (r *columnsNames) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *columnsNames) VisitCreateView(stmt ast.CreateViewStatement) error {
+	if len(stmt.Columns) == 0 {
+		i := Issue{
+			Position: stmt.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "define explicitly column names returned by query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *columnsNames) VisitCte(stmt ast.CteStatement) error {
+	if len(stmt.Columns) == 0 {
+		i := Issue{
+			Position: stmt.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "define explicitly column names returned by query",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 type columnsCount struct {
@@ -154,6 +237,26 @@ func (r *columnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 		err = nil
 	}
 	return r.issues, err
+}
+
+func (r *columnsCount) VisitCreateView(stmt ast.CreateViewStatement) error {
+	if len(stmt.Columns) == 0 {
+		return nil
+	}
+	count, err := r.getColumnsCount(stmt.Select)
+	if err != nil {
+		return err
+	}
+	if len(stmt.Columns) != count {
+		i := Issue{
+			Position: stmt.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "number of columns mismatched",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }
 
 func (r *columnsCount) VisitInsert(stmt ast.InsertStatement) error {
@@ -195,15 +298,14 @@ func (r *columnsCount) VisitInsert(stmt ast.InsertStatement) error {
 }
 
 func (r *columnsCount) VisitCte(stmt ast.CteStatement) error {
-	count := len(stmt.Columns)
-	if count == 0 {
+	if len(stmt.Columns) == 0 {
 		return nil
 	}
-	q, ok := stmt.Node.(ast.SelectStatement)
-	if !ok {
-		return fmt.Errorf("%s: unexpected query type", r.Name())
+	count, err := r.getColumnsCount(stmt.Node)
+	if err != nil {
+		return err
 	}
-	if len(q.Columns) != count {
+	if len(stmt.Columns) != count {
 		i := Issue{
 			Position: stmt.Pos(),
 			Severity: r.severity,
@@ -225,6 +327,21 @@ func (r *columnsCount) VisitExcept(stmt ast.ExceptStatement) error {
 
 func (r *columnsCount) VisitIntersect(stmt ast.IntersectStatement) error {
 	return r.checkSet(stmt.Left, stmt.Right)
+}
+
+func (r *columnsCount) getColumnsCount(node ast.Node) (int, error) {
+	switch c := node.(type) {
+	case ast.SelectStatement:
+		return len(c.Columns), nil
+	case ast.UnionStatement:
+		return r.getColumnsCount(c.Left)
+	case ast.ExceptStatement:
+		return r.getColumnsCount(c.Left)
+	case ast.IntersectStatement:
+		return r.getColumnsCount(c.Left)
+	default:
+		return 0, fmt.Errorf("%s: unexpected query type", r.Name())
+	}
 }
 
 func (r *columnsCount) checkSet(left, right ast.Node) error {
