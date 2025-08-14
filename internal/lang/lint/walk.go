@@ -11,6 +11,20 @@ var (
 	errVisit = errors.New("don't visit node")
 )
 
+func doneVisiting(err error) error {
+	if errors.Is(err, errVisit) {
+		return nil
+	}
+	return err
+}
+
+func stopVisiting(err error) error {
+	if errors.Is(err, errStop) {
+		return nil
+	}
+	return err
+}
+
 type walkVisitor struct {
 	rule ast.Visitor
 }
@@ -23,10 +37,7 @@ func Walk(rule ast.Visitor) ast.Visitor {
 
 func (v walkVisitor) VisitValues(node ast.ValuesStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
-		return err
+		return doneVisiting(err)
 	}
 	for i := range node.List {
 		if err := node.List[i].Accept(v); err != nil {
@@ -38,10 +49,7 @@ func (v walkVisitor) VisitValues(node ast.ValuesStatement) error {
 
 func (v walkVisitor) VisitSelect(node ast.SelectStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
-		return err
+		return doneVisiting(err)
 	}
 	for _, c := range node.Columns {
 		if err := c.Accept(v); err != nil {
@@ -73,7 +81,7 @@ func (v walkVisitor) VisitSelect(node ast.SelectStatement) error {
 
 func (v walkVisitor) VisitUnion(node ast.UnionStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := node.Left.Accept(v); err != nil {
 		return err
@@ -83,7 +91,7 @@ func (v walkVisitor) VisitUnion(node ast.UnionStatement) error {
 
 func (v walkVisitor) VisitIntersect(node ast.IntersectStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := node.Left.Accept(v); err != nil {
 		return err
@@ -93,7 +101,7 @@ func (v walkVisitor) VisitIntersect(node ast.IntersectStatement) error {
 
 func (v walkVisitor) VisitExcept(node ast.ExceptStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := node.Left.Accept(v); err != nil {
 		return err
@@ -103,10 +111,7 @@ func (v walkVisitor) VisitExcept(node ast.ExceptStatement) error {
 
 func (v walkVisitor) VisitInsert(node ast.InsertStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
-		return err
+		return doneVisiting(err)
 	}
 	if err := node.Table.Accept(v); err != nil {
 		return err
@@ -129,7 +134,7 @@ func (v walkVisitor) VisitInsert(node ast.InsertStatement) error {
 
 func (v walkVisitor) VisitUpdate(node ast.UpdateStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := node.Table.Accept(v); err != nil {
 		return err
@@ -147,7 +152,7 @@ func (v walkVisitor) VisitUpdate(node ast.UpdateStatement) error {
 
 func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := node.Table.Accept(v); err != nil {
 		return err
@@ -160,10 +165,7 @@ func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
 
 func (v walkVisitor) VisitTruncate(node ast.TruncateStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
-		return err
+		return doneVisiting(err)
 	}
 	for i := range node.Tables {
 		if err := node.Tables[i].Accept(v); err != nil {
@@ -175,7 +177,7 @@ func (v walkVisitor) VisitTruncate(node ast.TruncateStatement) error {
 
 func (v walkVisitor) VisitWith(node ast.WithStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	for _, q := range node.Queries {
 		if err := q.Accept(v); err != nil {
@@ -187,7 +189,7 @@ func (v walkVisitor) VisitWith(node ast.WithStatement) error {
 
 func (v walkVisitor) VisitCte(node ast.CteStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	return node.Node.Accept(v)
 }
@@ -242,10 +244,7 @@ func (v walkVisitor) VisitRollbackSavepoint(_ ast.RollbackSavepoint) error {
 
 func (v walkVisitor) VisitJoin(join ast.Join) error {
 	if err := join.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
-		return err
+		return doneVisiting(err)
 	}
 	if err := join.Table.Accept(v); err != nil {
 		return err
@@ -281,6 +280,7 @@ func (v walkVisitor) VisitOffset(offset ast.Offset) error {
 		if errors.Is(err, errStop) {
 			err = nil
 		}
+		return err
 	}
 	if err := offset.Count.Accept(v); err != nil {
 		return err
@@ -290,7 +290,7 @@ func (v walkVisitor) VisitOffset(offset ast.Offset) error {
 
 func (v walkVisitor) VisitBinary(binary ast.Binary) error {
 	if err := binary.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := binary.Left.Accept(v); err != nil {
 		return err
@@ -300,7 +300,7 @@ func (v walkVisitor) VisitBinary(binary ast.Binary) error {
 
 func (v walkVisitor) VisitUnary(unary ast.Unary) error {
 	if err := unary.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	return unary.Right.Accept(v)
 }
@@ -311,10 +311,7 @@ func (v walkVisitor) VisitCallFunc(_ ast.Call) error {
 
 func (v walkVisitor) VisitList(list ast.List) error {
 	if err := list.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
-		return err
+		return doneVisiting(err)
 	}
 	for i := range list.Values {
 		if err := list.Values[i].Accept(v); err != nil {
@@ -330,7 +327,7 @@ func (v walkVisitor) VisitCollate(_ ast.Collate) error {
 
 func (v walkVisitor) VisitIn(in ast.In) error {
 	if err := in.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := in.Ident.Accept(v); err != nil {
 		return err
@@ -340,7 +337,7 @@ func (v walkVisitor) VisitIn(in ast.In) error {
 
 func (v walkVisitor) VisitIs(is ast.Is) error {
 	if err := is.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := is.Ident.Accept(v); err != nil {
 		return err
@@ -350,14 +347,14 @@ func (v walkVisitor) VisitIs(is ast.Is) error {
 
 func (v walkVisitor) VisitExists(exists ast.Exists) error {
 	if err := exists.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	return exists.Node.Accept(v)
 }
 
 func (v walkVisitor) VisitBetween(between ast.Between) error {
 	if err := between.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	if err := between.Ident.Accept(v); err != nil {
 		return err
@@ -370,25 +367,21 @@ func (v walkVisitor) VisitBetween(between ast.Between) error {
 
 func (v walkVisitor) VisitAll(all ast.All) error {
 	if err := all.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
+		return doneVisiting(err)
 	}
 	return all.Node.Accept(v)
 }
 
 func (v walkVisitor) VisitAny(any ast.Any) error {
 	if err := any.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
+		return doneVisiting(err)
 	}
 	return any.Node.Accept(v)
 }
 
 func (v walkVisitor) VisitNot(not ast.Not) error {
 	if err := not.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	return not.Node.Accept(v)
 }
@@ -403,7 +396,7 @@ func (v walkVisitor) VisitValue(value ast.Value) error {
 
 func (v walkVisitor) VisitAlias(alias ast.Alias) error {
 	if err := alias.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	return alias.Node.Accept(v)
 }
@@ -414,7 +407,7 @@ func (v walkVisitor) VisitName(name ast.Name) error {
 
 func (v walkVisitor) VisitGroup(group ast.Group) error {
 	if err := group.Accept(v.rule); err != nil {
-		return err
+		return doneVisiting(err)
 	}
 	return group.Node.Accept(v)
 }
@@ -473,10 +466,7 @@ func (v walkVisitor) VisitAlterTable(_ ast.AlterTableStatement) error {
 
 func (v walkVisitor) VisitCreateView(node ast.CreateViewStatement) error {
 	if err := node.Accept(v.rule); err != nil {
-		if errors.Is(err, errVisit) {
-			err = nil
-		}
-		return err
+		return doneVisiting(err)
 	}
 	if err := node.Name.Accept(v); err != nil {
 		return err
