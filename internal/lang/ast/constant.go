@@ -7,9 +7,12 @@ const (
 	TypeNumber
 	TypeText
 	TypeDate
+	TypeInterval
 	TypeBool
 	TypeXml
 	TypeNull
+	TypeSet
+	TypeNode
 )
 
 type OrderDir uint8
