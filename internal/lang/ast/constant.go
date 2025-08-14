@@ -1,6 +1,6 @@
 package ast
 
-type StaticType int8
+type StaticType int16
 
 const (
 	TypeAny StaticType = 1 << iota

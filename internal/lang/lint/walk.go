@@ -158,7 +158,18 @@ func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitTruncate(_ ast.TruncateStatement) error {
+func (v walkVisitor) VisitTruncate(node ast.TruncateStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
+		return err
+	}
+	for i := range node.Tables {
+		if err := node.Tables[i].Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -298,7 +309,18 @@ func (v walkVisitor) VisitCallFunc(_ ast.Call) error {
 	return nil
 }
 
-func (v walkVisitor) VisitList(_ ast.List) error {
+func (v walkVisitor) VisitList(list ast.List) error {
+	if err := list.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
+		return err
+	}
+	for i := range list.Values {
+		if err := list.Values[i].Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -346,12 +368,22 @@ func (v walkVisitor) VisitBetween(between ast.Between) error {
 	return between.Upper.Accept(v)
 }
 
-func (v walkVisitor) VisitAll(_ ast.All) error {
-	return nil
+func (v walkVisitor) VisitAll(all ast.All) error {
+	if err := all.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
+	}
+	return all.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitAny(_ ast.Any) error {
-	return nil
+func (v walkVisitor) VisitAny(any ast.Any) error {
+	if err := any.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
+	}
+	return any.Node.Accept(v)
 }
 
 func (v walkVisitor) VisitNot(not ast.Not) error {
@@ -439,8 +471,22 @@ func (v walkVisitor) VisitAlterTable(_ ast.AlterTableStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCreateView(_ ast.CreateViewStatement) error {
-	return nil
+func (v walkVisitor) VisitCreateView(node ast.CreateViewStatement) error {
+	if err := node.Accept(v.rule); err != nil {
+		if errors.Is(err, errVisit) {
+			err = nil
+		}
+		return err
+	}
+	if err := node.Name.Accept(v); err != nil {
+		return err
+	}
+	for i := range node.Columns {
+		if err := node.Columns[i].Accept(v); err != nil {
+			return err
+		}
+	}
+	return node.Select.Accept(v)
 }
 
 func (v walkVisitor) VisitDropView(_ ast.DropViewStatement) error {
