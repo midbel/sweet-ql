@@ -193,3 +193,100 @@ func (r *groupbyAggrFunc) Verify(stmt ast.Node) ([]Issue, error) {
 	}
 	return r.issues, err
 }
+
+func (r *groupbyAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
+	if len(stmt.Columns) > 0 {
+		return nil
+	}
+	for _, c := range stmt.Columns {
+		if a, ok := c.(*ast.Alias); ok {
+			c = a.Node
+		}
+		if c, ok := c.(*ast.Call); ok && lang.IsAggregateFunc(c.GetIdent()) {
+			if len(stmt.Groups) == 0 {
+				i := Issue{
+					Position: c.Pos(),
+					Severity: r.severity,
+					Rule:     r.Name(),
+					Reason:   "aggregate function used but group by clause is empty",
+				}
+				r.issues = append(r.issues, i)
+			}
+		}
+	}
+	return nil
+}
+
+type callFuncVisitor struct {
+	ast.Visitor
+	check func(*ast.Call) error
+}
+
+func visitCallFunc(check func(*ast.Call) error) ast.Visitor {
+	return &callFuncVisitor{
+		Visitor: ast.Noop(),
+		check:   check,
+	}
+}
+
+func (v *callFuncVisitor) VisitCallFunc(call *ast.Call) error {
+	return v.check(call)
+}
+
+// check that only aggregate function are used in having clause
+type havingAggrFunc struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func HavingAggrFunc(level Severity) Rule {
+	return &havingAggrFunc{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *havingAggrFunc) Name() string {
+	return "having-aggr-function"
+}
+
+func (r *havingAggrFunc) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(Walk(r))
+	if errors.Is(err, errStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *havingAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
+	if stmt.Having == nil {
+		return nil
+	}
+	if len(stmt.Groups) == 0 {
+		i := Issue{
+			Position: stmt.Having.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use of having clause without group by",
+		}
+		r.issues = append(r.issues, i)
+		return nil
+	}
+	sub := Walk(visitCallFunc(r.visitCall))
+	return stmt.Having.Accept(sub)
+}
+
+func (r *havingAggrFunc) visitCall(call *ast.Call) error {
+	if !lang.IsAggregateFunc(call.GetIdent()) {
+		i := Issue{
+			Position: call.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "use only aggregate function in having clause",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}

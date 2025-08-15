@@ -40,10 +40,10 @@ func TestStdOperator(t *testing.T) {
 	runTests(t, tests, StdOperator(Warning))
 }
 
-func TestOrderWithFetch(t *testing.T) {
-	tests := []TestCase{}
-	runTests(t, tests, OrderWithFetch(Warning))
-}
+// func TestOrderWithFetch(t *testing.T) {
+// 	tests := []TestCase{}
+// 	runTests(t, tests, OrderWithFetch(Warning))
+// }
 
 func TestEnforceFetch(t *testing.T) {
 	tests := []TestCase{
@@ -205,7 +205,7 @@ func TestMissingWhere(t *testing.T) {
 	runTests(t, tests, MissingWhere(Warning))
 }
 
-func TestDuplicateField(t *testing.T) {
+func TestDuplicatedName(t *testing.T) {
 	tests := []TestCase{
 		{
 			Query:  "select id, name from foobar",
@@ -232,7 +232,7 @@ func TestDuplicateField(t *testing.T) {
 			Issues: 1,
 		},
 	}
-	runTests(t, tests, DuplicatedField(Warning))
+	runTests(t, tests, DuplicatedName(Warning))
 }
 
 func TestNoStar(t *testing.T) {

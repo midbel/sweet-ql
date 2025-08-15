@@ -46,6 +46,8 @@ var supportedRules = map[string]func(lint.Severity) lint.Rule{
 	"groupby-columns":          lint.GroupbyColumns,
 	"no-literal-groupby":       lint.NoLiteralGroupby,
 	"groupby-distinct":         lint.GroupbyDistinct,
+	"grouby-aggr-func":         lint.GroupbyAggrFunc,
+	"having-aggr-func":         lint.HavingAggrFunc,
 }
 
 func runLint(args []string) error {

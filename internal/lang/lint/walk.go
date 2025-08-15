@@ -305,7 +305,15 @@ func (v walkVisitor) VisitUnary(unary *ast.Unary) error {
 	return unary.Right.Accept(v)
 }
 
-func (v walkVisitor) VisitCallFunc(_ *ast.Call) error {
+func (v walkVisitor) VisitCallFunc(call *ast.Call) error {
+	if err := call.Accept(v.rule); err != nil {
+		return doneVisiting(err)
+	}
+	for i := range call.Args {
+		if err := call.Args[i].Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
