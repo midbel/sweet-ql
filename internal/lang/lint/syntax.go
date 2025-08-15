@@ -187,20 +187,17 @@ func (r *columnsNames) Verify(stmt ast.Node) ([]Issue, error) {
 }
 
 func (r *columnsNames) VisitCreateView(stmt *ast.CreateViewStatement) error {
-	if len(stmt.Columns) == 0 {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "define explicitly column names returned by query",
-		}
-		r.issues = append(r.issues, i)
-	}
+	r.checkColumnsCount(stmt.Columns, stmt)
 	return nil
 }
 
 func (r *columnsNames) VisitCte(stmt *ast.CteStatement) error {
-	if len(stmt.Columns) == 0 {
+	r.checkColumnsCount(stmt.Columns, stmt)
+	return nil
+}
+
+func (r *columnsNames) checkColumnsCount(columns []ast.Node, stmt ast.Node) {
+	if len(columns) == 0 {
 		i := Issue{
 			Position: stmt.Pos(),
 			Severity: r.severity,
@@ -209,7 +206,6 @@ func (r *columnsNames) VisitCte(stmt *ast.CteStatement) error {
 		}
 		r.issues = append(r.issues, i)
 	}
-	return nil
 }
 
 type columnsCount struct {

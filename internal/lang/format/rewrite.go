@@ -9,7 +9,7 @@ type rewriteStdOperator struct {
 	ast.Visitor
 }
 
-func (r rewriteStdOperator) VisitBinary(binary ast.Binary) error {
+func (r rewriteStdOperator) VisitBinary(binary *ast.Binary) error {
 	return nil
 }
 
@@ -28,9 +28,17 @@ type rewriteGroupbyFields struct {
 	ast.Visitor
 }
 
+func (r rewriteGroupbyFields) VisitSelect(stmt *ast.SelectStatement) error {
+	return nil
+}
+
 // when position are used in group by, replace by the identifier
 type rewriteGroupbyPosField struct {
 	ast.Visitor
+}
+
+func (r rewriteGroupbyPosField) VisitSelect(stmt *ast.SelectStatement) error {
+	return nil
 }
 
 // simplify some boolean expression when they can be evaluate with only the identifier
@@ -53,9 +61,17 @@ type rewriteMissingCteColumns struct {
 	ast.Visitor
 }
 
+func (r rewriteMissingCteColumns) VisitCte(stmt *ast.CteStatement) error {
+	return nil
+}
+
 // add columns definition list to create view
 type rewriteMissingViewColumns struct {
 	ast.Visitor
+}
+
+func (r rewriteMissingViewColumns) VisitCreateView(stmt *ast.CreateViewStatement) error {
+	return nil
 }
 
 // rewrite literal value in join with placeholders
@@ -66,4 +82,13 @@ type rewriteLiteralWithPlaceholderJoin struct {
 // rewrite literal value in expression with placeholders
 type rewriteLiteralWithPlaceholderExpr struct {
 	ast.Visitor
+}
+
+// rewrite use of limit/offset to offset/fetch
+type rewriteLimitToFetch struct {
+	ast.Visitor
+}
+
+func (r rewriteLimitToFetch) VisitSelect(stmt *ast.SelectStatement) error {
+	return nil
 }
