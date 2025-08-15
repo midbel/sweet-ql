@@ -12,11 +12,11 @@ type Body struct {
 	Values []Node
 }
 
-func (b Body) Pos() token.Position {
+func (b *Body) Pos() token.Position {
 	return b.Position
 }
 
-func (b Body) Accept(visit Visitor) error {
+func (b *Body) Accept(visit Visitor) error {
 	return visit.VisitBody(b)
 }
 
@@ -25,15 +25,15 @@ type List struct {
 	Values []Node
 }
 
-func (i List) Pos() token.Position {
+func (i *List) Pos() token.Position {
 	return i.Position
 }
 
-func (i List) Accept(visit Visitor) error {
+func (i *List) Accept(visit Visitor) error {
 	return visit.VisitList(i)
 }
 
-func (i List) Len() int {
+func (i *List) Len() int {
 	return len(i.Values)
 }
 
@@ -42,11 +42,11 @@ type Group struct {
 	Node
 }
 
-func (g Group) Pos() token.Position {
+func (g *Group) Pos() token.Position {
 	return g.Position
 }
 
-func (g Group) Accept(visit Visitor) error {
+func (g *Group) Accept(visit Visitor) error {
 	return visit.VisitGroup(g)
 }
 
@@ -57,11 +57,11 @@ type Cast struct {
 	Type Type
 }
 
-func (c Cast) Pos() token.Position {
+func (c *Cast) Pos() token.Position {
 	return c.Position
 }
 
-func (c Cast) Accept(visit Visitor) error {
+func (c *Cast) Accept(visit Visitor) error {
 	return visit.VisitCast(c)
 }
 
@@ -73,7 +73,7 @@ type Type struct {
 	Precision int
 }
 
-func (t Type) Pos() token.Position {
+func (t *Type) Pos() token.Position {
 	return t.Position
 }
 
@@ -82,11 +82,11 @@ type Not struct {
 	Node
 }
 
-func (n Not) Pos() token.Position {
+func (n *Not) Pos() token.Position {
 	return n.Position
 }
 
-func (n Not) Accept(visit Visitor) error {
+func (n *Not) Accept(visit Visitor) error {
 	return visit.VisitNot(n)
 }
 
@@ -96,7 +96,7 @@ type Collate struct {
 	Value Node
 }
 
-func (c Collate) Pos() token.Position {
+func (c *Collate) Pos() token.Position {
 	return c.Position
 }
 
@@ -109,11 +109,11 @@ type Exists struct {
 	Node
 }
 
-func (e Exists) Pos() token.Position {
+func (e *Exists) Pos() token.Position {
 	return e.Position
 }
 
-func (e Exists) Accept(visit Visitor) error {
+func (e *Exists) Accept(visit Visitor) error {
 	return visit.VisitExists(e)
 }
 
@@ -126,16 +126,16 @@ type Call struct {
 	Over     Node
 }
 
-func (c Call) Pos() token.Position {
+func (c *Call) Pos() token.Position {
 	return c.Position
 }
 
-func (c Call) Accept(visit Visitor) error {
+func (c *Call) Accept(visit Visitor) error {
 	return visit.VisitCallFunc(c)
 }
 
-func (c Call) GetIdent() string {
-	n, ok := c.Ident.(Name)
+func (c *Call) GetIdent() string {
+	n, ok := c.Ident.(*Name)
 	if !ok {
 		return ""
 	}
@@ -147,7 +147,7 @@ type Row struct {
 	Values []Node
 }
 
-func (r Row) Pos() token.Position {
+func (r *Row) Pos() token.Position {
 	return r.Position
 }
 
@@ -161,11 +161,11 @@ type Unary struct {
 	Op    string
 }
 
-func (u Unary) Pos() token.Position {
+func (u *Unary) Pos() token.Position {
 	return u.Position
 }
 
-func (u Unary) Accept(visit Visitor) error {
+func (u *Unary) Accept(visit Visitor) error {
 	return visit.VisitUnary(u)
 }
 
@@ -176,19 +176,19 @@ type Binary struct {
 	Op    string
 }
 
-func (b Binary) Pos() token.Position {
+func (b *Binary) Pos() token.Position {
 	return b.Position
 }
 
-func (b Binary) Accept(visit Visitor) error {
+func (b *Binary) Accept(visit Visitor) error {
 	return visit.VisitBinary(b)
 }
 
-func (b Binary) IsEquality() bool {
+func (b *Binary) IsEquality() bool {
 	return b.Op == "=" || b.Op == "!=" || b.Op == "<>"
 }
 
-func (b Binary) IsRelation() bool {
+func (b *Binary) IsRelation() bool {
 	return b.Op == "AND" || b.Op == "OR"
 }
 
@@ -197,11 +197,11 @@ type All struct {
 	Node
 }
 
-func (a All) Pos() token.Position {
+func (a *All) Pos() token.Position {
 	return a.Position
 }
 
-func (a All) Accept(visit Visitor) error {
+func (a *All) Accept(visit Visitor) error {
 	return visit.VisitAll(a)
 }
 
@@ -210,11 +210,11 @@ type Any struct {
 	Node
 }
 
-func (a Any) Pos() token.Position {
+func (a *Any) Pos() token.Position {
 	return a.Position
 }
 
-func (a Any) Accept(visit Visitor) error {
+func (a *Any) Accept(visit Visitor) error {
 	return visit.VisitAny(a)
 }
 
@@ -224,11 +224,11 @@ type Is struct {
 	Value Node
 }
 
-func (i Is) Pos() token.Position {
+func (i *Is) Pos() token.Position {
 	return i.Position
 }
 
-func (i Is) Accept(visit Visitor) error {
+func (i *Is) Accept(visit Visitor) error {
 	return visit.VisitIs(i)
 }
 
@@ -238,11 +238,11 @@ type In struct {
 	Value Node
 }
 
-func (i In) Pos() token.Position {
+func (i *In) Pos() token.Position {
 	return i.Position
 }
 
-func (i In) Accept(visit Visitor) error {
+func (i *In) Accept(visit Visitor) error {
 	return visit.VisitIn(i)
 }
 
@@ -253,11 +253,11 @@ type Between struct {
 	Upper Node
 }
 
-func (b Between) Pos() token.Position {
+func (b *Between) Pos() token.Position {
 	return b.Position
 }
 
-func (b Between) Accept(visit Visitor) error {
+func (b *Between) Accept(visit Visitor) error {
 	return visit.VisitBetween(b)
 }
 
@@ -266,7 +266,7 @@ type Placeholder struct {
 	Node
 }
 
-func (p Placeholder) Pos() token.Position {
+func (p *Placeholder) Pos() token.Position {
 	return p.Position
 }
 
@@ -279,15 +279,15 @@ type Value struct {
 	Literal string
 }
 
-func (v Value) Pos() token.Position {
+func (v *Value) Pos() token.Position {
 	return v.Position
 }
 
-func (v Value) Accept(visit Visitor) error {
+func (v *Value) Accept(visit Visitor) error {
 	return visit.VisitValue(v)
 }
 
-func (v Value) Type() StaticType {
+func (v *Value) Type() StaticType {
 	if v.Bool() {
 		return TypeBool
 	}
@@ -300,28 +300,28 @@ func (v Value) Type() StaticType {
 	return TypeText
 }
 
-func (v Value) Number() bool {
+func (v *Value) Number() bool {
 	_, err := strconv.ParseFloat(v.Literal, 64)
 	return err == nil
 }
 
-func (v Value) Constant() bool {
+func (v *Value) Constant() bool {
 	return v.Null() || v.True() || v.False()
 }
 
-func (v Value) Bool() bool {
+func (v *Value) Bool() bool {
 	return v.True() || v.False()
 }
 
-func (v Value) Null() bool {
+func (v *Value) Null() bool {
 	return v.Literal == "NULL"
 }
 
-func (v Value) True() bool {
+func (v *Value) True() bool {
 	return v.Literal == "TRUE"
 }
 
-func (v Value) False() bool {
+func (v *Value) False() bool {
 	return v.Literal == "FALSE"
 }
 
@@ -332,11 +332,11 @@ type Alias struct {
 	Columns []Node
 }
 
-func (a Alias) Pos() token.Position {
+func (a *Alias) Pos() token.Position {
 	return a.Position
 }
 
-func (a Alias) Accept(visit Visitor) error {
+func (a *Alias) Accept(visit Visitor) error {
 	return visit.VisitAlias(a)
 }
 
@@ -345,7 +345,7 @@ type Identifier struct {
 	Name   string
 }
 
-func (i Identifier) Star() bool {
+func (i *Identifier) Star() bool {
 	return !i.Quoted && i.Name == ""
 }
 
@@ -354,20 +354,20 @@ type Name struct {
 	Parts []Identifier
 }
 
-func (n Name) Pos() token.Position {
+func (n *Name) Pos() token.Position {
 	return n.Position
 }
 
-func (n Name) Accept(visit Visitor) error {
+func (n *Name) Accept(visit Visitor) error {
 	return visit.VisitName(n)
 }
 
-func (n Name) All() bool {
+func (n *Name) All() bool {
 	c := len(n.Parts)
 	return c == 0 || n.Parts[c-1].Name == ""
 }
 
-func (n Name) Schema() string {
+func (n *Name) Schema() string {
 	switch len(n.Parts) {
 	case 2:
 		return n.Parts[0].Name
@@ -378,7 +378,7 @@ func (n Name) Schema() string {
 	}
 }
 
-func (n Name) Name() string {
+func (n *Name) Name() string {
 	if len(n.Parts) == 0 {
 		return "*"
 	}
@@ -389,7 +389,7 @@ func (n Name) Name() string {
 	return str
 }
 
-func (n Name) Ident() string {
+func (n *Name) Ident() string {
 	z := len(n.Parts)
 	if z == 0 {
 		return "*"

@@ -33,7 +33,7 @@ func (r *noCte) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noCte) VisitWith(with ast.WithStatement) error {
+func (r *noCte) VisitWith(with *ast.WithStatement) error {
 	i := Issue{
 		Position: with.Pos(),
 		Severity: r.severity,
@@ -90,13 +90,13 @@ func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 	return issues, err
 }
 
-func (r *cteUnused) VisitCte(stmt ast.CteStatement) error {
+func (r *cteUnused) VisitCte(stmt *ast.CteStatement) error {
 	r.names[stmt.Ident] = 0
 	r.positions[stmt.Ident] = stmt.Pos()
 	return nil
 }
 
-func (r *cteUnused) VisitSelect(stmt ast.SelectStatement) error {
+func (r *cteUnused) VisitSelect(stmt *ast.SelectStatement) error {
 	r.begin()
 	defer r.end()
 
@@ -107,7 +107,7 @@ func (r *cteUnused) VisitSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
-func (r *cteUnused) VisitName(name ast.Name) error {
+func (r *cteUnused) VisitName(name *ast.Name) error {
 	r.update(name.Name())
 	return nil
 }

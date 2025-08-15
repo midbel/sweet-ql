@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitCreateTable(stmt ast.CreateTableStatement) error {
+func (w *Writer) VisitCreateTable(stmt *ast.CreateTableStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -45,7 +45,7 @@ func (w *Writer) VisitCreateTable(stmt ast.CreateTableStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitDropTable(stmt ast.DropTableStatement) error {
+func (w *Writer) VisitDropTable(stmt *ast.DropTableStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -69,7 +69,7 @@ func (w *Writer) VisitDropTable(stmt ast.DropTableStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitAlterTable(stmt ast.AlterTableStatement) error {
+func (w *Writer) VisitAlterTable(stmt *ast.AlterTableStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -83,7 +83,7 @@ func (w *Writer) VisitAlterTable(stmt ast.AlterTableStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitAddColumn(action ast.AddColumnAction) error {
+func (w *Writer) VisitAddColumn(action *ast.AddColumnAction) error {
 	w.WriteKeyword("add")
 	w.WriteBlank()
 	w.WriteKeyword("column")
@@ -92,7 +92,7 @@ func (w *Writer) VisitAddColumn(action ast.AddColumnAction) error {
 	return nil
 }
 
-func (w *Writer) VisitAlterColumn(action ast.AlterColumnAction) error {
+func (w *Writer) VisitAlterColumn(action *ast.AlterColumnAction) error {
 	w.WriteKeyword("alter")
 	w.WriteBlank()
 	w.WriteKeyword("column")
@@ -101,7 +101,7 @@ func (w *Writer) VisitAlterColumn(action ast.AlterColumnAction) error {
 	return nil
 }
 
-func (w *Writer) VisitDropColumn(action ast.DropColumnAction) error {
+func (w *Writer) VisitDropColumn(action *ast.DropColumnAction) error {
 	w.WriteKeyword("drop")
 	w.WriteBlank()
 	w.WriteKeyword("column")
@@ -117,14 +117,14 @@ func (w *Writer) VisitDropColumn(action ast.DropColumnAction) error {
 	return nil
 }
 
-func (w *Writer) VisitAddConstraint(action ast.AddConstraintAction) error {
+func (w *Writer) VisitAddConstraint(action *ast.AddConstraintAction) error {
 	w.WriteKeyword("add")
 	w.WriteBlank()
 	action.Constraint.Accept(w)
 	return nil
 }
 
-func (w *Writer) VisitDropConstraint(action ast.DropConstraintAction) error {
+func (w *Writer) VisitDropConstraint(action *ast.DropConstraintAction) error {
 	w.WriteKeyword("drop")
 	w.WriteBlank()
 	w.WriteKeyword("constraint")
@@ -140,7 +140,7 @@ func (w *Writer) VisitDropConstraint(action ast.DropConstraintAction) error {
 	return nil
 }
 
-func (w *Writer) VisitCreateView(stmt ast.CreateViewStatement) error {
+func (w *Writer) VisitCreateView(stmt *ast.CreateViewStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -166,7 +166,7 @@ func (w *Writer) VisitCreateView(stmt ast.CreateViewStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitDropView(stmt ast.DropViewStatement) error {
+func (w *Writer) VisitDropView(stmt *ast.DropViewStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -190,7 +190,7 @@ func (w *Writer) VisitDropView(stmt ast.DropViewStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitColumnDef(def ast.ColumnDef) error {
+func (w *Writer) VisitColumnDef(def *ast.ColumnDef) error {
 	def.Name.Accept(w)
 	w.WriteBlank()
 	w.visitType(def.Type)
@@ -201,7 +201,7 @@ func (w *Writer) VisitColumnDef(def ast.ColumnDef) error {
 	return nil
 }
 
-func (w *Writer) VisitConstraint(cst ast.Constraint) error {
+func (w *Writer) VisitConstraint(cst *ast.Constraint) error {
 	if cst.Name != "" {
 		w.WriteKeyword("constraint")
 		w.WriteBlank()
@@ -212,7 +212,7 @@ func (w *Writer) VisitConstraint(cst ast.Constraint) error {
 	return nil
 }
 
-func (w *Writer) VisitPrimaryKey(cst ast.PrimaryKeyConstraint) error {
+func (w *Writer) VisitPrimaryKey(cst *ast.PrimaryKeyConstraint) error {
 	w.WriteKeyword("primary")
 	w.WriteBlank()
 	w.WriteKeyword("key")
@@ -231,7 +231,7 @@ func (w *Writer) VisitPrimaryKey(cst ast.PrimaryKeyConstraint) error {
 	return nil
 }
 
-func (w *Writer) VisitForeignKey(cst ast.ForeignKeyConstraint) error {
+func (w *Writer) VisitForeignKey(cst *ast.ForeignKeyConstraint) error {
 	if len(cst.Locals) > 0 {
 		w.WriteKeyword("foreign")
 		w.WriteBlank()
@@ -263,14 +263,14 @@ func (w *Writer) VisitForeignKey(cst ast.ForeignKeyConstraint) error {
 	return nil
 }
 
-func (w *Writer) VisitNotNull(cst ast.NotNullConstraint) error {
+func (w *Writer) VisitNotNull(cst *ast.NotNullConstraint) error {
 	w.WriteKeyword("not")
 	w.WriteBlank()
 	w.WriteKeyword("null")
 	return nil
 }
 
-func (w *Writer) VisitUnique(cst ast.UniqueConstraint) error {
+func (w *Writer) VisitUnique(cst *ast.UniqueConstraint) error {
 	w.WriteKeyword("unique")
 	if len(cst.Columns) == 0 {
 		return nil
@@ -286,7 +286,7 @@ func (w *Writer) VisitUnique(cst ast.UniqueConstraint) error {
 	return nil
 }
 
-func (w *Writer) VisitDefault(cst ast.DefaultConstraint) error {
+func (w *Writer) VisitDefault(cst *ast.DefaultConstraint) error {
 	compact := w.Compact
 	w.Compact = compactAll
 	defer func() {
@@ -299,7 +299,7 @@ func (w *Writer) VisitDefault(cst ast.DefaultConstraint) error {
 	return nil
 }
 
-func (w *Writer) VisitCheck(cst ast.CheckConstraint) error {
+func (w *Writer) VisitCheck(cst *ast.CheckConstraint) error {
 	compact := w.Compact
 	w.Compact = compactAll
 	defer func() {
@@ -311,7 +311,7 @@ func (w *Writer) VisitCheck(cst ast.CheckConstraint) error {
 	return nil
 }
 
-func (w *Writer) VisitGenerated(cst ast.GeneratedConstraint) error {
+func (w *Writer) VisitGenerated(cst *ast.GeneratedConstraint) error {
 	w.WriteKeyword("generated")
 	w.WriteBlank()
 	if cst.Default {

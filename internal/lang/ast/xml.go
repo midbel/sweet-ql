@@ -10,11 +10,11 @@ type XmlAttribute struct {
 	Value Node
 }
 
-func (x XmlAttribute) Pos() token.Position {
+func (x *XmlAttribute) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlAttribute) Accept(visit Visitor) error {
+func (x *XmlAttribute) Accept(visit Visitor) error {
 	return visit.VisitXmlAttribute(x)
 }
 
@@ -24,15 +24,15 @@ type XmlNamespace struct {
 	Uri  Node
 }
 
-func (x XmlNamespace) Pos() token.Position {
+func (x *XmlNamespace) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlNamespace) Accept(visit Visitor) error {
+func (x *XmlNamespace) Accept(visit Visitor) error {
 	return visit.VisitXmlNamespace(x)
 }
 
-func (x XmlNamespace) IsDefault() bool {
+func (x *XmlNamespace) IsDefault() bool {
 	return x.Name == nil
 }
 
@@ -43,11 +43,11 @@ type XmlRoot struct {
 	Standalone string
 }
 
-func (x XmlRoot) Pos() token.Position {
+func (x *XmlRoot) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlRoot) Accept(visit Visitor) error {
+func (x *XmlRoot) Accept(visit Visitor) error {
 	return visit.VisitXmlRoot(x)
 }
 
@@ -57,11 +57,11 @@ type XmlPi struct {
 	Body Node
 }
 
-func (x XmlPi) Pos() token.Position {
+func (x *XmlPi) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlPi) Accept(visit Visitor) error {
+func (x *XmlPi) Accept(visit Visitor) error {
 	return visit.VisitXmlPi(x)
 }
 
@@ -73,11 +73,11 @@ type XmlElement struct {
 	Children   []Node
 }
 
-func (x XmlElement) Pos() token.Position {
+func (x *XmlElement) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlElement) Accept(visit Visitor) error {
+func (x *XmlElement) Accept(visit Visitor) error {
 	return visit.VisitXmlElement(x)
 }
 
@@ -86,11 +86,11 @@ type XmlText struct {
 	Text Node
 }
 
-func (x XmlText) Pos() token.Position {
+func (x *XmlText) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlText) Accept(visit Visitor) error {
+func (x *XmlText) Accept(visit Visitor) error {
 	return visit.VisitXmlText(x)
 }
 
@@ -99,11 +99,11 @@ type XmlComment struct {
 	Text Node
 }
 
-func (x XmlComment) Pos() token.Position {
+func (x *XmlComment) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlComment) Accept(visit Visitor) error {
+func (x *XmlComment) Accept(visit Visitor) error {
 	return visit.VisitXmlComment(x)
 }
 
@@ -112,11 +112,11 @@ type XmlAgg struct {
 	Body Node
 }
 
-func (x XmlAgg) Pos() token.Position {
+func (x *XmlAgg) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlAgg) Accept(visit Visitor) error {
+func (x *XmlAgg) Accept(visit Visitor) error {
 	return visit.VisitXmlAgg(x)
 }
 
@@ -127,11 +127,11 @@ type XmlForestItem struct {
 	OnNull OnNull
 }
 
-func (x XmlForestItem) Pos() token.Position {
+func (x *XmlForestItem) Pos() token.Position {
 	return x.Position
 }
 
-func (_ XmlForestItem) Accept(visit Visitor) error {
+func (_ *XmlForestItem) Accept(visit Visitor) error {
 	return nil
 }
 
@@ -140,11 +140,11 @@ type XmlForest struct {
 	Args []Node
 }
 
-func (x XmlForest) Pos() token.Position {
+func (x *XmlForest) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlForest) Accept(visit Visitor) error {
+func (x *XmlForest) Accept(visit Visitor) error {
 	return visit.VisitXmlForest(x)
 }
 
@@ -153,10 +153,10 @@ type XmlConcat struct {
 	Args []Node
 }
 
-func (x XmlConcat) Pos() token.Position {
+func (x *XmlConcat) Pos() token.Position {
 	return x.Position
 }
 
-func (x XmlConcat) Accept(visit Visitor) error {
+func (x *XmlConcat) Accept(visit Visitor) error {
 	return visit.VisitXmlConcat(x)
 }

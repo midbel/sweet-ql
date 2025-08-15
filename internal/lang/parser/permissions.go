@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Parser) ParseGrant() (ast.Node, error) {
-	stmt := ast.GrantStatement{
+	stmt := &ast.GrantStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
@@ -36,7 +36,7 @@ func (p *Parser) ParseGrant() (ast.Node, error) {
 }
 
 func (p *Parser) ParseRevoke() (ast.Node, error) {
-	stmt := ast.RevokeStatement{
+	stmt := &ast.RevokeStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()

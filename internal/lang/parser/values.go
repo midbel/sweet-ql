@@ -18,7 +18,7 @@ func (p *Parser) ParsePlaceholder() (ast.Node, error) {
 		ident := ast.Identifier{
 			Name: p.GetCurrLiteral(),
 		}
-		stmt.Node = ast.Name{
+		stmt.Node = &ast.Name{
 			Parts: slx.One(ident),
 		}
 		p.Next()
@@ -26,18 +26,18 @@ func (p *Parser) ParsePlaceholder() (ast.Node, error) {
 		if _, err := strconv.Atoi(p.GetCurrLiteral()); err != nil {
 			return nil, err
 		}
-		stmt.Node = ast.Value{
+		stmt.Node = &ast.Value{
 			Literal: p.GetCurrLiteral(),
 		}
 		p.Next()
 	default:
 		return nil, p.Unexpected("placeholder", defaultReason)
 	}
-	return stmt, nil
+	return &stmt, nil
 }
 
 func (p *Parser) ParseLiteral() (ast.Node, error) {
-	stmt := ast.Value{
+	stmt := &ast.Value{
 		Literal:  p.GetCurrLiteral(),
 		Position: p.GetCurrPosition(),
 	}
@@ -58,7 +58,7 @@ func (p *Parser) ParseConstant() (ast.Node, error) {
 }
 
 func (p *Parser) ParseIdentifier() (ast.Node, error) {
-	name := ast.Name{
+	name := &ast.Name{
 		Position: p.GetCurrPosition(),
 	}
 	for p.PeekIs(token.Dot) {
@@ -101,7 +101,7 @@ func (p *Parser) ParseAlias(stmt ast.Node) (ast.Node, error) {
 			Name:   p.GetCurrLiteral(),
 			Quoted: p.Is(token.QuotedIdent),
 		}
-		alias := ast.Alias{
+		alias := &ast.Alias{
 			Node:       stmt,
 			Position:   p.GetCurrPosition(),
 			Identifier: ident,
@@ -167,7 +167,7 @@ func (p *Parser) ParseCase() (ast.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		stmt.Body = append(stmt.Body, when)
+		stmt.Body = append(stmt.Body, &when)
 	}
 	if p.IsKeyword("ELSE") {
 		p.Next()
@@ -184,7 +184,7 @@ func (p *Parser) ParseCase() (ast.Node, error) {
 		return nil, p.Unexpected("case", keywordExpected("END"))
 	}
 	p.Next()
-	return stmt, nil
+	return &stmt, nil
 }
 
 func (p *Parser) ParseCast() (ast.Node, error) {
@@ -218,7 +218,7 @@ func (p *Parser) ParseCast() (ast.Node, error) {
 		return nil, p.Unexpected("cast", missingCloseParen)
 	}
 	p.Next()
-	return cast, nil
+	return &cast, nil
 }
 
 func (p *Parser) ParseType() (ast.Type, error) {
@@ -281,5 +281,5 @@ func (p *Parser) ParseRow() (ast.Node, error) {
 		return nil, p.Unexpected("row", missingCloseParen)
 	}
 	p.Next()
-	return row, nil
+	return &row, nil
 }

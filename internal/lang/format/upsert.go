@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitInsert(stmt ast.InsertStatement) error {
+func (w *Writer) VisitInsert(stmt *ast.InsertStatement) error {
 	w.Enter()
 	defer w.Leave()
 
@@ -32,7 +32,7 @@ func (w *Writer) VisitInsert(stmt ast.InsertStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) error {
+func (w *Writer) VisitUpdate(stmt *ast.UpdateStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -59,7 +59,7 @@ func (w *Writer) VisitUpdate(stmt ast.UpdateStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitAssignment(stmt ast.Assignment) error {
+func (w *Writer) VisitAssignment(stmt *ast.Assignment) error {
 	stmt.Field.Accept(w)
 	w.WriteBlank()
 	w.WriteString("=")
@@ -68,7 +68,7 @@ func (w *Writer) VisitAssignment(stmt ast.Assignment) error {
 	return nil
 }
 
-func (w *Writer) VisitDelete(stmt ast.DeleteStatement) error {
+func (w *Writer) VisitDelete(stmt *ast.DeleteStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -84,7 +84,7 @@ func (w *Writer) VisitDelete(stmt ast.DeleteStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) error {
+func (w *Writer) VisitTruncate(stmt *ast.TruncateStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -119,7 +119,7 @@ func (w *Writer) VisitTruncate(stmt ast.TruncateStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitMerge(stmt ast.MergeStatement) error {
+func (w *Writer) VisitMerge(stmt *ast.MergeStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -147,13 +147,13 @@ func (w *Writer) VisitMerge(stmt ast.MergeStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitMatch(stmt ast.MatchStatement) error {
+func (w *Writer) VisitMatch(stmt *ast.MatchStatement) error {
 	w.WriteKeyword("when")
 	w.WriteBlank()
 	switch stmt.Node.(type) {
-	case ast.DeleteStatement, ast.UpdateStatement:
+	case *ast.DeleteStatement, *ast.UpdateStatement:
 		w.WriteKeyword("matched")
-	case ast.InsertStatement:
+	case *ast.InsertStatement:
 		w.WriteKeyword("not")
 		w.WriteBlank()
 		w.WriteKeyword("matched")

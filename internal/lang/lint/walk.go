@@ -35,7 +35,7 @@ func Walk(rule ast.Visitor) ast.Visitor {
 	}
 }
 
-func (v walkVisitor) VisitValues(node ast.ValuesStatement) error {
+func (v walkVisitor) VisitValues(node *ast.ValuesStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -47,7 +47,7 @@ func (v walkVisitor) VisitValues(node ast.ValuesStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitSelect(node ast.SelectStatement) error {
+func (v walkVisitor) VisitSelect(node *ast.SelectStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -79,7 +79,7 @@ func (v walkVisitor) VisitSelect(node ast.SelectStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitUnion(node ast.UnionStatement) error {
+func (v walkVisitor) VisitUnion(node *ast.UnionStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -89,7 +89,7 @@ func (v walkVisitor) VisitUnion(node ast.UnionStatement) error {
 	return node.Right.Accept(v)
 }
 
-func (v walkVisitor) VisitIntersect(node ast.IntersectStatement) error {
+func (v walkVisitor) VisitIntersect(node *ast.IntersectStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -99,7 +99,7 @@ func (v walkVisitor) VisitIntersect(node ast.IntersectStatement) error {
 	return node.Right.Accept(v)
 }
 
-func (v walkVisitor) VisitExcept(node ast.ExceptStatement) error {
+func (v walkVisitor) VisitExcept(node *ast.ExceptStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -109,7 +109,7 @@ func (v walkVisitor) VisitExcept(node ast.ExceptStatement) error {
 	return node.Right.Accept(v)
 }
 
-func (v walkVisitor) VisitInsert(node ast.InsertStatement) error {
+func (v walkVisitor) VisitInsert(node *ast.InsertStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -132,7 +132,7 @@ func (v walkVisitor) VisitInsert(node ast.InsertStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitUpdate(node ast.UpdateStatement) error {
+func (v walkVisitor) VisitUpdate(node *ast.UpdateStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -150,7 +150,7 @@ func (v walkVisitor) VisitUpdate(node ast.UpdateStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
+func (v walkVisitor) VisitDelete(node *ast.DeleteStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -163,7 +163,7 @@ func (v walkVisitor) VisitDelete(node ast.DeleteStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitTruncate(node ast.TruncateStatement) error {
+func (v walkVisitor) VisitTruncate(node *ast.TruncateStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -175,7 +175,7 @@ func (v walkVisitor) VisitTruncate(node ast.TruncateStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitWith(node ast.WithStatement) error {
+func (v walkVisitor) VisitWith(node *ast.WithStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -187,62 +187,62 @@ func (v walkVisitor) VisitWith(node ast.WithStatement) error {
 	return node.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitCte(node ast.CteStatement) error {
+func (v walkVisitor) VisitCte(node *ast.CteStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return node.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitMerge(_ ast.MergeStatement) error {
+func (v walkVisitor) VisitMerge(_ *ast.MergeStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitMatch(_ ast.MatchStatement) error {
+func (v walkVisitor) VisitMatch(_ *ast.MatchStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCall(_ ast.CallStatement) error {
+func (v walkVisitor) VisitCall(_ *ast.CallStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitGrant(_ ast.GrantStatement) error {
+func (v walkVisitor) VisitGrant(_ *ast.GrantStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitRevoke(_ ast.RevokeStatement) error {
+func (v walkVisitor) VisitRevoke(_ *ast.RevokeStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCommit(node ast.Commit) error {
+func (v walkVisitor) VisitCommit(node *ast.Commit) error {
 	return node.Accept(v.rule)
 }
 
-func (v walkVisitor) VisitRollback(node ast.Rollback) error {
+func (v walkVisitor) VisitRollback(node *ast.Rollback) error {
 	return node.Accept(v.rule)
 }
 
-func (v walkVisitor) VisitSetTransaction(_ ast.SetTransaction) error {
+func (v walkVisitor) VisitSetTransaction(_ *ast.SetTransaction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitStartTransaction(_ ast.StartTransaction) error {
+func (v walkVisitor) VisitStartTransaction(_ *ast.StartTransaction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitSavepoint(_ ast.Savepoint) error {
+func (v walkVisitor) VisitSavepoint(_ *ast.Savepoint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitReleaseSavepoint(_ ast.ReleaseSavepoint) error {
+func (v walkVisitor) VisitReleaseSavepoint(_ *ast.ReleaseSavepoint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitRollbackSavepoint(_ ast.RollbackSavepoint) error {
+func (v walkVisitor) VisitRollbackSavepoint(_ *ast.RollbackSavepoint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitJoin(join ast.Join) error {
+func (v walkVisitor) VisitJoin(join *ast.Join) error {
 	if err := join.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -252,7 +252,7 @@ func (v walkVisitor) VisitJoin(join ast.Join) error {
 	return join.Where.Accept(v)
 }
 
-func (v walkVisitor) VisitOrder(order ast.Order) error {
+func (v walkVisitor) VisitOrder(order *ast.Order) error {
 	if err := order.Accept(v.rule); err != nil {
 		if errors.Is(err, errStop) {
 			err = nil
@@ -262,7 +262,7 @@ func (v walkVisitor) VisitOrder(order ast.Order) error {
 	return order.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitLimit(limit ast.Limit) error {
+func (v walkVisitor) VisitLimit(limit *ast.Limit) error {
 	if err := limit.Accept(v.rule); err != nil {
 		if errors.Is(err, errStop) {
 			err = nil
@@ -275,7 +275,7 @@ func (v walkVisitor) VisitLimit(limit ast.Limit) error {
 	return limit.Offset.Accept(v)
 }
 
-func (v walkVisitor) VisitOffset(offset ast.Offset) error {
+func (v walkVisitor) VisitOffset(offset *ast.Offset) error {
 	if err := offset.Accept(v.rule); err != nil {
 		if errors.Is(err, errStop) {
 			err = nil
@@ -288,7 +288,7 @@ func (v walkVisitor) VisitOffset(offset ast.Offset) error {
 	return offset.Offset.Accept(v)
 }
 
-func (v walkVisitor) VisitBinary(binary ast.Binary) error {
+func (v walkVisitor) VisitBinary(binary *ast.Binary) error {
 	if err := binary.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -298,18 +298,18 @@ func (v walkVisitor) VisitBinary(binary ast.Binary) error {
 	return binary.Right.Accept(v)
 }
 
-func (v walkVisitor) VisitUnary(unary ast.Unary) error {
+func (v walkVisitor) VisitUnary(unary *ast.Unary) error {
 	if err := unary.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return unary.Right.Accept(v)
 }
 
-func (v walkVisitor) VisitCallFunc(_ ast.Call) error {
+func (v walkVisitor) VisitCallFunc(_ *ast.Call) error {
 	return nil
 }
 
-func (v walkVisitor) VisitList(list ast.List) error {
+func (v walkVisitor) VisitList(list *ast.List) error {
 	if err := list.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -321,11 +321,11 @@ func (v walkVisitor) VisitList(list ast.List) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCollate(_ ast.Collate) error {
+func (v walkVisitor) VisitCollate(_ *ast.Collate) error {
 	return nil
 }
 
-func (v walkVisitor) VisitIn(in ast.In) error {
+func (v walkVisitor) VisitIn(in *ast.In) error {
 	if err := in.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -335,7 +335,7 @@ func (v walkVisitor) VisitIn(in ast.In) error {
 	return in.Value.Accept(v)
 }
 
-func (v walkVisitor) VisitIs(is ast.Is) error {
+func (v walkVisitor) VisitIs(is *ast.Is) error {
 	if err := is.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -345,14 +345,14 @@ func (v walkVisitor) VisitIs(is ast.Is) error {
 	return is.Value.Accept(v)
 }
 
-func (v walkVisitor) VisitExists(exists ast.Exists) error {
+func (v walkVisitor) VisitExists(exists *ast.Exists) error {
 	if err := exists.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return exists.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitBetween(between ast.Between) error {
+func (v walkVisitor) VisitBetween(between *ast.Between) error {
 	if err := between.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -365,94 +365,94 @@ func (v walkVisitor) VisitBetween(between ast.Between) error {
 	return between.Upper.Accept(v)
 }
 
-func (v walkVisitor) VisitAll(all ast.All) error {
+func (v walkVisitor) VisitAll(all *ast.All) error {
 	if err := all.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return all.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitAny(any ast.Any) error {
+func (v walkVisitor) VisitAny(any *ast.Any) error {
 	if err := any.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return any.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitNot(not ast.Not) error {
+func (v walkVisitor) VisitNot(not *ast.Not) error {
 	if err := not.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return not.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitCast(_ ast.Cast) error {
+func (v walkVisitor) VisitCast(_ *ast.Cast) error {
 	return nil
 }
 
-func (v walkVisitor) VisitValue(value ast.Value) error {
+func (v walkVisitor) VisitValue(value *ast.Value) error {
 	return value.Accept(v.rule)
 }
 
-func (v walkVisitor) VisitAlias(alias ast.Alias) error {
+func (v walkVisitor) VisitAlias(alias *ast.Alias) error {
 	if err := alias.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return alias.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitName(name ast.Name) error {
+func (v walkVisitor) VisitName(name *ast.Name) error {
 	return name.Accept(v.rule)
 }
 
-func (v walkVisitor) VisitGroup(group ast.Group) error {
+func (v walkVisitor) VisitGroup(group *ast.Group) error {
 	if err := group.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
 	return group.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitAssignment(_ ast.Assignment) error {
+func (v walkVisitor) VisitAssignment(_ *ast.Assignment) error {
 	return nil
 }
 
-func (v walkVisitor) VisitBody(_ ast.Body) error {
+func (v walkVisitor) VisitBody(_ *ast.Body) error {
 	return nil
 }
 
-func (v walkVisitor) VisitIf(_ ast.If) error {
+func (v walkVisitor) VisitIf(_ *ast.If) error {
 	return nil
 }
 
-func (v walkVisitor) VisitWhile(_ ast.While) error {
+func (v walkVisitor) VisitWhile(_ *ast.While) error {
 	return nil
 }
 
-func (v walkVisitor) VisitSet(_ ast.Set) error {
+func (v walkVisitor) VisitSet(_ *ast.Set) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDeclare(_ ast.Declare) error {
+func (v walkVisitor) VisitDeclare(_ *ast.Declare) error {
 	return nil
 }
 
-func (v walkVisitor) VisitReturn(_ ast.Return) error {
+func (v walkVisitor) VisitReturn(_ *ast.Return) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCase(_ ast.Case) error {
+func (v walkVisitor) VisitCase(_ *ast.Case) error {
 	return nil
 }
 
-func (v walkVisitor) VisitWhen(_ ast.When) error {
+func (v walkVisitor) VisitWhen(_ *ast.When) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCreateProcedure(_ ast.CreateProcedureStatement) error {
+func (v walkVisitor) VisitCreateProcedure(_ *ast.CreateProcedureStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCreateTable(node ast.CreateTableStatement) error {
+func (v walkVisitor) VisitCreateTable(node *ast.CreateTableStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -472,15 +472,15 @@ func (v walkVisitor) VisitCreateTable(node ast.CreateTableStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDropTable(_ ast.DropTableStatement) error {
+func (v walkVisitor) VisitDropTable(_ *ast.DropTableStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitAlterTable(_ ast.AlterTableStatement) error {
+func (v walkVisitor) VisitAlterTable(_ *ast.AlterTableStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCreateView(node ast.CreateViewStatement) error {
+func (v walkVisitor) VisitCreateView(node *ast.CreateViewStatement) error {
 	if err := node.Accept(v.rule); err != nil {
 		return doneVisiting(err)
 	}
@@ -495,134 +495,134 @@ func (v walkVisitor) VisitCreateView(node ast.CreateViewStatement) error {
 	return node.Select.Accept(v)
 }
 
-func (v walkVisitor) VisitDropView(_ ast.DropViewStatement) error {
+func (v walkVisitor) VisitDropView(_ *ast.DropViewStatement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitColumnDef(_ ast.ColumnDef) error {
+func (v walkVisitor) VisitColumnDef(_ *ast.ColumnDef) error {
 	return nil
 }
 
-func (v walkVisitor) VisitAddColumn(_ ast.AddColumnAction) error {
+func (v walkVisitor) VisitAddColumn(_ *ast.AddColumnAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitAlterColumn(_ ast.AlterColumnAction) error {
+func (v walkVisitor) VisitAlterColumn(_ *ast.AlterColumnAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDropColumn(_ ast.DropColumnAction) error {
+func (v walkVisitor) VisitDropColumn(_ *ast.DropColumnAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitAddConstraint(_ ast.AddConstraintAction) error {
+func (v walkVisitor) VisitAddConstraint(_ *ast.AddConstraintAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDropConstraint(_ ast.DropConstraintAction) error {
+func (v walkVisitor) VisitDropConstraint(_ *ast.DropConstraintAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitRenameTable(_ ast.RenameTableAction) error {
+func (v walkVisitor) VisitRenameTable(_ *ast.RenameTableAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitRenameColumn(_ ast.RenameColumnAction) error {
+func (v walkVisitor) VisitRenameColumn(_ *ast.RenameColumnAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitRenameConstraint(_ ast.RenameConstraintAction) error {
+func (v walkVisitor) VisitRenameConstraint(_ *ast.RenameConstraintAction) error {
 	return nil
 }
 
-func (v walkVisitor) VisitConstraint(_ ast.Constraint) error {
+func (v walkVisitor) VisitConstraint(_ *ast.Constraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitSetDefaultConstraint(_ ast.SetDefaultConstraint) error {
+func (v walkVisitor) VisitSetDefaultConstraint(_ *ast.SetDefaultConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDropDefaultConstraint(_ ast.DropDefaultConstraint) error {
+func (v walkVisitor) VisitDropDefaultConstraint(_ *ast.DropDefaultConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitSetNotNullConstraint(_ ast.SetNotNullConstraint) error {
+func (v walkVisitor) VisitSetNotNullConstraint(_ *ast.SetNotNullConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDropNotNullConstraint(_ ast.DropNotNullConstraint) error {
+func (v walkVisitor) VisitDropNotNullConstraint(_ *ast.DropNotNullConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitSetTypeConstraint(_ ast.SetTypeConstraint) error {
+func (v walkVisitor) VisitSetTypeConstraint(_ *ast.SetTypeConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitPrimaryKey(_ ast.PrimaryKeyConstraint) error {
+func (v walkVisitor) VisitPrimaryKey(_ *ast.PrimaryKeyConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitForeignKey(_ ast.ForeignKeyConstraint) error {
+func (v walkVisitor) VisitForeignKey(_ *ast.ForeignKeyConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitNotNull(_ ast.NotNullConstraint) error {
+func (v walkVisitor) VisitNotNull(_ *ast.NotNullConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitUnique(_ ast.UniqueConstraint) error {
+func (v walkVisitor) VisitUnique(_ *ast.UniqueConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitCheck(_ ast.CheckConstraint) error {
+func (v walkVisitor) VisitCheck(_ *ast.CheckConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitDefault(_ ast.DefaultConstraint) error {
+func (v walkVisitor) VisitDefault(_ *ast.DefaultConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitGenerated(_ ast.GeneratedConstraint) error {
+func (v walkVisitor) VisitGenerated(_ *ast.GeneratedConstraint) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlElement(_ ast.XmlElement) error {
+func (v walkVisitor) VisitXmlElement(_ *ast.XmlElement) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlAttribute(_ ast.XmlAttribute) error {
+func (v walkVisitor) VisitXmlAttribute(_ *ast.XmlAttribute) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlNamespace(_ ast.XmlNamespace) error {
+func (v walkVisitor) VisitXmlNamespace(_ *ast.XmlNamespace) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlText(_ ast.XmlText) error {
+func (v walkVisitor) VisitXmlText(_ *ast.XmlText) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlComment(_ ast.XmlComment) error {
+func (v walkVisitor) VisitXmlComment(_ *ast.XmlComment) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlPi(_ ast.XmlPi) error {
+func (v walkVisitor) VisitXmlPi(_ *ast.XmlPi) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlConcat(_ ast.XmlConcat) error {
+func (v walkVisitor) VisitXmlConcat(_ *ast.XmlConcat) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlAgg(_ ast.XmlAgg) error {
+func (v walkVisitor) VisitXmlAgg(_ *ast.XmlAgg) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlRoot(_ ast.XmlRoot) error {
+func (v walkVisitor) VisitXmlRoot(_ *ast.XmlRoot) error {
 	return nil
 }
 
-func (v walkVisitor) VisitXmlForest(_ ast.XmlForest) error {
+func (v walkVisitor) VisitXmlForest(_ *ast.XmlForest) error {
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Parser) ParseMerge() (ast.Node, error) {
-	stmt := ast.MergeStatement{
+	stmt := &ast.MergeStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
@@ -70,9 +70,9 @@ func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 	switch {
 	case p.IsKeyword("DELETE"):
 		p.Next()
-		stmt = ast.MatchStatement{
+		stmt = &ast.MatchStatement{
 			Condition: cdt,
-			Node:      ast.DeleteStatement{},
+			Node:      &ast.DeleteStatement{},
 		}
 	case p.IsKeyword("UPDATE"):
 		p.Next()
@@ -88,9 +88,9 @@ func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 			}
 			upd.List = append(upd.List, s)
 		}
-		stmt = ast.MatchStatement{
+		stmt = &ast.MatchStatement{
 			Condition: cdt,
-			Node:      upd,
+			Node:      &upd,
 		}
 	default:
 		err = p.Unexpected("matched", defaultReason)
@@ -120,15 +120,15 @@ func (p *Parser) parseMergeNotMatched(cdt ast.Node) (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	stmt := ast.MatchStatement{
+	stmt := &ast.MatchStatement{
 		Condition: cdt,
-		Node:      ins,
+		Node:      &ins,
 	}
 	return stmt, nil
 }
 
 func (p *Parser) ParseDelete() (ast.Node, error) {
-	stmt := ast.DeleteStatement{
+	stmt := &ast.DeleteStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
@@ -147,7 +147,7 @@ func (p *Parser) ParseDelete() (ast.Node, error) {
 }
 
 func (p *Parser) ParseTruncate() (ast.Node, error) {
-	stmt := ast.TruncateStatement{
+	stmt := &ast.TruncateStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
@@ -189,7 +189,7 @@ func (p *Parser) ParseTruncate() (ast.Node, error) {
 }
 
 func (p *Parser) ParseUpdate() (ast.Node, error) {
-	stmt := ast.UpdateStatement{
+	stmt := &ast.UpdateStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
@@ -249,11 +249,11 @@ func (p *Parser) parseAssignment() (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ass, nil
+	return &ass, nil
 }
 
 func (p *Parser) ParseInsert() (ast.Node, error) {
-	stmt := ast.InsertStatement{
+	stmt := &ast.InsertStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
@@ -290,7 +290,7 @@ func (p *Parser) ParseReturning() (ast.Node, error) {
 	if p.ansiMode {
 		return nil, p.Unexpected("returning", notAnsiReason)
 	}
-	ret := ast.Returning{
+	ret := &ast.Returning{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
@@ -309,6 +309,6 @@ func (p *Parser) ParseReturning() (ast.Node, error) {
 		}
 		p.Next()
 	}
-	ret.Node = list
+	ret.Node = &list
 	return ret, nil
 }

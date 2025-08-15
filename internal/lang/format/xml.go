@@ -2,7 +2,7 @@ package format
 
 import "github.com/midbel/sweet/internal/lang/ast"
 
-func (w *Writer) VisitXmlElement(elem ast.XmlElement) error {
+func (w *Writer) VisitXmlElement(elem *ast.XmlElement) error {
 	w.WriteCall("xmlelement")
 	w.WriteString("(")
 	w.WriteNL()
@@ -33,7 +33,7 @@ func (w *Writer) VisitXmlElement(elem ast.XmlElement) error {
 	return nil
 }
 
-func (w *Writer) visitXmlAttributes(elem ast.XmlElement) {
+func (w *Writer) visitXmlAttributes(elem *ast.XmlElement) {
 	if len(elem.Attributes) == 0 {
 		return
 	}
@@ -57,7 +57,7 @@ func (w *Writer) visitXmlAttributes(elem ast.XmlElement) {
 	w.WriteString(")")
 }
 
-func (w *Writer) visitXmlNamespaces(elem ast.XmlElement) {
+func (w *Writer) visitXmlNamespaces(elem *ast.XmlElement) {
 	if len(elem.Namespaces) == 0 {
 		return
 	}
@@ -81,7 +81,7 @@ func (w *Writer) visitXmlNamespaces(elem ast.XmlElement) {
 	w.WriteString(")")
 }
 
-func (w *Writer) VisitXmlAttribute(elem ast.XmlAttribute) error {
+func (w *Writer) VisitXmlAttribute(elem *ast.XmlAttribute) error {
 	elem.Value.Accept(w)
 	if elem.Name != nil {
 		w.WriteBlank()
@@ -92,7 +92,7 @@ func (w *Writer) VisitXmlAttribute(elem ast.XmlAttribute) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlNamespace(elem ast.XmlNamespace) error {
+func (w *Writer) VisitXmlNamespace(elem *ast.XmlNamespace) error {
 	if elem.Name == nil {
 		w.WriteKeyword("DEFAULT")
 		w.WriteBlank()
@@ -107,7 +107,7 @@ func (w *Writer) VisitXmlNamespace(elem ast.XmlNamespace) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlPi(elem ast.XmlPi) error {
+func (w *Writer) VisitXmlPi(elem *ast.XmlPi) error {
 	w.WriteCall("xmlpi")
 	w.WriteString("(")
 	w.WriteNL()
@@ -129,7 +129,7 @@ func (w *Writer) VisitXmlPi(elem ast.XmlPi) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlRoot(elem ast.XmlRoot) error {
+func (w *Writer) VisitXmlRoot(elem *ast.XmlRoot) error {
 	w.WriteCall("xmlroot")
 	w.WriteString("(")
 	w.WriteNL()
@@ -164,7 +164,7 @@ func (w *Writer) VisitXmlRoot(elem ast.XmlRoot) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlText(elem ast.XmlText) error {
+func (w *Writer) VisitXmlText(elem *ast.XmlText) error {
 	w.WriteCall("xmltext")
 	w.WriteString("(")
 	elem.Text.Accept(w)
@@ -172,7 +172,7 @@ func (w *Writer) VisitXmlText(elem ast.XmlText) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlComment(elem ast.XmlComment) error {
+func (w *Writer) VisitXmlComment(elem *ast.XmlComment) error {
 	w.WriteCall("xmlcomment")
 	w.WriteString("(")
 	elem.Text.Accept(w)
@@ -180,7 +180,7 @@ func (w *Writer) VisitXmlComment(elem ast.XmlComment) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlAgg(elem ast.XmlAgg) error {
+func (w *Writer) VisitXmlAgg(elem *ast.XmlAgg) error {
 	w.WriteCall("xmlagg")
 	w.WriteString("(")
 	w.WriteNL()
@@ -194,7 +194,7 @@ func (w *Writer) VisitXmlAgg(elem ast.XmlAgg) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlConcat(elem ast.XmlConcat) error {
+func (w *Writer) VisitXmlConcat(elem *ast.XmlConcat) error {
 	w.WriteCall("xmlconcat")
 	w.WriteString("(")
 	w.Enter()
@@ -213,7 +213,7 @@ func (w *Writer) VisitXmlConcat(elem ast.XmlConcat) error {
 	return nil
 }
 
-func (w *Writer) VisitXmlForest(elem ast.XmlForest) error {
+func (w *Writer) VisitXmlForest(elem *ast.XmlForest) error {
 	w.WriteCall("xmlforest")
 	w.WriteString("(")
 	w.Enter()
@@ -221,7 +221,7 @@ func (w *Writer) VisitXmlForest(elem ast.XmlForest) error {
 		if j > 0 {
 			w.WriteComma()
 		}
-		i, ok := n.(ast.XmlForestItem)
+		i, ok := n.(*ast.XmlForestItem)
 		if !ok {
 			continue
 		}

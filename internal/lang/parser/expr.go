@@ -54,7 +54,7 @@ func (p *Parser) parseExpression(pow int) (ast.Node, error) {
 }
 
 func (p *Parser) parseRelational(ident ast.Node) (ast.Node, error) {
-	stmt := ast.Binary{
+	stmt := &ast.Binary{
 		Left:     ident,
 		Op:       p.GetCurrLiteral(),
 		Position: p.GetCurrPosition(),
@@ -69,7 +69,7 @@ func (p *Parser) parseRelational(ident ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) parseLike(ident ast.Node) (ast.Node, error) {
-	stmt := ast.Binary{
+	stmt := &ast.Binary{
 		Left:     ident,
 		Op:       p.GetCurrLiteral(),
 		Position: p.GetCurrPosition(),
@@ -84,7 +84,7 @@ func (p *Parser) parseLike(ident ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) parseIs(ident ast.Node) (ast.Node, error) {
-	stmt := ast.Is{
+	stmt := &ast.Is{
 		Ident:    ident,
 		Position: p.GetCurrPosition(),
 	}
@@ -99,7 +99,7 @@ func (p *Parser) parseIs(ident ast.Node) (ast.Node, error) {
 	}
 	stmt.Value = val
 	if not {
-		return ast.Not{
+		return &ast.Not{
 			Position: stmt.Position,
 			Node:     stmt,
 		}, nil
@@ -108,11 +108,11 @@ func (p *Parser) parseIs(ident ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) parseIsNull(ident ast.Node) (ast.Node, error) {
-	val := ast.Value{
+	val := &ast.Value{
 		Position: p.GetCurrPosition(),
 		Literal:  token.Null,
 	}
-	stmt := ast.Is{
+	stmt := &ast.Is{
 		Ident:    ident,
 		Value:    val,
 		Position: p.GetCurrPosition(),
@@ -122,16 +122,16 @@ func (p *Parser) parseIsNull(ident ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) parseNotNull(ident ast.Node) (ast.Node, error) {
-	val := ast.Value{
+	val := &ast.Value{
 		Literal:  token.Null,
 		Position: p.GetCurrPosition(),
 	}
-	stmt := ast.Is{
+	stmt := &ast.Is{
 		Ident:    ident,
 		Value:    val,
 		Position: val.Position,
 	}
-	not := ast.Not{
+	not := &ast.Not{
 		Node:     stmt,
 		Position: stmt.Position,
 	}
@@ -159,11 +159,11 @@ func (p *Parser) parseExists() (ast.Node, error) {
 		return nil, p.Unexpected("exists", missingCloseParen)
 	}
 	p.Next()
-	return stmt, nil
+	return &stmt, nil
 }
 
 func (p *Parser) parseBetween(ident ast.Node) (ast.Node, error) {
-	stmt := ast.Between{
+	stmt := &ast.Between{
 		Ident:    ident,
 		Position: p.GetCurrPosition(),
 	}
@@ -186,7 +186,7 @@ func (p *Parser) parseBetween(ident ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) parseIn(ident ast.Node) (ast.Node, error) {
-	in := ast.In{
+	in := &ast.In{
 		Ident:    ident,
 		Position: p.GetCurrPosition(),
 	}
@@ -221,7 +221,7 @@ func (p *Parser) parseIn(ident ast.Node) (ast.Node, error) {
 		if !p.Is(token.Rparen) {
 			return nil, p.Unexpected("in", missingCloseParen)
 		}
-		in.Value = list
+		in.Value = &list
 		p.Next()
 	} else {
 		in.Value, err = p.ParseIdentifier()
@@ -238,7 +238,7 @@ func (p *Parser) getInfixExpr() (infixFunc, error) {
 }
 
 func (p *Parser) parseInfixExpr(left ast.Node) (ast.Node, error) {
-	stmt := ast.Binary{
+	stmt := &ast.Binary{
 		Left:     left,
 		Position: p.GetCurrPosition(),
 	}
@@ -279,12 +279,12 @@ func (p *Parser) parseAllOrAny() (ast.Node, error) {
 	}
 	p.Next()
 	if all {
-		expr = ast.All{
+		expr = &ast.All{
 			Position: pos,
 			Node:     expr,
 		}
 	} else {
-		expr = ast.Any{
+		expr = &ast.Any{
 			Position: pos,
 			Node:     expr,
 		}
@@ -293,7 +293,7 @@ func (p *Parser) parseAllOrAny() (ast.Node, error) {
 }
 
 func (p *Parser) parseCollateExpr(left ast.Node) (ast.Node, error) {
-	stmt := ast.Collate{
+	stmt := &ast.Collate{
 		Position: p.GetCurrPosition(),
 		Ident:    left,
 	}
@@ -305,7 +305,7 @@ func (p *Parser) parseCollateExpr(left ast.Node) (ast.Node, error) {
 		Name:   p.GetCurrLiteral(),
 		Quoted: p.Is(token.QuotedIdent),
 	}
-	stmt.Value = ast.Name{
+	stmt.Value = &ast.Name{
 		Position: p.GetCurrPosition(),
 		Parts:    slx.One(ident),
 	}
@@ -321,7 +321,7 @@ func (p *Parser) parseKeywordExpr(left ast.Node) (ast.Node, error) {
 			if stmt == nil {
 				return stmt
 			}
-			return ast.Not{
+			return &ast.Not{
 				Node: stmt,
 			}
 		}
@@ -353,14 +353,14 @@ func (p *Parser) parseKeywordExpr(left ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) parseCallExpr(left ast.Node) (ast.Node, error) {
-	n, ok := left.(ast.Name)
+	n, ok := left.(*ast.Name)
 	if !ok {
 		return nil, p.Unexpected("function", identExpected)
 	}
 	if strings.HasPrefix(strings.ToUpper(n.Name()), "XML") {
 		return p.ParseXML(left)
 	}
-	stmt := ast.Call{
+	stmt := &ast.Call{
 		Position: n.Position,
 		Ident:    left,
 	}
@@ -434,7 +434,7 @@ func (p *Parser) parseUnary() (ast.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		stmt = ast.Unary{
+		stmt = &ast.Unary{
 			Position: pos,
 			Right:    stmt,
 			Op:       "-",
@@ -445,7 +445,7 @@ func (p *Parser) parseUnary() (ast.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		stmt = ast.Not{
+		stmt = &ast.Not{
 			Position: pos,
 			Node:     stmt,
 		}
@@ -467,7 +467,7 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 			return nil, p.Unexpected("group", missingCloseParen)
 		}
 		p.Next()
-		g := ast.Group{
+		g := &ast.Group{
 			Position: pos,
 			Node:     stmt,
 		}
@@ -481,7 +481,7 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 		return nil, p.Unexpected("group", missingCloseParen)
 	}
 	p.Next()
-	g := ast.Group{
+	g := &ast.Group{
 		Position: pos,
 		Node:     stmt,
 	}

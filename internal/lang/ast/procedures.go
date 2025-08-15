@@ -12,7 +12,7 @@ type ProcedureParameter struct {
 	Default Node
 }
 
-func (p ProcedureParameter) Pos() token.Position {
+func (p *ProcedureParameter) Pos() token.Position {
 	return p.Position
 }
 
@@ -24,10 +24,10 @@ type CreateProcedureStatement struct {
 	Body       Node
 }
 
-func (s CreateProcedureStatement) Pos() token.Position {
+func (s *CreateProcedureStatement) Pos() token.Position {
 	return s.Position
 }
 
-func (s CreateProcedureStatement) Accept(visit Visitor) error {
+func (s *CreateProcedureStatement) Accept(visit Visitor) error {
 	return visit.VisitCreateProcedure(s)
 }

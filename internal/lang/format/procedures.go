@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitCreateProcedure(stmt ast.CreateProcedureStatement) error {
+func (w *Writer) VisitCreateProcedure(stmt *ast.CreateProcedureStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()

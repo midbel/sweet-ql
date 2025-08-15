@@ -11,11 +11,11 @@ type ColumnDef struct {
 	Constraints []Node
 }
 
-func (c ColumnDef) Pos() token.Position {
+func (c *ColumnDef) Pos() token.Position {
 	return c.Position
 }
 
-func (c ColumnDef) Accept(visit Visitor) error {
+func (c *ColumnDef) Accept(visit Visitor) error {
 	return visit.VisitColumnDef(c)
 }
 
@@ -24,11 +24,11 @@ type AddColumnAction struct {
 	Def Node
 }
 
-func (a AddColumnAction) Pos() token.Position {
+func (a *AddColumnAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a AddColumnAction) Accept(visit Visitor) error {
+func (a *AddColumnAction) Accept(visit Visitor) error {
 	return visit.VisitAddColumn(a)
 }
 
@@ -38,11 +38,11 @@ type AlterColumnAction struct {
 	Action Node
 }
 
-func (a AlterColumnAction) Pos() token.Position {
+func (a *AlterColumnAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a AlterColumnAction) Accept(visit Visitor) error {
+func (a *AlterColumnAction) Accept(visit Visitor) error {
 	return visit.VisitAlterColumn(a)
 }
 
@@ -52,11 +52,11 @@ type DropColumnAction struct {
 	Cascade CascadeMode
 }
 
-func (a DropColumnAction) Pos() token.Position {
+func (a *DropColumnAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a DropColumnAction) Accept(visit Visitor) error {
+func (a *DropColumnAction) Accept(visit Visitor) error {
 	return visit.VisitDropColumn(a)
 }
 
@@ -65,11 +65,11 @@ type AddConstraintAction struct {
 	Constraint Node
 }
 
-func (a AddConstraintAction) Pos() token.Position {
+func (a *AddConstraintAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a AddConstraintAction) Accept(visit Visitor) error {
+func (a *AddConstraintAction) Accept(visit Visitor) error {
 	return visit.VisitAddConstraint(a)
 }
 
@@ -79,11 +79,11 @@ type DropConstraintAction struct {
 	Cascade CascadeMode
 }
 
-func (a DropConstraintAction) Pos() token.Position {
+func (a *DropConstraintAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a DropConstraintAction) Accept(visit Visitor) error {
+func (a *DropConstraintAction) Accept(visit Visitor) error {
 	return visit.VisitDropConstraint(a)
 }
 
@@ -93,11 +93,11 @@ type RenameTableAction struct {
 	New Node
 }
 
-func (a RenameTableAction) Pos() token.Position {
+func (a *RenameTableAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a RenameTableAction) Accept(visit Visitor) error {
+func (a *RenameTableAction) Accept(visit Visitor) error {
 	return visit.VisitRenameTable(a)
 }
 
@@ -107,11 +107,11 @@ type RenameColumnAction struct {
 	New Node
 }
 
-func (a RenameColumnAction) Pos() token.Position {
+func (a *RenameColumnAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a RenameColumnAction) Accept(visit Visitor) error {
+func (a *RenameColumnAction) Accept(visit Visitor) error {
 	return visit.VisitRenameColumn(a)
 }
 
@@ -121,11 +121,11 @@ type RenameConstraintAction struct {
 	New Node
 }
 
-func (a RenameConstraintAction) Pos() token.Position {
+func (a *RenameConstraintAction) Pos() token.Position {
 	return a.Position
 }
 
-func (a RenameConstraintAction) Accept(visit Visitor) error {
+func (a *RenameConstraintAction) Accept(visit Visitor) error {
 	return visit.VisitRenameConstraint(a)
 }
 
@@ -135,11 +135,11 @@ type AlterTableStatement struct {
 	Action Node
 }
 
-func (s AlterTableStatement) Pos() token.Position {
+func (s *AlterTableStatement) Pos() token.Position {
 	return s.Position
 }
 
-func (s AlterTableStatement) Accept(visit Visitor) error {
+func (s *AlterTableStatement) Accept(visit Visitor) error {
 	return visit.VisitAlterTable(s)
 }
 
@@ -149,11 +149,11 @@ type DropViewStatement struct {
 	Cascade CascadeMode
 }
 
-func (s DropViewStatement) Pos() token.Position {
+func (s *DropViewStatement) Pos() token.Position {
 	return s.Position
 }
 
-func (s DropViewStatement) Accept(visit Visitor) error {
+func (s *DropViewStatement) Accept(visit Visitor) error {
 	return visit.VisitDropView(s)
 }
 
@@ -163,11 +163,11 @@ type DropTableStatement struct {
 	Cascade CascadeMode
 }
 
-func (s DropTableStatement) Pos() token.Position {
+func (s *DropTableStatement) Pos() token.Position {
 	return s.Position
 }
 
-func (s DropTableStatement) Accept(visit Visitor) error {
+func (s *DropTableStatement) Accept(visit Visitor) error {
 	return visit.VisitDropTable(s)
 }
 
@@ -178,11 +178,11 @@ type CreateViewStatement struct {
 	Select  Node
 }
 
-func (s CreateViewStatement) Pos() token.Position {
+func (s *CreateViewStatement) Pos() token.Position {
 	return s.Position
 }
 
-func (s CreateViewStatement) Accept(visit Visitor) error {
+func (s *CreateViewStatement) Accept(visit Visitor) error {
 	return visit.VisitCreateView(s)
 }
 
@@ -193,11 +193,11 @@ type CreateTableStatement struct {
 	Constraints []Node
 }
 
-func (s CreateTableStatement) Pos() token.Position {
+func (s *CreateTableStatement) Pos() token.Position {
 	return s.Position
 }
 
-func (s CreateTableStatement) Accept(visit Visitor) error {
+func (s *CreateTableStatement) Accept(visit Visitor) error {
 	return visit.VisitCreateTable(s)
 }
 
@@ -206,11 +206,11 @@ type PrimaryKeyConstraint struct {
 	Columns []Node
 }
 
-func (c PrimaryKeyConstraint) Pos() token.Position {
+func (c *PrimaryKeyConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c PrimaryKeyConstraint) Accept(visit Visitor) error {
+func (c *PrimaryKeyConstraint) Accept(visit Visitor) error {
 	return visit.VisitPrimaryKey(c)
 }
 
@@ -223,11 +223,11 @@ type ForeignKeyConstraint struct {
 	OnUpdate Node
 }
 
-func (c ForeignKeyConstraint) Pos() token.Position {
+func (c *ForeignKeyConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c ForeignKeyConstraint) Accept(visit Visitor) error {
+func (c *ForeignKeyConstraint) Accept(visit Visitor) error {
 	return visit.VisitForeignKey(c)
 }
 
@@ -236,11 +236,11 @@ type NotNullConstraint struct {
 	Column Node
 }
 
-func (c NotNullConstraint) Pos() token.Position {
+func (c *NotNullConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c NotNullConstraint) Accept(visit Visitor) error {
+func (c *NotNullConstraint) Accept(visit Visitor) error {
 	return visit.VisitNotNull(c)
 }
 
@@ -249,11 +249,11 @@ type UniqueConstraint struct {
 	Columns []Node
 }
 
-func (c UniqueConstraint) Pos() token.Position {
+func (c *UniqueConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c UniqueConstraint) Accept(visit Visitor) error {
+func (c *UniqueConstraint) Accept(visit Visitor) error {
 	return visit.VisitUnique(c)
 }
 
@@ -262,11 +262,11 @@ type CheckConstraint struct {
 	Expr Node
 }
 
-func (c CheckConstraint) Pos() token.Position {
+func (c *CheckConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c CheckConstraint) Accept(visit Visitor) error {
+func (c *CheckConstraint) Accept(visit Visitor) error {
 	return visit.VisitCheck(c)
 }
 
@@ -275,11 +275,11 @@ type DefaultConstraint struct {
 	Expr Node
 }
 
-func (c DefaultConstraint) Pos() token.Position {
+func (c *DefaultConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c DefaultConstraint) Accept(visit Visitor) error {
+func (c *DefaultConstraint) Accept(visit Visitor) error {
 	return visit.VisitDefault(c)
 }
 
@@ -289,11 +289,11 @@ type GeneratedConstraint struct {
 	Default bool
 }
 
-func (c GeneratedConstraint) Pos() token.Position {
+func (c *GeneratedConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c GeneratedConstraint) Accept(visit Visitor) error {
+func (c *GeneratedConstraint) Accept(visit Visitor) error {
 	return visit.VisitGenerated(c)
 }
 
@@ -303,11 +303,11 @@ type Constraint struct {
 	Node
 }
 
-func (c Constraint) Pos() token.Position {
+func (c *Constraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c Constraint) Accept(visit Visitor) error {
+func (c *Constraint) Accept(visit Visitor) error {
 	return visit.VisitConstraint(c)
 }
 
@@ -316,11 +316,11 @@ type SetDefaultConstraint struct {
 	Expr Node
 }
 
-func (c SetDefaultConstraint) Pos() token.Position {
+func (c *SetDefaultConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c SetDefaultConstraint) Accept(visit Visitor) error {
+func (c *SetDefaultConstraint) Accept(visit Visitor) error {
 	return visit.VisitSetDefaultConstraint(c)
 }
 
@@ -328,11 +328,11 @@ type DropDefaultConstraint struct {
 	token.Position
 }
 
-func (c DropDefaultConstraint) Pos() token.Position {
+func (c *DropDefaultConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c DropDefaultConstraint) Accept(visit Visitor) error {
+func (c *DropDefaultConstraint) Accept(visit Visitor) error {
 	return visit.VisitDropDefaultConstraint(c)
 }
 
@@ -340,11 +340,11 @@ type SetNotNullConstraint struct {
 	token.Position
 }
 
-func (c SetNotNullConstraint) Pos() token.Position {
+func (c *SetNotNullConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c SetNotNullConstraint) Accept(visit Visitor) error {
+func (c *SetNotNullConstraint) Accept(visit Visitor) error {
 	return visit.VisitSetNotNullConstraint(c)
 }
 
@@ -352,11 +352,11 @@ type DropNotNullConstraint struct {
 	token.Position
 }
 
-func (c DropNotNullConstraint) Pos() token.Position {
+func (c *DropNotNullConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c DropNotNullConstraint) Accept(visit Visitor) error {
+func (c *DropNotNullConstraint) Accept(visit Visitor) error {
 	return visit.VisitDropNotNullConstraint(c)
 }
 
@@ -365,10 +365,10 @@ type SetTypeConstraint struct {
 	Type
 }
 
-func (c SetTypeConstraint) Pos() token.Position {
+func (c *SetTypeConstraint) Pos() token.Position {
 	return c.Position
 }
 
-func (c SetTypeConstraint) Accept(visit Visitor) error {
+func (c *SetTypeConstraint) Accept(visit Visitor) error {
 	return visit.VisitSetTypeConstraint(c)
 }

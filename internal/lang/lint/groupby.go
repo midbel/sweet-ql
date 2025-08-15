@@ -34,19 +34,19 @@ func (r *groupbyColumns) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *groupbyColumns) VisitSelect(stmt ast.SelectStatement) error {
+func (r *groupbyColumns) VisitSelect(stmt *ast.SelectStatement) error {
 	if len(stmt.Groups) == 0 {
 		return nil
 	}
 	for _, c := range stmt.Columns {
-		if a, ok := c.(ast.Alias); ok {
+		if a, ok := c.(*ast.Alias); ok {
 			c = a
 		}
 		var ok bool
 		switch c := c.(type) {
-		case ast.Name:
+		case *ast.Name:
 			ok = r.exists(c, stmt)
-		case ast.Call:
+		case *ast.Call:
 			if lang.IsAggregateFunc(c.GetIdent()) {
 				ok = true
 			}
@@ -65,9 +65,9 @@ func (r *groupbyColumns) VisitSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
-func (r *groupbyColumns) exists(name ast.Name, stmt ast.SelectStatement) bool {
+func (r *groupbyColumns) exists(name *ast.Name, stmt *ast.SelectStatement) bool {
 	return slices.ContainsFunc(stmt.Groups, func(n ast.Node) bool {
-		if n, ok := n.(ast.Name); ok {
+		if n, ok := n.(*ast.Name); ok {
 			return slices.Equal(n.Parts, name.Parts)
 		}
 		return false
@@ -101,15 +101,15 @@ func (r *groupbyDistinct) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *groupbyDistinct) VisitSelect(stmt ast.SelectStatement) error {
+func (r *groupbyDistinct) VisitSelect(stmt *ast.SelectStatement) error {
 	if len(stmt.Groups) == 0 {
 		return nil
 	}
 	ok := slices.ContainsFunc(stmt.Columns, func(c ast.Node) bool {
-		if a, ok := c.(ast.Alias); ok {
+		if a, ok := c.(*ast.Alias); ok {
 			c = a.Node
 		}
-		if c, ok := c.(ast.Call); ok && lang.IsAggregateFunc(c.GetIdent()) {
+		if c, ok := c.(*ast.Call); ok && lang.IsAggregateFunc(c.GetIdent()) {
 			return true
 		}
 		return false
@@ -152,9 +152,9 @@ func (r *noLiteralGroupby) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noLiteralGroupby) VisitSelect(stmt ast.SelectStatement) error {
+func (r *noLiteralGroupby) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, g := range stmt.Groups {
-		if v, ok := g.(ast.Value); ok && !v.Number() {
+		if v, ok := g.(*ast.Value); ok && !v.Number() {
 			i := Issue{
 				Position: v.Pos(),
 				Severity: r.severity,

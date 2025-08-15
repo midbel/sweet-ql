@@ -35,8 +35,8 @@ func (r *selfAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *selfAlias) VisitAlias(alias ast.Alias) error {
-	n, ok := alias.Node.(ast.Name)
+func (r *selfAlias) VisitAlias(alias *ast.Alias) error {
+	n, ok := alias.Node.(*ast.Name)
 	if !ok {
 		return nil
 	}
@@ -81,8 +81,8 @@ func (r *ambiguousAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *ambiguousAlias) VisitAlias(alias ast.Alias) error {
-	c, ok := alias.Node.(ast.Call)
+func (r *ambiguousAlias) VisitAlias(alias *ast.Alias) error {
+	c, ok := alias.Node.(*ast.Call)
 	if !ok {
 		return nil
 	}
@@ -124,10 +124,10 @@ func (r *recommandedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *recommandedAlias) VisitSelect(stmt ast.SelectStatement) error {
+func (r *recommandedAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, q := range stmt.Columns {
 		switch q.(type) {
-		case ast.Call, ast.Group, ast.Binary, ast.Unary:
+		case *ast.Call, *ast.Group, *ast.Binary, *ast.Unary:
 			i := Issue{
 				Position: q.Pos(),
 				Severity: r.severity,
@@ -167,9 +167,9 @@ func (r *missingAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *missingAlias) VisitSelect(stmt ast.SelectStatement) error {
+func (r *missingAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
-		if _, ok := c.(ast.Alias); !ok {
+		if _, ok := c.(*ast.Alias); !ok {
 			i := Issue{
 				Position: c.Pos(),
 				Severity: r.severity,
@@ -208,9 +208,9 @@ func (r *noAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noAlias) VisitSelect(stmt ast.SelectStatement) error {
+func (r *noAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
-		if a, ok := c.(ast.Alias); ok {
+		if a, ok := c.(*ast.Alias); ok {
 			i := Issue{
 				Position: a.Pos(),
 				Severity: r.severity,
@@ -251,10 +251,10 @@ func (r *invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *invalidAlias) VisitSelect(stmt ast.SelectStatement) error {
+func (r *invalidAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	var aliases []ast.Identifier
 	for _, c := range stmt.Columns {
-		a, ok := c.(ast.Alias)
+		a, ok := c.(*ast.Alias)
 		if ok {
 			aliases = append(aliases, a.Identifier)
 		}
@@ -264,7 +264,7 @@ func (r *invalidAlias) VisitSelect(stmt ast.SelectStatement) error {
 	return r.visit(stmt)
 }
 
-func (r *invalidAlias) VisitName(name ast.Name) error {
+func (r *invalidAlias) VisitName(name *ast.Name) error {
 	if r.exists(name) {
 		i := Issue{
 			Position: name.Pos(),
@@ -277,7 +277,7 @@ func (r *invalidAlias) VisitName(name ast.Name) error {
 	return nil
 }
 
-func (r *invalidAlias) visit(stmt ast.SelectStatement) error {
+func (r *invalidAlias) visit(stmt *ast.SelectStatement) error {
 	var (
 		where  = slx.One(stmt.Where)
 		having = slx.One(stmt.Having)
@@ -306,7 +306,7 @@ func (r *invalidAlias) pop() {
 	}
 }
 
-func (r *invalidAlias) exists(name ast.Name) bool {
+func (r *invalidAlias) exists(name *ast.Name) bool {
 	n := len(r.aliases)
 	if n == 0 || len(name.Parts) != 1 {
 		return false
@@ -350,10 +350,10 @@ func (r *undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *undefinedAlias) VisitSelect(stmt ast.SelectStatement) error {
+func (r *undefinedAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	var aliases []ast.Identifier
 	for _, t := range stmt.Tables {
-		if a, ok := t.(ast.Alias); ok {
+		if a, ok := t.(*ast.Alias); ok {
 			aliases = append(aliases, a.Identifier)
 		}
 	}
@@ -362,7 +362,7 @@ func (r *undefinedAlias) VisitSelect(stmt ast.SelectStatement) error {
 	return r.visit(stmt)
 }
 
-func (r *undefinedAlias) VisitName(name ast.Name) error {
+func (r *undefinedAlias) VisitName(name *ast.Name) error {
 	if !r.exists(name) {
 		i := Issue{
 			Position: name.Pos(),
@@ -375,7 +375,7 @@ func (r *undefinedAlias) VisitName(name ast.Name) error {
 	return nil
 }
 
-func (r *undefinedAlias) visit(stmt ast.SelectStatement) error {
+func (r *undefinedAlias) visit(stmt *ast.SelectStatement) error {
 	var (
 		where  = slx.One(stmt.Where)
 		having = slx.One(stmt.Having)
@@ -404,7 +404,7 @@ func (r *undefinedAlias) pop() {
 	}
 }
 
-func (r *undefinedAlias) exists(name ast.Name) bool {
+func (r *undefinedAlias) exists(name *ast.Name) bool {
 	n := len(r.aliases)
 	if n == 0 || len(name.Parts) <= 1 {
 		return true

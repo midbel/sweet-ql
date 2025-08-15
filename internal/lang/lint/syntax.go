@@ -36,7 +36,7 @@ func (r *noStar) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noStar) VisitName(name ast.Name) error {
+func (r *noStar) VisitName(name *ast.Name) error {
 	if name.All() {
 		i := Issue{
 			Position: name.Pos(),
@@ -76,24 +76,24 @@ func (r *duplicatedName) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *duplicatedName) VisitCreateTable(stmt ast.CreateTableStatement) error {
+func (r *duplicatedName) VisitCreateTable(stmt *ast.CreateTableStatement) error {
 	return nil
 }
 
-func (r *duplicatedName) VisitCreateView(stmt ast.CreateViewStatement) error {
+func (r *duplicatedName) VisitCreateView(stmt *ast.CreateViewStatement) error {
 	r.checkColumns(stmt.Columns)
 	return nil
 }
 
-func (r *duplicatedName) VisitInsert(stmt ast.InsertStatement) error {
+func (r *duplicatedName) VisitInsert(stmt *ast.InsertStatement) error {
 	r.checkColumns(stmt.Columns)
 	return nil
 }
 
-func (r *duplicatedName) VisitWith(stmt ast.WithStatement) error {
+func (r *duplicatedName) VisitWith(stmt *ast.WithStatement) error {
 	names := make(map[string]struct{})
 	for _, q := range stmt.Queries {
-		q, ok := q.(ast.CteStatement)
+		q, ok := q.(*ast.CteStatement)
 		if !ok {
 			return fmt.Errorf("%s: unexpected query type", r.Name())
 		}
@@ -111,12 +111,12 @@ func (r *duplicatedName) VisitWith(stmt ast.WithStatement) error {
 	return nil
 }
 
-func (r *duplicatedName) VisitCte(stmt ast.CteStatement) error {
+func (r *duplicatedName) VisitCte(stmt *ast.CteStatement) error {
 	r.checkColumns(stmt.Columns)
 	return nil
 }
 
-func (r *duplicatedName) VisitSelect(stmt ast.SelectStatement) error {
+func (r *duplicatedName) VisitSelect(stmt *ast.SelectStatement) error {
 	r.checkColumns(stmt.Columns)
 	return nil
 }
@@ -128,9 +128,9 @@ func (r *duplicatedName) checkColumns(columns []ast.Node) {
 		switch q := q.(type) {
 		default:
 			continue
-		case ast.Alias:
+		case *ast.Alias:
 			id = append(id, q.Identifier)
-		case ast.Name:
+		case *ast.Name:
 			if q.All() && len(columns) > 1 {
 				i := Issue{
 					Position: q.Pos(),
@@ -186,7 +186,7 @@ func (r *columnsNames) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *columnsNames) VisitCreateView(stmt ast.CreateViewStatement) error {
+func (r *columnsNames) VisitCreateView(stmt *ast.CreateViewStatement) error {
 	if len(stmt.Columns) == 0 {
 		i := Issue{
 			Position: stmt.Pos(),
@@ -199,7 +199,7 @@ func (r *columnsNames) VisitCreateView(stmt ast.CreateViewStatement) error {
 	return nil
 }
 
-func (r *columnsNames) VisitCte(stmt ast.CteStatement) error {
+func (r *columnsNames) VisitCte(stmt *ast.CteStatement) error {
 	if len(stmt.Columns) == 0 {
 		i := Issue{
 			Position: stmt.Pos(),
@@ -239,7 +239,7 @@ func (r *columnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *columnsCount) VisitCreateView(stmt ast.CreateViewStatement) error {
+func (r *columnsCount) VisitCreateView(stmt *ast.CreateViewStatement) error {
 	if len(stmt.Columns) == 0 {
 		return nil
 	}
@@ -259,13 +259,13 @@ func (r *columnsCount) VisitCreateView(stmt ast.CreateViewStatement) error {
 	return nil
 }
 
-func (r *columnsCount) VisitInsert(stmt ast.InsertStatement) error {
+func (r *columnsCount) VisitInsert(stmt *ast.InsertStatement) error {
 	count := len(stmt.Columns)
 	if count == 0 {
 		return nil
 	}
 	switch q := stmt.Values.(type) {
-	case ast.SelectStatement:
+	case *ast.SelectStatement:
 		if len(q.Columns) != count {
 			i := Issue{
 				Position: stmt.Pos(),
@@ -275,9 +275,9 @@ func (r *columnsCount) VisitInsert(stmt ast.InsertStatement) error {
 			}
 			r.issues = append(r.issues, i)
 		}
-	case ast.ValuesStatement:
+	case *ast.ValuesStatement:
 		for _, n := range q.List {
-			i, ok := n.(ast.List)
+			i, ok := n.(*ast.List)
 			if !ok {
 				return fmt.Errorf("%s: unexpected query type", r.Name())
 			}
@@ -297,7 +297,7 @@ func (r *columnsCount) VisitInsert(stmt ast.InsertStatement) error {
 	return nil
 }
 
-func (r *columnsCount) VisitCte(stmt ast.CteStatement) error {
+func (r *columnsCount) VisitCte(stmt *ast.CteStatement) error {
 	if len(stmt.Columns) == 0 {
 		return nil
 	}
@@ -317,27 +317,27 @@ func (r *columnsCount) VisitCte(stmt ast.CteStatement) error {
 	return nil
 }
 
-func (r *columnsCount) VisitUnion(stmt ast.UnionStatement) error {
+func (r *columnsCount) VisitUnion(stmt *ast.UnionStatement) error {
 	return r.checkSet(stmt.Left, stmt.Right)
 }
 
-func (r *columnsCount) VisitExcept(stmt ast.ExceptStatement) error {
+func (r *columnsCount) VisitExcept(stmt *ast.ExceptStatement) error {
 	return r.checkSet(stmt.Left, stmt.Right)
 }
 
-func (r *columnsCount) VisitIntersect(stmt ast.IntersectStatement) error {
+func (r *columnsCount) VisitIntersect(stmt *ast.IntersectStatement) error {
 	return r.checkSet(stmt.Left, stmt.Right)
 }
 
 func (r *columnsCount) getColumnsCount(node ast.Node) (int, error) {
 	switch c := node.(type) {
-	case ast.SelectStatement:
+	case *ast.SelectStatement:
 		return len(c.Columns), nil
-	case ast.UnionStatement:
+	case *ast.UnionStatement:
 		return r.getColumnsCount(c.Left)
-	case ast.ExceptStatement:
+	case *ast.ExceptStatement:
 		return r.getColumnsCount(c.Left)
-	case ast.IntersectStatement:
+	case *ast.IntersectStatement:
 		return r.getColumnsCount(c.Left)
 	default:
 		return 0, fmt.Errorf("%s: unexpected query type", r.Name())
@@ -345,12 +345,12 @@ func (r *columnsCount) getColumnsCount(node ast.Node) (int, error) {
 }
 
 func (r *columnsCount) checkSet(left, right ast.Node) error {
-	q1, ok := left.(ast.SelectStatement)
+	q1, ok := left.(*ast.SelectStatement)
 	if !ok {
 		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
 	ok = slices.ContainsFunc(q1.Columns, func(c ast.Node) bool {
-		n, ok := c.(ast.Name)
+		n, ok := c.(*ast.Name)
 		return ok && n.All()
 	})
 	if ok {
@@ -364,12 +364,12 @@ func (r *columnsCount) checkSet(left, right ast.Node) error {
 		return nil
 	}
 
-	q2, ok := right.(ast.SelectStatement)
+	q2, ok := right.(*ast.SelectStatement)
 	if !ok {
 		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
 	ok = slices.ContainsFunc(q2.Columns, func(c ast.Node) bool {
-		n, ok := c.(ast.Name)
+		n, ok := c.(*ast.Name)
 		return ok && n.All()
 	})
 	if ok {
@@ -420,7 +420,7 @@ func (r *missingWhere) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *missingWhere) VisitSelect(stmt ast.SelectStatement) error {
+func (r *missingWhere) VisitSelect(stmt *ast.SelectStatement) error {
 	if stmt.Where == nil {
 		i := Issue{
 			Position: stmt.Pos(),
@@ -433,7 +433,7 @@ func (r *missingWhere) VisitSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
-func (r *missingWhere) VisitUpdate(stmt ast.UpdateStatement) error {
+func (r *missingWhere) VisitUpdate(stmt *ast.UpdateStatement) error {
 	if stmt.Where == nil {
 		i := Issue{
 			Position: stmt.Pos(),
@@ -446,7 +446,7 @@ func (r *missingWhere) VisitUpdate(stmt ast.UpdateStatement) error {
 	return nil
 }
 
-func (r *missingWhere) VisitDelete(stmt ast.DeleteStatement) error {
+func (r *missingWhere) VisitDelete(stmt *ast.DeleteStatement) error {
 	if stmt.Where == nil {
 		i := Issue{
 			Position: stmt.Pos(),
@@ -504,7 +504,7 @@ func (r *recommandedQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *recommandedQuoted) VisitName(name ast.Name) error {
+func (r *recommandedQuoted) VisitName(name *ast.Name) error {
 	ok := slices.ContainsFunc(name.Parts, func(i ast.Identifier) bool {
 		return !i.Quoted && strings.ToLower(i.Name) != i.Name && strings.ToUpper(i.Name) != i.Name
 	})
@@ -520,7 +520,7 @@ func (r *recommandedQuoted) VisitName(name ast.Name) error {
 	return nil
 }
 
-func (r *recommandedQuoted) VisitAlias(alias ast.Alias) error {
+func (r *recommandedQuoted) VisitAlias(alias *ast.Alias) error {
 	if !alias.Quoted && strings.ToLower(alias.Name) != alias.Name && strings.ToUpper(alias.Name) != alias.Name {
 		i := Issue{
 			Position: alias.Pos(),
@@ -560,7 +560,7 @@ func (r *noIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noIdentQuoted) VisitName(name ast.Name) error {
+func (r *noIdentQuoted) VisitName(name *ast.Name) error {
 	ok := slices.ContainsFunc(name.Parts, func(i ast.Identifier) bool {
 		return i.Quoted
 	})
@@ -576,7 +576,7 @@ func (r *noIdentQuoted) VisitName(name ast.Name) error {
 	return nil
 }
 
-func (r *noIdentQuoted) VisitAlias(alias ast.Alias) error {
+func (r *noIdentQuoted) VisitAlias(alias *ast.Alias) error {
 	if alias.Quoted {
 		i := Issue{
 			Position: alias.Pos(),
@@ -616,7 +616,7 @@ func (r *missingIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *missingIdentQuoted) VisitName(name ast.Name) error {
+func (r *missingIdentQuoted) VisitName(name *ast.Name) error {
 	ok := slices.ContainsFunc(name.Parts, func(i ast.Identifier) bool {
 		return !i.Quoted
 	})
@@ -632,7 +632,7 @@ func (r *missingIdentQuoted) VisitName(name ast.Name) error {
 	return nil
 }
 
-func (r *missingIdentQuoted) VisitAlias(alias ast.Alias) error {
+func (r *missingIdentQuoted) VisitAlias(alias *ast.Alias) error {
 	if !alias.Quoted {
 		i := Issue{
 			Position: alias.Pos(),
@@ -672,7 +672,7 @@ func (r *ambiguousName) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *ambiguousName) VisitName(name ast.Name) error {
+func (r *ambiguousName) VisitName(name *ast.Name) error {
 	if len(name.Parts) == 1 {
 		i := Issue{
 			Position: name.Pos(),
@@ -687,17 +687,17 @@ func (r *ambiguousName) VisitName(name ast.Name) error {
 
 type literalVisitor struct {
 	ast.Visitor
-	check func(ast.Value) error
+	check func(*ast.Value) error
 }
 
-func visitLiteral(check func(ast.Value) error) ast.Visitor {
+func visitLiteral(check func(*ast.Value) error) ast.Visitor {
 	return &literalVisitor{
 		Visitor: ast.Noop(),
 		check:   check,
 	}
 }
 
-func (i *literalVisitor) VisitValue(value ast.Value) error {
+func (i *literalVisitor) VisitValue(value *ast.Value) error {
 	return i.check(value)
 }
 
@@ -729,7 +729,7 @@ func (r *noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noLiteralJoin) VisitJoin(join ast.Join) error {
+func (r *noLiteralJoin) VisitJoin(join *ast.Join) error {
 	var (
 		visit = visitLiteral(r.visitValue)
 		walk  = Walk(visit)
@@ -737,7 +737,7 @@ func (r *noLiteralJoin) VisitJoin(join ast.Join) error {
 	return join.Where.Accept(walk)
 }
 
-func (r *noLiteralJoin) visitValue(value ast.Value) error {
+func (r *noLiteralJoin) visitValue(value *ast.Value) error {
 	i := Issue{
 		Position: value.Pos(),
 		Severity: r.severity,
@@ -776,7 +776,7 @@ func (r *unusedJoin) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *unusedJoin) VisitSelect(stmt ast.SelectStatement) error {
+func (r *unusedJoin) VisitSelect(stmt *ast.SelectStatement) error {
 	if len(stmt.Tables) == 1 {
 		return nil
 	}
@@ -811,7 +811,7 @@ func (r *enforceFetch) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *enforceFetch) VisitSelect(stmt ast.SelectStatement) error {
+func (r *enforceFetch) VisitSelect(stmt *ast.SelectStatement) error {
 	if stmt.Limit == nil {
 		i := Issue{
 			Position: stmt.Pos(),
@@ -824,7 +824,7 @@ func (r *enforceFetch) VisitSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
-func (r *enforceFetch) VisitLimit(limit ast.Limit) error {
+func (r *enforceFetch) VisitLimit(limit *ast.Limit) error {
 	if limit.Count == nil {
 		i := Issue{
 			Position: limit.Pos(),
@@ -837,7 +837,7 @@ func (r *enforceFetch) VisitLimit(limit ast.Limit) error {
 	return nil
 }
 
-func (r *enforceFetch) VisitOffset(offset ast.Offset) error {
+func (r *enforceFetch) VisitOffset(offset *ast.Offset) error {
 	if offset.Count == nil {
 		i := Issue{
 			Position: offset.Pos(),
@@ -878,7 +878,7 @@ func (r *orderOffsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *orderOffsetFetch) VisitSelect(stmt ast.SelectStatement) error {
+func (r *orderOffsetFetch) VisitSelect(stmt *ast.SelectStatement) error {
 	if stmt.Limit != nil && len(stmt.Orders) == 0 {
 		i := Issue{
 			Position: stmt.Pos(),
@@ -919,20 +919,20 @@ func (r *setOrderLast) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *setOrderLast) VisitUnion(stmt ast.UnionStatement) error {
+func (r *setOrderLast) VisitUnion(stmt *ast.UnionStatement) error {
 	return r.checkStatement(stmt.Left, stmt.Right)
 }
 
-func (r *setOrderLast) VisitExcept(stmt ast.ExceptStatement) error {
+func (r *setOrderLast) VisitExcept(stmt *ast.ExceptStatement) error {
 	return r.checkStatement(stmt.Left, stmt.Right)
 }
 
-func (r *setOrderLast) VisitIntersect(stmt ast.IntersectStatement) error {
+func (r *setOrderLast) VisitIntersect(stmt *ast.IntersectStatement) error {
 	return r.checkStatement(stmt.Left, stmt.Right)
 }
 
 func (r *setOrderLast) checkStatement(left, right ast.Node) error {
-	stmt, ok := left.(ast.SelectStatement)
+	stmt, ok := left.(*ast.SelectStatement)
 	if !ok {
 		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
@@ -976,20 +976,20 @@ func (r *setOffsetFetchLast) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *setOffsetFetchLast) VisitUnion(stmt ast.UnionStatement) error {
+func (r *setOffsetFetchLast) VisitUnion(stmt *ast.UnionStatement) error {
 	return r.checkStatement(stmt.Left, stmt.Right)
 }
 
-func (r *setOffsetFetchLast) VisitExcept(stmt ast.ExceptStatement) error {
+func (r *setOffsetFetchLast) VisitExcept(stmt *ast.ExceptStatement) error {
 	return r.checkStatement(stmt.Left, stmt.Right)
 }
 
-func (r *setOffsetFetchLast) VisitIntersect(stmt ast.IntersectStatement) error {
+func (r *setOffsetFetchLast) VisitIntersect(stmt *ast.IntersectStatement) error {
 	return r.checkStatement(stmt.Left, stmt.Right)
 }
 
 func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
-	stmt, ok := left.(ast.SelectStatement)
+	stmt, ok := left.(*ast.SelectStatement)
 	if !ok {
 		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
@@ -1032,15 +1032,15 @@ func (r *selfCompare) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *selfCompare) VisitBinary(binary ast.Binary) error {
+func (r *selfCompare) VisitBinary(binary *ast.Binary) error {
 	if binary.IsRelation() {
 		return nil
 	}
-	n1, ok := binary.Left.(ast.Name)
+	n1, ok := binary.Left.(*ast.Name)
 	if !ok {
 		return nil
 	}
-	n2, ok := binary.Right.(ast.Name)
+	n2, ok := binary.Right.(*ast.Name)
 	if !ok {
 		return nil
 	}
@@ -1083,7 +1083,7 @@ func (r *stdOperator) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *stdOperator) VisitBinary(binary ast.Binary) error {
+func (r *stdOperator) VisitBinary(binary *ast.Binary) error {
 	if binary.IsRelation() {
 		return nil
 	}
@@ -1096,7 +1096,7 @@ func (r *stdOperator) VisitBinary(binary ast.Binary) error {
 		}
 		r.issues = append(r.issues, i)
 	}
-	if n, ok := binary.Right.(ast.Value); ok && n.Constant() && binary.IsEquality() {
+	if n, ok := binary.Right.(*ast.Value); ok && n.Constant() && binary.IsEquality() {
 		i := Issue{
 			Position: binary.Pos(),
 			Severity: r.severity,

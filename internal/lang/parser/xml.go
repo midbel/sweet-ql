@@ -10,7 +10,7 @@ import (
 )
 
 func (p *Parser) ParseXML(name ast.Node) (ast.Node, error) {
-	n, ok := name.(ast.Name)
+	n, ok := name.(*ast.Name)
 	if !ok {
 		return nil, p.Unexpected("xml", defaultReason)
 	}
@@ -42,7 +42,7 @@ func (p *Parser) ParseXML(name ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) ParseXmlRoot(left ast.Node) (ast.Node, error) {
-	xml := ast.XmlRoot{
+	xml := &ast.XmlRoot{
 		Position: left.Pos(),
 	}
 	p.Next()
@@ -96,12 +96,12 @@ func (p *Parser) ParseXmlElement(left ast.Node) (ast.Node, error) {
 		Quoted: p.Is(token.QuotedIdent),
 		Name:   p.GetCurrLiteral(),
 	}
-	name := ast.Name{
+	name := &ast.Name{
 		Position: p.GetCurrPosition(),
 		Parts:    slx.One(ident),
 	}
 	p.Next()
-	xml := ast.XmlElement{
+	xml := &ast.XmlElement{
 		Position: left.Pos(),
 		Name:     name,
 	}
@@ -169,7 +169,7 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Node, error) {
 		if !p.Is(token.Ident) && !p.Is(token.QuotedIdent) {
 			needAs = true
 		}
-		attr := ast.XmlAttribute{
+		attr := &ast.XmlAttribute{
 			Position: p.GetCurrPosition(),
 		}
 		if attr.Value, err = p.StartExpression(); err != nil {
@@ -184,7 +184,7 @@ func (p *Parser) ParseXmlAttributes() ([]ast.Node, error) {
 				Quoted: p.Is(token.QuotedIdent),
 				Name:   p.GetCurrLiteral(),
 			}
-			attr.Name = ast.Name{
+			attr.Name = &ast.Name{
 				Position: p.GetCurrPosition(),
 				Parts:    slx.One(ident),
 			}
@@ -238,7 +238,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Node, error) {
 				Quoted: p.Is(token.QuotedIdent),
 				Name:   p.GetCurrLiteral(),
 			}
-			ns.Uri = ast.Name{
+			ns.Uri = &ast.Name{
 				Position: p.GetCurrPosition(),
 				Parts:    slx.One(ident),
 			}
@@ -252,7 +252,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Node, error) {
 				Quoted: p.Is(token.QuotedIdent),
 				Name:   p.GetCurrLiteral(),
 			}
-			ns.Uri = ast.Name{
+			ns.Uri = &ast.Name{
 				Position: p.GetCurrPosition(),
 				Parts:    slx.One(ident),
 			}
@@ -266,7 +266,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Node, error) {
 					Quoted: p.Is(token.QuotedIdent),
 					Name:   p.GetCurrLiteral(),
 				}
-				ns.Name = ast.Name{
+				ns.Name = &ast.Name{
 					Position: p.GetCurrPosition(),
 					Parts:    slx.One(ident),
 				}
@@ -279,7 +279,7 @@ func (p *Parser) ParseXmlNamespaces() ([]ast.Node, error) {
 		if err := p.EnsureEnd("xmlnamespaces", token.Comma, token.Rparen); err != nil {
 			return nil, err
 		}
-		list = append(list, ns)
+		list = append(list, &ns)
 	}
 	if !p.Is(token.Rparen) {
 		return nil, p.Unexpected("xmlnamespaces", missingCloseParen)
@@ -303,12 +303,12 @@ func (p *Parser) ParseXmlInstruction(left ast.Node) (ast.Node, error) {
 		Quoted: p.Is(token.QuotedIdent),
 		Name:   p.GetCurrLiteral(),
 	}
-	name := ast.Name{
+	name := &ast.Name{
 		Position: p.GetCurrPosition(),
 		Parts:    slx.One(ident),
 	}
 	p.Next()
-	xml := ast.XmlPi{
+	xml := &ast.XmlPi{
 		Position: left.Pos(),
 		Name:     name,
 	}
@@ -325,7 +325,7 @@ func (p *Parser) ParseXmlInstruction(left ast.Node) (ast.Node, error) {
 }
 
 func (p *Parser) ParseXmlForest(left ast.Node) (ast.Node, error) {
-	xml := ast.XmlForest{
+	xml := &ast.XmlForest{
 		Position: left.Pos(),
 	}
 	p.Next()
@@ -372,14 +372,14 @@ func (p *Parser) parseForestItem() (ast.Node, error) {
 	default:
 	}
 	if p.IsKeyword("AS") {
-		return p.ParseAlias(item)
+		return p.ParseAlias(&item)
 	}
-	return item, nil
+	return &item, nil
 }
 
 func (p *Parser) ParseXmlConcat(left ast.Node) (ast.Node, error) {
 	p.Next()
-	xml := ast.XmlConcat{
+	xml := &ast.XmlConcat{
 		Position: left.Pos(),
 	}
 	for !p.Done() && !p.Is(token.Rparen) {
@@ -401,7 +401,7 @@ func (p *Parser) ParseXmlConcat(left ast.Node) (ast.Node, error) {
 
 func (p *Parser) ParseXmlAgg(left ast.Node) (ast.Node, error) {
 	p.Next()
-	xml := ast.XmlAgg{
+	xml := &ast.XmlAgg{
 		Position: left.Pos(),
 	}
 	body, err := p.StartExpression()
@@ -431,7 +431,7 @@ func (p *Parser) ParseXmlText(left ast.Node) (ast.Node, error) {
 		return nil, p.Unexpected("xmltext", missingCloseParen)
 	}
 	p.Next()
-	xml := ast.XmlText{
+	xml := &ast.XmlText{
 		Position: left.Pos(),
 		Text:     stmt,
 	}
@@ -443,7 +443,7 @@ func (p *Parser) ParseXmlComment(left ast.Node) (ast.Node, error) {
 	if !p.Curr().IsValue() {
 		return nil, p.Unexpected("xmlcomment", valueExpected)
 	}
-	text := ast.Value{
+	text := &ast.Value{
 		Literal:  p.GetCurrLiteral(),
 		Position: p.GetCurrPosition(),
 	}
@@ -452,7 +452,7 @@ func (p *Parser) ParseXmlComment(left ast.Node) (ast.Node, error) {
 		return nil, p.Unexpected("xmlcomment", missingCloseParen)
 	}
 	p.Next()
-	xml := ast.XmlComment{
+	xml := &ast.XmlComment{
 		Position: left.Pos(),
 		Text:     text,
 	}

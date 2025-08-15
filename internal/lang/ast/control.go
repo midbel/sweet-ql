@@ -9,11 +9,11 @@ type Return struct {
 	Values []Node
 }
 
-func (r Return) Pos() token.Position {
+func (r *Return) Pos() token.Position {
 	return r.Position
 }
 
-func (r Return) Accept(visit Visitor) error {
+func (r *Return) Accept(visit Visitor) error {
 	return visit.VisitReturn(r)
 }
 
@@ -23,11 +23,11 @@ type While struct {
 	Body Node
 }
 
-func (w While) Pos() token.Position {
+func (w *While) Pos() token.Position {
 	return w.Position
 }
 
-func (w While) Accept(visit Visitor) error {
+func (w *While) Accept(visit Visitor) error {
 	return visit.VisitWhile(w)
 }
 
@@ -38,11 +38,11 @@ type If struct {
 	Alt Node
 }
 
-func (i If) Pos() token.Position {
+func (i *If) Pos() token.Position {
 	return i.Position
 }
 
-func (i If) Accept(visit Visitor) error {
+func (i *If) Accept(visit Visitor) error {
 	return visit.VisitIf(i)
 }
 
@@ -53,11 +53,11 @@ type Declare struct {
 	Value Node
 }
 
-func (d Declare) Pos() token.Position {
+func (d *Declare) Pos() token.Position {
 	return d.Position
 }
 
-func (d Declare) Accept(visit Visitor) error {
+func (d *Declare) Accept(visit Visitor) error {
 	return visit.VisitDeclare(d)
 }
 
@@ -68,11 +68,11 @@ type Case struct {
 	Else Node
 }
 
-func (c Case) Pos() token.Position {
+func (c *Case) Pos() token.Position {
 	return c.Position
 }
 
-func (c Case) Accept(visit Visitor) error {
+func (c *Case) Accept(visit Visitor) error {
 	return visit.VisitCase(c)
 }
 
@@ -82,11 +82,11 @@ type When struct {
 	Body Node
 }
 
-func (w When) Pos() token.Position {
+func (w *When) Pos() token.Position {
 	return w.Position
 }
 
-func (w When) Accept(visit Visitor) error {
+func (w *When) Accept(visit Visitor) error {
 	return visit.VisitWhen(w)
 }
 
@@ -96,10 +96,10 @@ type Set struct {
 	Expr  Node
 }
 
-func (s Set) Pos() token.Position {
+func (s *Set) Pos() token.Position {
 	return s.Position
 }
 
-func (s Set) Accept(visit Visitor) error {
+func (s *Set) Accept(visit Visitor) error {
 	return visit.VisitSet(s)
 }

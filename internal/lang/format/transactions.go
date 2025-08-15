@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitStartTransaction(stmt ast.StartTransaction) error {
+func (w *Writer) VisitStartTransaction(stmt *ast.StartTransaction) error {
 	w.Enter()
 	// defer w.Leave()
 	w.WritePrefix()
@@ -36,7 +36,7 @@ func (w *Writer) VisitStartTransaction(stmt ast.StartTransaction) error {
 	return nil
 }
 
-func (w *Writer) VisitSetTransaction(stmt ast.SetTransaction) error {
+func (w *Writer) VisitSetTransaction(stmt *ast.SetTransaction) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -66,7 +66,7 @@ func (w *Writer) VisitSetTransaction(stmt ast.SetTransaction) error {
 	return nil
 }
 
-func (w *Writer) VisitSavepoint(stmt ast.Savepoint) error {
+func (w *Writer) VisitSavepoint(stmt *ast.Savepoint) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -78,7 +78,7 @@ func (w *Writer) VisitSavepoint(stmt ast.Savepoint) error {
 	return nil
 }
 
-func (w *Writer) VisitReleaseSavepoint(stmt ast.ReleaseSavepoint) error {
+func (w *Writer) VisitReleaseSavepoint(stmt *ast.ReleaseSavepoint) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -92,7 +92,7 @@ func (w *Writer) VisitReleaseSavepoint(stmt ast.ReleaseSavepoint) error {
 	return nil
 }
 
-func (w *Writer) VisitRollbackSavepoint(stmt ast.RollbackSavepoint) error {
+func (w *Writer) VisitRollbackSavepoint(stmt *ast.RollbackSavepoint) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -106,7 +106,7 @@ func (w *Writer) VisitRollbackSavepoint(stmt ast.RollbackSavepoint) error {
 	return nil
 }
 
-func (w *Writer) VisitCommit(stmt ast.Commit) error {
+func (w *Writer) VisitCommit(stmt *ast.Commit) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -114,7 +114,7 @@ func (w *Writer) VisitCommit(stmt ast.Commit) error {
 	return nil
 }
 
-func (w *Writer) VisitRollback(stmt ast.Rollback) error {
+func (w *Writer) VisitRollback(stmt *ast.Rollback) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()

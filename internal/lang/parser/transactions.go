@@ -49,7 +49,7 @@ func (p *Parser) parseSetTransaction() (ast.Node, error) {
 	default:
 		return nil, p.Unexpected("transaction", defaultReason)
 	}
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) parseStartTransaction() (ast.Node, error) {
@@ -81,14 +81,14 @@ func (p *Parser) parseStartTransaction() (ast.Node, error) {
 	}
 	switch {
 	case p.IsKeyword("END") || p.IsKeyword("COMMIT"):
-		stmt.End = ast.Commit{}
+		stmt.End = &ast.Commit{}
 	case p.IsKeyword("ROLLBACK"):
-		stmt.End = ast.Rollback{}
+		stmt.End = &ast.Rollback{}
 	default:
 		return nil, p.Unexpected("transaction", defaultReason)
 	}
 	p.Next()
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) parseSavepoint() (ast.Node, error) {
@@ -103,7 +103,7 @@ func (p *Parser) parseSavepoint() (ast.Node, error) {
 			return nil, err
 		}
 	}
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) parseReleaseSavepoint() (ast.Node, error) {
@@ -116,7 +116,7 @@ func (p *Parser) parseReleaseSavepoint() (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) parseRollbackSavepoint() (ast.Node, error) {
@@ -129,15 +129,15 @@ func (p *Parser) parseRollbackSavepoint() (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) parseCommit() (ast.Node, error) {
 	p.Next()
-	return ast.Commit{}, nil
+	return &ast.Commit{}, nil
 }
 
 func (p *Parser) parseRollback() (ast.Node, error) {
 	p.Next()
-	return ast.Rollback{}, nil
+	return &ast.Rollback{}, nil
 }

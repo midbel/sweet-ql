@@ -7,8 +7,8 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitGroup(group ast.Group) error {
-	if _, ok := group.Node.(ast.SelectStatement); ok && w.Compact.Subqueries() {
+func (w *Writer) VisitGroup(group *ast.Group) error {
+	if _, ok := group.Node.(*ast.SelectStatement); ok && w.Compact.Subqueries() {
 		compact := w.Compact
 		w.Compact = compactAll
 		defer func() {
@@ -28,7 +28,7 @@ func (w *Writer) VisitGroup(group ast.Group) error {
 	return nil
 }
 
-func (w *Writer) VisitValue(value ast.Value) error {
+func (w *Writer) VisitValue(value *ast.Value) error {
 	if value.Constant() {
 		if w.withColor() {
 			w.WriteString(keywordColor)
@@ -53,7 +53,7 @@ func (w *Writer) VisitValue(value ast.Value) error {
 	return nil
 }
 
-func (w *Writer) VisitCollate(collate ast.Collate) error {
+func (w *Writer) VisitCollate(collate *ast.Collate) error {
 	collate.Ident.Accept(w)
 	w.WriteBlank()
 	w.WriteKeyword("collate")
@@ -62,7 +62,7 @@ func (w *Writer) VisitCollate(collate ast.Collate) error {
 	return nil
 }
 
-func (w *Writer) VisitCallFunc(call ast.Call) error {
+func (w *Writer) VisitCallFunc(call *ast.Call) error {
 	call.Ident.Accept(w)
 	w.WriteString("(")
 	if call.Distinct {
@@ -79,7 +79,7 @@ func (w *Writer) VisitCallFunc(call ast.Call) error {
 	return nil
 }
 
-func (w *Writer) VisitName(name ast.Name) error {
+func (w *Writer) VisitName(name *ast.Name) error {
 	for i := range name.Parts {
 		if i > 0 {
 			w.WriteString(".")
@@ -99,7 +99,7 @@ func (w *Writer) VisitName(name ast.Name) error {
 	return nil
 }
 
-func (w *Writer) VisitAlias(alias ast.Alias) error {
+func (w *Writer) VisitAlias(alias *ast.Alias) error {
 	alias.Node.Accept(w)
 	w.WriteBlank()
 	if !w.Compact.NoAs() {
@@ -124,7 +124,7 @@ func (w *Writer) VisitAlias(alias ast.Alias) error {
 	return nil
 }
 
-func (w *Writer) VisitBinary(bin ast.Binary) error {
+func (w *Writer) VisitBinary(bin *ast.Binary) error {
 	bin.Left.Accept(w)
 	if bin.IsRelation() {
 		w.WriteNL()
@@ -140,13 +140,13 @@ func (w *Writer) VisitBinary(bin ast.Binary) error {
 	return nil
 }
 
-func (w *Writer) VisitUnary(unary ast.Unary) error {
+func (w *Writer) VisitUnary(unary *ast.Unary) error {
 	w.WriteKeyword(unary.Op)
 	unary.Right.Accept(w)
 	return nil
 }
 
-func (w *Writer) VisitList(list ast.List) error {
+func (w *Writer) VisitList(list *ast.List) error {
 	w.WriteString("(")
 	for i, v := range list.Values {
 		if i > 0 {
@@ -158,7 +158,7 @@ func (w *Writer) VisitList(list ast.List) error {
 	return nil
 }
 
-func (w *Writer) VisitBody(body ast.Body) error {
+func (w *Writer) VisitBody(body *ast.Body) error {
 	for _, v := range body.Values {
 		v.Accept(w)
 		w.WriteEOL()
@@ -167,7 +167,7 @@ func (w *Writer) VisitBody(body ast.Body) error {
 	return nil
 }
 
-func (w *Writer) VisitCase(cas ast.Case) error {
+func (w *Writer) VisitCase(cas *ast.Case) error {
 	w.WriteKeyword("case")
 	if cas.Cdt != nil {
 		w.WriteBlank()
@@ -207,7 +207,7 @@ func (w *Writer) VisitCase(cas ast.Case) error {
 	return nil
 }
 
-func (w *Writer) VisitWhen(when ast.When) error {
+func (w *Writer) VisitWhen(when *ast.When) error {
 	w.WriteKeyword("when")
 	w.WriteBlank()
 	when.Cdt.Accept(w)
@@ -218,7 +218,7 @@ func (w *Writer) VisitWhen(when ast.When) error {
 	return nil
 }
 
-func (w *Writer) VisitCast(cast ast.Cast) error {
+func (w *Writer) VisitCast(cast *ast.Cast) error {
 	w.WriteKeyword("cast")
 	w.WriteString("(")
 	cast.Node.Accept(w)
@@ -246,7 +246,7 @@ func (w *Writer) visitType(typ ast.Type) {
 	}
 }
 
-func (w *Writer) VisitExists(exists ast.Exists) error {
+func (w *Writer) VisitExists(exists *ast.Exists) error {
 	w.WriteKeyword("exists")
 	w.WriteString("(")
 	exists.Node.Accept(w)
@@ -254,12 +254,12 @@ func (w *Writer) VisitExists(exists ast.Exists) error {
 	return nil
 }
 
-func (w *Writer) VisitBetween(between ast.Between) error {
+func (w *Writer) VisitBetween(between *ast.Between) error {
 	w.visitBetween(between, false)
 	return nil
 }
 
-func (w *Writer) VisitAll(all ast.All) error {
+func (w *Writer) VisitAll(all *ast.All) error {
 	w.WriteKeyword("all")
 	w.WriteString("(")
 	all.Node.Accept(w)
@@ -267,7 +267,7 @@ func (w *Writer) VisitAll(all ast.All) error {
 	return nil
 }
 
-func (w *Writer) VisitAny(any ast.Any) error {
+func (w *Writer) VisitAny(any *ast.Any) error {
 	w.WriteKeyword("any")
 	w.WriteString("(")
 	any.Node.Accept(w)
@@ -275,30 +275,30 @@ func (w *Writer) VisitAny(any ast.Any) error {
 	return nil
 }
 
-func (w *Writer) VisitIs(is ast.Is) error {
+func (w *Writer) VisitIs(is *ast.Is) error {
 	w.visitIs(is, false)
 	return nil
 }
 
-func (w *Writer) VisitIn(in ast.In) error {
+func (w *Writer) VisitIn(in *ast.In) error {
 	w.visitIn(in, false)
 	return nil
 }
 
-func (w *Writer) VisitNot(not ast.Not) error {
+func (w *Writer) VisitNot(not *ast.Not) error {
 	switch n := not.Node.(type) {
-	case ast.Is:
+	case *ast.Is:
 		w.visitIs(n, true)
-	case ast.In:
+	case *ast.In:
 		w.visitIn(n, true)
-	case ast.Between:
+	case *ast.Between:
 		w.visitBetween(n, true)
 	default:
 	}
 	return nil
 }
 
-func (w *Writer) visitIs(is ast.Is, not bool) {
+func (w *Writer) visitIs(is *ast.Is, not bool) {
 	is.Ident.Accept(w)
 	w.WriteBlank()
 	w.WriteKeyword("is")
@@ -310,7 +310,7 @@ func (w *Writer) visitIs(is ast.Is, not bool) {
 	is.Value.Accept(w)
 }
 
-func (w *Writer) visitIn(in ast.In, not bool) {
+func (w *Writer) visitIn(in *ast.In, not bool) {
 	in.Ident.Accept(w)
 	if not {
 		w.WriteBlank()
@@ -322,7 +322,7 @@ func (w *Writer) visitIn(in ast.In, not bool) {
 	in.Value.Accept(w)
 }
 
-func (w *Writer) visitBetween(between ast.Between, not bool) {
+func (w *Writer) visitBetween(between *ast.Between, not bool) {
 	between.Ident.Accept(w)
 	if not {
 		w.WriteBlank()
@@ -338,7 +338,7 @@ func (w *Writer) visitBetween(between ast.Between, not bool) {
 	between.Upper.Accept(w)
 }
 
-func (w *Writer) VisitRow(stmt ast.Row) error {
+func (w *Writer) VisitRow(stmt *ast.Row) error {
 	w.WriteKeyword("row")
 	w.WriteString("(")
 	for i, v := range stmt.Values {

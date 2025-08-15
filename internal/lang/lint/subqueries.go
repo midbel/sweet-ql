@@ -35,7 +35,7 @@ func (r *subqueryColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *subqueryColumnsCount) VisitJoin(join ast.Join) error {
+func (r *subqueryColumnsCount) VisitJoin(join *ast.Join) error {
 	var (
 		other = subqueryColumnsCount{
 			severity: r.severity,
@@ -44,10 +44,10 @@ func (r *subqueryColumnsCount) VisitJoin(join ast.Join) error {
 		sub   = Walk(&other)
 		entry = join.Table
 	)
-	if a, ok := entry.(ast.Alias); ok {
+	if a, ok := entry.(*ast.Alias); ok {
 		entry = a.Node
 	}
-	if g, ok := entry.(ast.Group); ok {
+	if g, ok := entry.(*ast.Group); ok {
 		entry = g.Node
 	}
 	if err := entry.Accept(sub); err != nil {
@@ -60,8 +60,8 @@ func (r *subqueryColumnsCount) VisitJoin(join ast.Join) error {
 	return errVisit
 }
 
-func (r *subqueryColumnsCount) VisitGroup(group ast.Group) error {
-	if stmt, ok := group.Node.(ast.SelectStatement); ok {
+func (r *subqueryColumnsCount) VisitGroup(group *ast.Group) error {
+	if stmt, ok := group.Node.(*ast.SelectStatement); ok {
 		if len(stmt.Columns) != 1 {
 			i := Issue{
 				Position: stmt.Columns[0].Pos(),
@@ -71,7 +71,7 @@ func (r *subqueryColumnsCount) VisitGroup(group ast.Group) error {
 			}
 			r.issues = append(r.issues, i)
 		} else {
-			n, ok := stmt.Columns[0].(ast.Name)
+			n, ok := stmt.Columns[0].(*ast.Name)
 			if ok && n.All() {
 				i := Issue{
 					Position: stmt.Columns[0].Pos(),
@@ -114,7 +114,7 @@ func (r *subqueryNames) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *subqueryNames) VisitSelect(stmt ast.SelectStatement) error {
+func (r *subqueryNames) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, t := range stmt.Tables {
 		if err := r.visitNode(t, stmt); err != nil {
 			return err
@@ -123,7 +123,7 @@ func (r *subqueryNames) VisitSelect(stmt ast.SelectStatement) error {
 	return errVisit
 }
 
-func (r *subqueryNames) visitNode(node ast.Node, stmt ast.SelectStatement) error {
+func (r *subqueryNames) visitNode(node ast.Node, stmt *ast.SelectStatement) error {
 	x := &subqueryJoinNames{
 		Visitor: ast.Noop(),
 	}
@@ -152,18 +152,18 @@ func (r *subqueryNames) visitNode(node ast.Node, stmt ast.SelectStatement) error
 type queryIdentUsage struct {
 	ast.Visitor
 	issues []Issue
-	names  []ast.Name
+	names  []*ast.Name
 	alias  ast.Identifier
 }
 
-func (s *queryIdentUsage) VisitName(name ast.Name) error {
+func (s *queryIdentUsage) VisitName(name *ast.Name) error {
 	if len(name.Parts) <= 1 {
 		return nil
 	}
 	if name.Parts[len(name.Parts)-2] != s.alias {
 		return nil
 	}
-	ok := slices.ContainsFunc(s.names, func(n ast.Name) bool {
+	ok := slices.ContainsFunc(s.names, func(n *ast.Name) bool {
 		if n.Pos() == name.Pos() {
 			return true
 		}
@@ -182,26 +182,26 @@ func (s *queryIdentUsage) VisitName(name ast.Name) error {
 type subqueryJoinNames struct {
 	ast.Visitor
 
-	names []ast.Name
+	names []*ast.Name
 	alias ast.Identifier
 }
 
-func (s *subqueryJoinNames) VisitAlias(alias ast.Alias) error {
+func (s *subqueryJoinNames) VisitAlias(alias *ast.Alias) error {
 	s.alias = alias.Identifier
 
 	entry := alias.Node
-	if g, ok := entry.(ast.Group); ok {
+	if g, ok := entry.(*ast.Group); ok {
 		entry = g.Node
 	} else {
 		return nil
 	}
-	if stmt, ok := entry.(ast.SelectStatement); ok {
+	if stmt, ok := entry.(*ast.SelectStatement); ok {
 		for _, c := range stmt.Columns {
 			switch c := c.(type) {
-			case ast.Name:
+			case *ast.Name:
 				s.names = append(s.names, c)
-			case ast.Alias:
-				n := ast.Name{
+			case *ast.Alias:
+				n := &ast.Name{
 					Position: c.Pos(),
 					Parts:    slx.One(c.Identifier),
 				}
@@ -240,8 +240,8 @@ func (r *noSubquery) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *noSubquery) VisitGroup(group ast.Group) error {
-	if _, ok := group.Node.(ast.SelectStatement); ok {
+func (r *noSubquery) VisitGroup(group *ast.Group) error {
+	if _, ok := group.Node.(*ast.SelectStatement); ok {
 		i := Issue{
 			Position: group.Pos(),
 			Severity: r.severity,

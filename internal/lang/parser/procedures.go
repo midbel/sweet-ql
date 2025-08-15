@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Parser) ParseCreateProcedure() (ast.Node, error) {
-	stmt := ast.CreateProcedureStatement{
+	stmt := &ast.CreateProcedureStatement{
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()

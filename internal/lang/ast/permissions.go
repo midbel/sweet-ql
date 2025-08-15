@@ -12,11 +12,11 @@ type GrantStatement struct {
 	Grant      bool
 }
 
-func (s GrantStatement) Pos() token.Position {
+func (s *GrantStatement) Pos() token.Position {
 	return s.Position
 }
 
-func (g GrantStatement) Accept(visit Visitor) error {
+func (g *GrantStatement) Accept(visit Visitor) error {
 	return visit.VisitGrant(g)
 }
 
@@ -28,10 +28,10 @@ type RevokeStatement struct {
 	Cascade    CascadeMode
 }
 
-func (r RevokeStatement) Pos() token.Position {
+func (r *RevokeStatement) Pos() token.Position {
 	return r.Position
 }
 
-func (r RevokeStatement) Accept(visit Visitor) error {
+func (r *RevokeStatement) Accept(visit Visitor) error {
 	return visit.VisitRevoke(r)
 }

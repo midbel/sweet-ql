@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitGrant(stmt ast.GrantStatement) error {
+func (w *Writer) VisitGrant(stmt *ast.GrantStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -49,7 +49,7 @@ func (w *Writer) VisitGrant(stmt ast.GrantStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitRevoke(stmt ast.RevokeStatement) error {
+func (w *Writer) VisitRevoke(stmt *ast.RevokeStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()

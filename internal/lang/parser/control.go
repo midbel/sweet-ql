@@ -21,7 +21,7 @@ func (p *Parser) parseSet() (ast.Node, error) {
 	p.Next()
 
 	stmt.Expr, err = p.StartExpression()
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) ParseDeclare() (ast.Node, error) {
@@ -50,7 +50,7 @@ func (p *Parser) ParseDeclare() (ast.Node, error) {
 			return nil, err
 		}
 	}
-	return stmt, nil
+	return &stmt, nil
 }
 
 func (p *Parser) parseIf() (ast.Node, error) {
@@ -78,7 +78,7 @@ func (p *Parser) parseIf() (ast.Node, error) {
 		stmt.Alt, err = p.ParseBody(p.KwCheck("END IF"))
 	case p.IsKeyword("ELSEIF"):
 		stmt.Alt, err = p.parseIf()
-		return stmt, err
+		return &stmt, err
 	case p.IsKeyword("END IF"):
 	default:
 		return nil, p.Unexpected("if", defaultReason)
@@ -90,7 +90,7 @@ func (p *Parser) parseIf() (ast.Node, error) {
 		return nil, p.Unexpected("if", keywordExpected("END IF"))
 	}
 	p.Next()
-	return stmt, nil
+	return &stmt, nil
 }
 
 func (p *Parser) parseWhile() (ast.Node, error) {
@@ -117,7 +117,7 @@ func (p *Parser) parseWhile() (ast.Node, error) {
 		return nil, p.Unexpected("while", keywordExpected("END WHILE"))
 	}
 	p.Next()
-	return stmt, nil
+	return &stmt, nil
 }
 
 func (p *Parser) ParseBody(done func() bool) (ast.Node, error) {
@@ -136,7 +136,7 @@ func (p *Parser) ParseBody(done func() bool) (ast.Node, error) {
 	if !done() {
 		return nil, p.Unexpected("body", defaultReason)
 	}
-	return list, nil
+	return &list, nil
 }
 
 func (p *Parser) parseReturn() (ast.Node, error) {
@@ -151,5 +151,5 @@ func (p *Parser) parseReturn() (ast.Node, error) {
 			return nil, err
 		}
 	}
-	return ret, nil
+	return &ret, nil
 }

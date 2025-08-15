@@ -4,7 +4,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitIf(stmt ast.If) error {
+func (w *Writer) VisitIf(stmt *ast.If) error {
 	w.Enter()
 	defer w.Leave()
 	w.visitIf(stmt, "if")
@@ -15,7 +15,7 @@ func (w *Writer) VisitIf(stmt ast.If) error {
 	return nil
 }
 
-func (w *Writer) visitIf(stmt ast.If, kw string) {
+func (w *Writer) visitIf(stmt *ast.If, kw string) {
 	w.WritePrefix()
 	w.WriteKeyword(kw)
 	w.WriteBlank()
@@ -26,7 +26,7 @@ func (w *Writer) visitIf(stmt ast.If, kw string) {
 	stmt.Csq.Accept(w)
 
 	if stmt.Alt != nil {
-		if s, ok := stmt.Alt.(ast.If); ok {
+		if s, ok := stmt.Alt.(*ast.If); ok {
 			w.visitIf(s, "elseif")
 		} else {
 			w.WritePrefix()
@@ -37,7 +37,7 @@ func (w *Writer) visitIf(stmt ast.If, kw string) {
 	}
 }
 
-func (w *Writer) VisitWhile(stmt ast.While) error {
+func (w *Writer) VisitWhile(stmt *ast.While) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -55,7 +55,7 @@ func (w *Writer) VisitWhile(stmt ast.While) error {
 	return nil
 }
 
-func (w *Writer) VisitSet(stmt ast.Set) error {
+func (w *Writer) VisitSet(stmt *ast.Set) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -69,7 +69,7 @@ func (w *Writer) VisitSet(stmt ast.Set) error {
 	return nil
 }
 
-func (w *Writer) VisitDeclare(stmt ast.Declare) error {
+func (w *Writer) VisitDeclare(stmt *ast.Declare) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -87,7 +87,7 @@ func (w *Writer) VisitDeclare(stmt ast.Declare) error {
 	return nil
 }
 
-func (w *Writer) VisitCall(stmt ast.CallStatement) error {
+func (w *Writer) VisitCall(stmt *ast.CallStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()

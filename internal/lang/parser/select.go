@@ -26,7 +26,7 @@ func (p *Parser) ParseValues() (ast.Node, error) {
 			}
 			stmt.List = append(stmt.List, v)
 		}
-		return stmt, nil
+		return &stmt, nil
 	}
 	for !p.Done() && !p.Is(token.EOL) {
 		if !p.Is(token.Lparen) {
@@ -55,13 +55,13 @@ func (p *Parser) ParseValues() (ast.Node, error) {
 			return nil, p.Unexpected("values", missingCloseParen)
 		}
 		p.Next()
-		stmt.List = append(stmt.List, list)
+		stmt.List = append(stmt.List, &list)
 		if !p.Is(token.Comma) {
 			break
 		}
 		p.Next()
 	}
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) parseCompound(stmt ast.Node) (ast.Node, error) {
@@ -79,21 +79,21 @@ func (p *Parser) parseCompound(stmt ast.Node) (ast.Node, error) {
 	var err error
 	switch {
 	case p.IsKeyword("UNION"):
-		u := ast.UnionStatement{
+		u := &ast.UnionStatement{
 			Left: stmt,
 		}
 		u.All, u.Distinct = allDistinct()
 		u.Right, err = p.ParseSelect()
 		return u, err
 	case p.IsKeyword("INTERSECT"):
-		i := ast.IntersectStatement{
+		i := &ast.IntersectStatement{
 			Left: stmt,
 		}
 		i.All, i.Distinct = allDistinct()
 		i.Right, err = p.ParseSelect()
 		return i, err
 	case p.IsKeyword("EXCEPT"):
-		e := ast.ExceptStatement{
+		e := &ast.ExceptStatement{
 			Left: stmt,
 		}
 		e.All, e.Distinct = allDistinct()
@@ -147,7 +147,7 @@ func (p *Parser) ParseSelect() (ast.Node, error) {
 	if stmt.Limit, err = p.ParseLimit(); err != nil {
 		return nil, err
 	}
-	return p.parseCompound(stmt)
+	return p.parseCompound(&stmt)
 }
 
 func (p *Parser) ParseColumns() ([]ast.Node, error) {
@@ -251,7 +251,7 @@ func (p *Parser) ParseFrom() ([]ast.Node, error) {
 	}
 
 	get = func() (ast.Node, error) {
-		stmt := ast.Join{
+		stmt := &ast.Join{
 			Type: p.GetCurrLiteral(),
 		}
 		p.Next()
@@ -310,7 +310,7 @@ func (p *Parser) ParseJoinUsing() (ast.Node, error) {
 		return nil, p.Unexpected("using", missingCloseParen)
 	}
 	p.Next()
-	return list, nil
+	return &list, nil
 }
 
 func (p *Parser) ParseWhere() (ast.Node, error) {
@@ -406,7 +406,7 @@ func (p *Parser) ParseWindows() ([]ast.Node, error) {
 		if win.Window, err = p.ParseWindow(); err != nil {
 			return nil, err
 		}
-		list = append(list, win)
+		list = append(list, &win)
 		if !p.Is(token.Comma) {
 			break
 		}
@@ -463,7 +463,7 @@ func (p *Parser) ParseWindow() (ast.Node, error) {
 		return nil, p.Unexpected("window", missingCloseParen)
 	}
 	p.Next()
-	return stmt, err
+	return &stmt, err
 }
 
 func (p *Parser) parseFrameSpec() (ast.Node, error) {
@@ -535,7 +535,7 @@ func (p *Parser) parseFrameSpec() (ast.Node, error) {
 	if stmt.Exclude > 0 {
 		p.Next()
 	}
-	return stmt, nil
+	return &stmt, nil
 }
 
 func (p *Parser) ParseOrderBy() ([]ast.Node, error) {
@@ -548,7 +548,7 @@ func (p *Parser) ParseOrderBy() ([]ast.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		order := ast.Order{
+		order := &ast.Order{
 			Node: stmt,
 		}
 
@@ -604,14 +604,14 @@ func (p *Parser) ParseOrderBy() ([]ast.Node, error) {
 func (p *Parser) ParseLimit() (ast.Node, error) {
 	getLimit := func() (ast.Node, error) {
 		var stmt ast.Limit
-		stmt.Count = ast.Value{
+		stmt.Count = &ast.Value{
 			Position: p.GetCurrPosition(),
 			Literal:  p.GetCurrLiteral(),
 		}
 		p.Next()
 		if p.Is(token.Comma) || p.IsKeyword("OFFSET") {
 			p.Next()
-			stmt.Offset = ast.Value{
+			stmt.Offset = &ast.Value{
 				Position: p.GetCurrPosition(),
 				Literal:  p.GetCurrLiteral(),
 			}
@@ -625,7 +625,7 @@ func (p *Parser) ParseLimit() (ast.Node, error) {
 		default:
 			return nil, p.Unexpected("LIMIT", defaultReason)
 		}
-		return stmt, nil
+		return &stmt, nil
 	}
 
 	switch {
@@ -650,7 +650,7 @@ func (p *Parser) ParseFetch() (ast.Node, error) {
 		)
 		if p.IsKeyword("OFFSET") {
 			p.Next()
-			stmt.Offset = ast.Value{
+			stmt.Offset = &ast.Value{
 				Position: p.GetCurrPosition(),
 				Literal:  p.GetCurrLiteral(),
 			}
@@ -672,7 +672,7 @@ func (p *Parser) ParseFetch() (ast.Node, error) {
 			return nil, p.Unexpected("fetch", defaultReason)
 		}
 		p.Next()
-		stmt.Count = ast.Value{
+		stmt.Count = &ast.Value{
 			Position: p.GetCurrPosition(),
 			Literal:  p.GetCurrLiteral(),
 		}
@@ -685,6 +685,6 @@ func (p *Parser) ParseFetch() (ast.Node, error) {
 			return nil, p.Unexpected("fetch", keywordExpected("ONLY"))
 		}
 		p.Next()
-		return stmt, err
+		return &stmt, err
 	})
 }

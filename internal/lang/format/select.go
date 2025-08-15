@@ -7,7 +7,7 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
-func (w *Writer) VisitUnion(stmt ast.UnionStatement) error {
+func (w *Writer) VisitUnion(stmt *ast.UnionStatement) error {
 	stmt.Left.Accept(w)
 	w.WriteNL()
 	w.WriteKeyword("union")
@@ -24,7 +24,7 @@ func (w *Writer) VisitUnion(stmt ast.UnionStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitIntersect(stmt ast.IntersectStatement) error {
+func (w *Writer) VisitIntersect(stmt *ast.IntersectStatement) error {
 	stmt.Left.Accept(w)
 	w.WriteNL()
 	w.WriteKeyword("intersect")
@@ -41,7 +41,7 @@ func (w *Writer) VisitIntersect(stmt ast.IntersectStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitExcept(stmt ast.ExceptStatement) error {
+func (w *Writer) VisitExcept(stmt *ast.ExceptStatement) error {
 	stmt.Left.Accept(w)
 	w.WriteNL()
 	w.WriteKeyword("except")
@@ -58,7 +58,7 @@ func (w *Writer) VisitExcept(stmt ast.ExceptStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitWith(stmt ast.WithStatement) error {
+func (w *Writer) VisitWith(stmt *ast.WithStatement) error {
 	w.Enter()
 
 	w.WritePrefix()
@@ -76,7 +76,7 @@ func (w *Writer) VisitWith(stmt ast.WithStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitCte(stmt ast.CteStatement) error {
+func (w *Writer) VisitCte(stmt *ast.CteStatement) error {
 	if w.Upperize.Identifier() {
 		stmt.Ident = strings.ToUpper(stmt.Ident)
 	}
@@ -103,7 +103,7 @@ func (w *Writer) VisitCte(stmt ast.CteStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitSelect(stmt ast.SelectStatement) error {
+func (w *Writer) VisitSelect(stmt *ast.SelectStatement) error {
 	w.Enter()
 	defer w.Leave()
 
@@ -121,7 +121,7 @@ func (w *Writer) VisitSelect(stmt ast.SelectStatement) error {
 	return nil
 }
 
-func (w *Writer) VisitJoin(join ast.Join) error {
+func (w *Writer) VisitJoin(join *ast.Join) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()
@@ -135,9 +135,9 @@ func (w *Writer) VisitJoin(join ast.Join) error {
 	join.Table.Accept(w)
 	w.WriteBlank()
 	switch join.Where.(type) {
-	case ast.Binary:
+	case *ast.Binary:
 		w.WriteKeyword("on")
-	case ast.List:
+	case *ast.List:
 		w.WriteKeyword("using")
 	default:
 		return nil
@@ -147,7 +147,7 @@ func (w *Writer) VisitJoin(join ast.Join) error {
 	return nil
 }
 
-func (w *Writer) VisitOrder(order ast.Order) error {
+func (w *Writer) VisitOrder(order *ast.Order) error {
 	order.Node.Accept(w)
 	if order.Dir > 0 {
 		w.WriteBlank()
@@ -162,7 +162,7 @@ func (w *Writer) VisitOrder(order ast.Order) error {
 	return nil
 }
 
-func (w *Writer) VisitLimit(limit ast.Limit) error {
+func (w *Writer) VisitLimit(limit *ast.Limit) error {
 	parts := []struct {
 		Keyword string
 		ast.Node
@@ -187,7 +187,7 @@ func (w *Writer) VisitLimit(limit ast.Limit) error {
 	return nil
 }
 
-func (w *Writer) VisitOffset(offset ast.Offset) error {
+func (w *Writer) VisitOffset(offset *ast.Offset) error {
 	if offset.Offset != nil {
 		w.WriteKeyword("offset")
 		w.WriteBlank()
@@ -216,7 +216,7 @@ func (w *Writer) VisitOffset(offset ast.Offset) error {
 	return nil
 }
 
-func (w *Writer) visitSelectFrom(stmt ast.SelectStatement) {
+func (w *Writer) visitSelectFrom(stmt *ast.SelectStatement) {
 	w.WriteNL()
 	w.WritePrefix()
 	w.WriteKeyword("from")
@@ -230,7 +230,7 @@ func (w *Writer) visitSelectFrom(stmt ast.SelectStatement) {
 	}
 }
 
-func (w *Writer) visitSelectColumns(stmt ast.SelectStatement) {
+func (w *Writer) visitSelectColumns(stmt *ast.SelectStatement) {
 	w.Enter()
 	defer w.Leave()
 	if stmt.Distinct {
@@ -253,7 +253,7 @@ func (w *Writer) visitSelectColumns(stmt ast.SelectStatement) {
 	}
 }
 
-func (w *Writer) visitSelectGroupBy(stmt ast.SelectStatement) {
+func (w *Writer) visitSelectGroupBy(stmt *ast.SelectStatement) {
 	if len(stmt.Groups) == 0 {
 		return
 	}
@@ -269,7 +269,7 @@ func (w *Writer) visitSelectGroupBy(stmt ast.SelectStatement) {
 	}
 }
 
-func (w *Writer) visitSelectHaving(stmt ast.SelectStatement) {
+func (w *Writer) visitSelectHaving(stmt *ast.SelectStatement) {
 	if stmt.Having == nil {
 		return
 	}
@@ -280,7 +280,7 @@ func (w *Writer) visitSelectHaving(stmt ast.SelectStatement) {
 	stmt.Having.Accept(w)
 }
 
-func (w *Writer) visitSelectOrderBy(stmt ast.SelectStatement) {
+func (w *Writer) visitSelectOrderBy(stmt *ast.SelectStatement) {
 	if len(stmt.Orders) == 0 {
 		return
 	}
@@ -296,7 +296,7 @@ func (w *Writer) visitSelectOrderBy(stmt ast.SelectStatement) {
 	}
 }
 
-func (w *Writer) visitSelectLimit(stmt ast.SelectStatement) {
+func (w *Writer) visitSelectLimit(stmt *ast.SelectStatement) {
 	if stmt.Limit == nil {
 		return
 	}
@@ -318,7 +318,7 @@ func (w *Writer) visitWhere(where ast.Node) {
 	where.Accept(w)
 }
 
-func (w *Writer) VisitValues(stmt ast.ValuesStatement) error {
+func (w *Writer) VisitValues(stmt *ast.ValuesStatement) error {
 	w.Enter()
 	defer w.Leave()
 	w.WritePrefix()

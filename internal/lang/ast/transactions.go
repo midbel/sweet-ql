@@ -10,11 +10,11 @@ type SetTransaction struct {
 	Level TransactionLevel
 }
 
-func (s SetTransaction) Pos() token.Position {
+func (s *SetTransaction) Pos() token.Position {
 	return s.Position
 }
 
-func (s SetTransaction) Accept(visit Visitor) error {
+func (s *SetTransaction) Accept(visit Visitor) error {
 	return visit.VisitSetTransaction(s)
 }
 
@@ -25,11 +25,11 @@ type StartTransaction struct {
 	End  Node
 }
 
-func (s StartTransaction) Pos() token.Position {
+func (s *StartTransaction) Pos() token.Position {
 	return s.Position
 }
 
-func (s StartTransaction) Accept(visit Visitor) error {
+func (s *StartTransaction) Accept(visit Visitor) error {
 	return visit.VisitStartTransaction(s)
 }
 
@@ -38,11 +38,11 @@ type Savepoint struct {
 	Name Node
 }
 
-func (s Savepoint) Pos() token.Position {
+func (s *Savepoint) Pos() token.Position {
 	return s.Position
 }
 
-func (s Savepoint) Accept(visit Visitor) error {
+func (s *Savepoint) Accept(visit Visitor) error {
 	return visit.VisitSavepoint(s)
 }
 
@@ -51,11 +51,11 @@ type ReleaseSavepoint struct {
 	Name Node
 }
 
-func (r ReleaseSavepoint) Pos() token.Position {
+func (r *ReleaseSavepoint) Pos() token.Position {
 	return r.Position
 }
 
-func (r ReleaseSavepoint) Accept(visit Visitor) error {
+func (r *ReleaseSavepoint) Accept(visit Visitor) error {
 	return visit.VisitReleaseSavepoint(r)
 }
 
@@ -64,11 +64,11 @@ type RollbackSavepoint struct {
 	Name Node
 }
 
-func (r RollbackSavepoint) Pos() token.Position {
+func (r *RollbackSavepoint) Pos() token.Position {
 	return r.Position
 }
 
-func (r RollbackSavepoint) Accept(visit Visitor) error {
+func (r *RollbackSavepoint) Accept(visit Visitor) error {
 	return visit.VisitRollbackSavepoint(r)
 }
 
@@ -76,11 +76,11 @@ type Commit struct {
 	token.Position
 }
 
-func (c Commit) Pos() token.Position {
+func (c *Commit) Pos() token.Position {
 	return c.Position
 }
 
-func (c Commit) Accept(visit Visitor) error {
+func (c *Commit) Accept(visit Visitor) error {
 	return visit.VisitCommit(c)
 }
 
@@ -88,10 +88,10 @@ type Rollback struct {
 	token.Position
 }
 
-func (r Rollback) Pos() token.Position {
+func (r *Rollback) Pos() token.Position {
 	return r.Position
 }
 
-func (r Rollback) Accept(visit Visitor) error {
+func (r *Rollback) Accept(visit Visitor) error {
 	return visit.VisitRollback(r)
 }

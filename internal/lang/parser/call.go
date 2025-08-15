@@ -38,5 +38,5 @@ func (p *Parser) ParseCall() (ast.Node, error) {
 		return nil, p.Unexpected("call", missingCloseParen)
 	}
 	p.Next()
-	return stmt, err
+	return &stmt, err
 }
