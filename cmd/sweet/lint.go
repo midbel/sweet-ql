@@ -54,6 +54,7 @@ func runLint(args []string) error {
 	var (
 		set   = flag.NewFlagSet("lint", flag.ExitOnError)
 		count = set.Int("c", 0, "print n first issue(s)")
+		fix   = set.Bool("fix", false, "fix all errors/warning when possible")
 		level lint.Severity
 		rules []lint.Rule
 	)
@@ -90,6 +91,7 @@ func runLint(args []string) error {
 	if err := set.Parse(args); err != nil {
 		return err
 	}
+	_ = *fix
 
 	var r io.Reader
 	if f, err := os.Open(set.Arg(0)); err == nil {

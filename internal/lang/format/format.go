@@ -72,6 +72,9 @@ func (w *Writer) Format(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	rs := []Rewriter{
+		StdOperator(),
+	}
 	for {
 		stmt, err := p.Parse()
 		if err != nil {
@@ -79,6 +82,11 @@ func (w *Writer) Format(r io.Reader) error {
 				break
 			}
 			return err
+		}
+		for i := range rs {
+			if err := rs[i].Rewrite(stmt); err != nil {
+				return err
+			}
 		}
 		if err = w.FormatStatement(stmt); err != nil {
 			return err

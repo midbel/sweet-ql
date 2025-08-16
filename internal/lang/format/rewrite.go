@@ -20,7 +20,8 @@ func StdOperator() Rewriter {
 }
 
 func (r rewriteStdOperator) Rewrite(stmt ast.Node) error {
-	return stmt.Accept(r)
+	walker := ast.Walk(r)
+	return stmt.Accept(walker)
 }
 
 func (r rewriteStdOperator) VisitBinary(binary *ast.Binary) error {
