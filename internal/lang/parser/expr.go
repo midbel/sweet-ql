@@ -548,6 +548,7 @@ var bindings = map[token.Symbol]int{
 	token.SymbolFor(token.Ge, ""):             powCmp,
 	token.SymbolFor(token.Eq, ""):             powCmp,
 	token.SymbolFor(token.Ne, ""):             powCmp,
+	token.SymbolFor(token.Neb, ""):            powCmp,
 	token.SymbolFor(token.Plus, ""):           powAdd,
 	token.SymbolFor(token.Minus, ""):          powAdd,
 	token.SymbolFor(token.Star, ""):           powMul,

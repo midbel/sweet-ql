@@ -4,12 +4,39 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
+type Rewriter interface {
+	Rewrite(ast.Node) error
+}
+
 // rewrite operator to std one like != to <> and = true to is true
 type rewriteStdOperator struct {
 	ast.Visitor
 }
 
+func StdOperator() Rewriter {
+	return rewriteStdOperator{
+		Visitor: ast.Noop(),
+	}
+}
+
+func (r rewriteStdOperator) Rewrite(stmt ast.Node) error {
+	return stmt.Accept(r)
+}
+
 func (r rewriteStdOperator) VisitBinary(binary *ast.Binary) error {
+	if binary.IsRelation() {
+		return nil
+	}
+	if binary.Op == "!=" {
+		binary.Op = "<>"
+	}
+	if v, ok := binary.Right.(*ast.Value); ok && v.Constant() {
+		switch binary.Op {
+		case "=":
+		case "<>":
+		default:
+		}
+	}
 	return nil
 }
 
@@ -39,16 +66,6 @@ type rewriteGroupbyPosField struct {
 
 func (r rewriteGroupbyPosField) VisitSelect(stmt *ast.SelectStatement) error {
 	return nil
-}
-
-// simplify some boolean expression when they can be evaluate with only the identifier
-type rewriteBooleanExpr struct {
-	ast.Visitor
-}
-
-// set the as keyword
-type rewriteSetAs struct {
-	ast.Visitor
 }
 
 // add alias to all columns in select clause

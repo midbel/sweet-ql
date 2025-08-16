@@ -27,8 +27,8 @@ func (_ *groupbyColumns) Name() string {
 
 func (r *groupbyColumns) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -94,8 +94,8 @@ func (_ *groupbyDistinct) Name() string {
 
 func (r *groupbyDistinct) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -145,8 +145,8 @@ func (_ *noLiteralGroupby) Name() string {
 
 func (r *noLiteralGroupby) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -187,8 +187,8 @@ func (_ *groupbyAggrFunc) Name() string {
 
 func (r *groupbyAggrFunc) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -253,8 +253,8 @@ func (_ *havingAggrFunc) Name() string {
 
 func (r *havingAggrFunc) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -274,7 +274,7 @@ func (r *havingAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
 		r.issues = append(r.issues, i)
 		return nil
 	}
-	sub := Walk(visitCallFunc(r.visitCall))
+	sub := ast.Walk(visitCallFunc(r.visitCall))
 	return stmt.Having.Accept(sub)
 }
 

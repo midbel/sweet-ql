@@ -27,8 +27,8 @@ func (_ *noDefaultValue) Name() string {
 func (r *noDefaultValue) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -55,8 +55,8 @@ func (_ *unconditionalMatch) Name() string {
 func (r *unconditionalMatch) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err

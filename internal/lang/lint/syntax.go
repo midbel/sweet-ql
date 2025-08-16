@@ -29,8 +29,8 @@ func (_ *noStar) Name() string {
 func (r *noStar) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -69,8 +69,8 @@ func (_ *duplicatedName) Name() string {
 func (r *duplicatedName) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -179,8 +179,8 @@ func (_ *columnsNames) Name() string {
 func (r *columnsNames) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -228,8 +228,8 @@ func (_ *columnsCount) Name() string {
 func (r *columnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -409,8 +409,8 @@ func (_ *missingWhere) Name() string {
 func (r *missingWhere) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -493,8 +493,8 @@ func (_ *recommandedQuoted) Name() string {
 func (r *recommandedQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -549,8 +549,8 @@ func (_ *noIdentQuoted) Name() string {
 func (r *noIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -605,8 +605,8 @@ func (_ *missingIdentQuoted) Name() string {
 func (r *missingIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -661,8 +661,8 @@ func (_ *ambiguousName) Name() string {
 func (r *ambiguousName) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -718,8 +718,8 @@ func (_ *noLiteralJoin) Name() string {
 func (r *noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -728,7 +728,7 @@ func (r *noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
 func (r *noLiteralJoin) VisitJoin(join *ast.Join) error {
 	var (
 		visit = visitLiteral(r.visitValue)
-		walk  = Walk(visit)
+		walk  = ast.Walk(visit)
 	)
 	return join.Where.Accept(walk)
 }
@@ -765,8 +765,8 @@ func (_ *unusedJoin) Name() string {
 func (r *unusedJoin) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -800,8 +800,8 @@ func (_ *enforceFetch) Name() string {
 func (r *enforceFetch) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -867,8 +867,8 @@ func (_ *orderOffsetFetch) Name() string {
 func (r *orderOffsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -908,8 +908,8 @@ func (_ *setOrderLast) Name() string {
 func (r *setOrderLast) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -965,8 +965,8 @@ func (_ *setOffsetFetchLast) Name() string {
 func (r *setOffsetFetchLast) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -1021,8 +1021,8 @@ func (_ *selfCompare) Name() string {
 func (r *selfCompare) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -1072,8 +1072,8 @@ func (_ *stdOperator) Name() string {
 func (r *stdOperator) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err

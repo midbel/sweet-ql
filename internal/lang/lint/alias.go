@@ -28,8 +28,8 @@ func (_ *selfAlias) Name() string {
 func (r *selfAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -74,8 +74,8 @@ func (_ *ambiguousAlias) Name() string {
 func (r *ambiguousAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -117,8 +117,8 @@ func (r *recommandedAlias) Name() string {
 
 func (r *recommandedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -160,8 +160,8 @@ func (_ missingAlias) Name() string {
 
 func (r *missingAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -201,8 +201,8 @@ func (_ *noAlias) Name() string {
 
 func (r *noAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -244,8 +244,8 @@ func (_ *invalidAlias) Name() string {
 
 func (r *invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -282,7 +282,7 @@ func (r *invalidAlias) visit(stmt *ast.SelectStatement) error {
 		where  = slx.One(stmt.Where)
 		having = slx.One(stmt.Having)
 		parts  = slices.Concat(stmt.Columns, stmt.Tables, stmt.Groups, where, having)
-		sub    = Walk(r)
+		sub    = ast.Walk(r)
 	)
 	for _, q := range parts {
 		if q == nil {
@@ -292,7 +292,7 @@ func (r *invalidAlias) visit(stmt *ast.SelectStatement) error {
 			return err
 		}
 	}
-	return errVisit
+	return ast.ErrVisit
 }
 
 func (r *invalidAlias) push(list []ast.Identifier) {
@@ -343,8 +343,8 @@ func (_ *undefinedAlias) Name() string {
 
 func (r *undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -380,7 +380,7 @@ func (r *undefinedAlias) visit(stmt *ast.SelectStatement) error {
 		where  = slx.One(stmt.Where)
 		having = slx.One(stmt.Having)
 		parts  = slices.Concat(stmt.Columns, stmt.Groups, where, having)
-		sub    = Walk(r)
+		sub    = ast.Walk(r)
 	)
 	for _, q := range parts {
 		if q == nil {
@@ -390,7 +390,7 @@ func (r *undefinedAlias) visit(stmt *ast.SelectStatement) error {
 			return err
 		}
 	}
-	return errVisit
+	return ast.ErrVisit
 }
 
 func (r *undefinedAlias) push(list []ast.Identifier) {

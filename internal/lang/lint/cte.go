@@ -26,8 +26,8 @@ func (_ *noCte) Name() string {
 
 func (r *noCte) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -41,7 +41,7 @@ func (r *noCte) VisitWith(with *ast.WithStatement) error {
 		Reason:   "prefer using subqueries over common table expression",
 	}
 	r.issues = append(r.issues, i)
-	return errStop
+	return ast.ErrStop
 }
 
 type cteUnused struct {
@@ -68,8 +68,8 @@ func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 	r.names = make(map[string]int)
 	r.positions = make(map[string]token.Position)
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 
@@ -100,7 +100,7 @@ func (r *cteUnused) VisitSelect(stmt *ast.SelectStatement) error {
 	r.begin()
 	defer r.end()
 
-	sub := Walk(r)
+	sub := ast.Walk(r)
 	for _, t := range stmt.Tables {
 		t.Accept(sub)
 	}
@@ -150,8 +150,8 @@ func (_ *cteNames) Name() string {
 func (r *cteNames) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err

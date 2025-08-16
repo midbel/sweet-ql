@@ -28,8 +28,8 @@ func (_ *subqueryColumnsCount) Name() string {
 func (r *subqueryColumnsCount) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -41,7 +41,7 @@ func (r *subqueryColumnsCount) VisitJoin(join *ast.Join) error {
 			severity: r.severity,
 			Visitor:  ast.Noop(),
 		}
-		sub   = Walk(&other)
+		sub   = ast.Walk(&other)
 		entry = join.Table
 	)
 	if a, ok := entry.(*ast.Alias); ok {
@@ -57,7 +57,7 @@ func (r *subqueryColumnsCount) VisitJoin(join *ast.Join) error {
 		return err
 	}
 	r.issues = slices.Concat(r.issues, other.issues)
-	return errVisit
+	return ast.ErrVisit
 }
 
 func (r *subqueryColumnsCount) VisitGroup(group *ast.Group) error {
@@ -107,8 +107,8 @@ func (_ *subqueryNames) Name() string {
 func (r *subqueryNames) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
@@ -120,14 +120,14 @@ func (r *subqueryNames) VisitSelect(stmt *ast.SelectStatement) error {
 			return err
 		}
 	}
-	return errVisit
+	return ast.ErrVisit
 }
 
 func (r *subqueryNames) visitNode(node ast.Node, stmt *ast.SelectStatement) error {
 	x := &subqueryJoinNames{
 		Visitor: ast.Noop(),
 	}
-	if err := node.Accept(Walk(x)); err != nil {
+	if err := node.Accept(ast.Walk(x)); err != nil {
 		return err
 	}
 	if len(x.names) == 0 {
@@ -138,7 +138,7 @@ func (r *subqueryNames) visitNode(node ast.Node, stmt *ast.SelectStatement) erro
 		names:   x.names,
 		alias:   x.alias,
 	}
-	if err := stmt.Accept(Walk(q)); err != nil {
+	if err := stmt.Accept(ast.Walk(q)); err != nil {
 		return err
 	}
 	for i := range q.issues {
@@ -233,8 +233,8 @@ func (_ *noSubquery) Name() string {
 func (r *noSubquery) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
-	err := stmt.Accept(Walk(r))
-	if errors.Is(err, errStop) {
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
 	return r.issues, err
