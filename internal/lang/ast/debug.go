@@ -64,31 +64,83 @@ func (v *debugVisitor) VisitSelect(stmt *SelectStatement) error {
 	return nil
 }
 
-func (v *debugVisitor) VisitUnion(*UnionStatement) error {
+func (v *debugVisitor) VisitUnion(stmt *UnionStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "union(")
+	v.enter()
+	for i, q := range []Node{stmt.Left, stmt.Right} {
+		if i > 0 {
+			fmt.Fprintln(v.writer, ",")
+		}
+		q.Accept(v)
+	}
+	v.leave()
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
-func (v *debugVisitor) VisitIntersect(*IntersectStatement) error {
+func (v *debugVisitor) VisitIntersect(stmt *IntersectStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "intersect(")
+	v.enter()
+	for i, q := range []Node{stmt.Left, stmt.Right} {
+		if i > 0 {
+			fmt.Fprintln(v.writer, ",")
+		}
+		q.Accept(v)
+	}
+	v.leave()
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
-func (v *debugVisitor) VisitExcept(*ExceptStatement) error {
+func (v *debugVisitor) VisitExcept(stmt *ExceptStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "except(")
+	v.enter()
+	for i, q := range []Node{stmt.Left, stmt.Right} {
+		if i > 0 {
+			fmt.Fprintln(v.writer, ",")
+		}
+		q.Accept(v)
+	}
+	v.leave()
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
 func (v *debugVisitor) VisitInsert(*InsertStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "insert(")
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
 func (v *debugVisitor) VisitUpdate(*UpdateStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "update(")
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
 func (v *debugVisitor) VisitDelete(*DeleteStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "delete(")
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
 func (v *debugVisitor) VisitTruncate(*TruncateStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "truncate(")
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
@@ -101,6 +153,10 @@ func (v *debugVisitor) VisitCte(*CteStatement) error {
 }
 
 func (v *debugVisitor) VisitMerge(*MergeStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "merge(")
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
@@ -113,18 +169,30 @@ func (v *debugVisitor) VisitCall(*CallStatement) error {
 }
 
 func (v *debugVisitor) VisitGrant(*GrantStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "grant(")
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
 func (v *debugVisitor) VisitRevoke(*RevokeStatement) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "revoke(")
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, ")")
 	return nil
 }
 
 func (v *debugVisitor) VisitCommit(*Commit) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "commit()")
 	return nil
 }
 
 func (v *debugVisitor) VisitRollback(*Rollback) error {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprintln(v.writer, "rollback()")
 	return nil
 }
 
