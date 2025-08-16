@@ -1,14 +1,18 @@
 package ast
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"strings"
 )
 
 func Debug(w io.Writer, stmt Node) {
-	walk := Walk(debug(w))
-	stmt.Accept(walk)
+	ws := bufio.NewWriter(w)
+	defer ws.Flush()
+
+	stmt.Accept(debug(ws))
+	fmt.Fprintln(ws)
 }
 
 type debugVisitor struct {
@@ -29,6 +33,20 @@ func (v *debugVisitor) prefix() string {
 	return strings.Repeat(" ", v.depth+1)
 }
 
+func (v *debugVisitor) writeOpening(query string, node Node) {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprint(v.writer, query)
+	fmt.Fprint(v.writer, " [")
+	fmt.Fprint(v.writer, node.Pos())
+	fmt.Fprint(v.writer, "] ")
+	fmt.Fprintln(v.writer, "(")
+}
+
+func (v *debugVisitor) writeEnd() {
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprint(v.writer, ")")
+}
+
 func (v *debugVisitor) enter() {
 	v.depth++
 }
@@ -42,9 +60,7 @@ func (v *debugVisitor) VisitValues(*ValuesStatement) error {
 }
 
 func (v *debugVisitor) VisitSelect(stmt *SelectStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "select(")
-
+	v.writeOpening("select", stmt)
 	v.enter()
 	for i := range stmt.Columns {
 		stmt.Columns[i].Accept(v)
@@ -59,14 +75,12 @@ func (v *debugVisitor) VisitSelect(stmt *SelectStatement) error {
 		stmt.Tables[i].Accept(v)
 	}
 	v.leave()
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+	v.writeEnd()
 	return nil
 }
 
 func (v *debugVisitor) VisitUnion(stmt *UnionStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "union(")
+	v.writeOpening("union", stmt)
 	v.enter()
 	for i, q := range []Node{stmt.Left, stmt.Right} {
 		if i > 0 {
@@ -75,14 +89,12 @@ func (v *debugVisitor) VisitUnion(stmt *UnionStatement) error {
 		q.Accept(v)
 	}
 	v.leave()
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+	v.writeEnd()
 	return nil
 }
 
 func (v *debugVisitor) VisitIntersect(stmt *IntersectStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "intersect(")
+	v.writeOpening("intersect", stmt)
 	v.enter()
 	for i, q := range []Node{stmt.Left, stmt.Right} {
 		if i > 0 {
@@ -91,14 +103,12 @@ func (v *debugVisitor) VisitIntersect(stmt *IntersectStatement) error {
 		q.Accept(v)
 	}
 	v.leave()
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+	v.writeEnd()
 	return nil
 }
 
 func (v *debugVisitor) VisitExcept(stmt *ExceptStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "except(")
+	v.writeOpening("except", stmt)
 	v.enter()
 	for i, q := range []Node{stmt.Left, stmt.Right} {
 		if i > 0 {
@@ -107,40 +117,31 @@ func (v *debugVisitor) VisitExcept(stmt *ExceptStatement) error {
 		q.Accept(v)
 	}
 	v.leave()
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitInsert(*InsertStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "insert(")
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+func (v *debugVisitor) VisitInsert(stmt *InsertStatement) error {
+	v.writeOpening("insert", stmt)
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitUpdate(*UpdateStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "update(")
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+func (v *debugVisitor) VisitUpdate(stmt *UpdateStatement) error {
+	v.writeOpening("update", stmt)
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitDelete(*DeleteStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "delete(")
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+func (v *debugVisitor) VisitDelete(stmt *DeleteStatement) error {
+	v.writeOpening("delete", stmt)
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitTruncate(*TruncateStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "truncate(")
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+func (v *debugVisitor) VisitTruncate(stmt *TruncateStatement) error {
+	v.writeOpening("truncate", stmt)
+	v.writeEnd()
 	return nil
 }
 
@@ -152,11 +153,9 @@ func (v *debugVisitor) VisitCte(*CteStatement) error {
 	return nil
 }
 
-func (v *debugVisitor) VisitMerge(*MergeStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "merge(")
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+func (v *debugVisitor) VisitMerge(stmt *MergeStatement) error {
+	v.writeOpening("merge", stmt)
+	v.writeEnd()
 	return nil
 }
 
@@ -168,31 +167,27 @@ func (v *debugVisitor) VisitCall(*CallStatement) error {
 	return nil
 }
 
-func (v *debugVisitor) VisitGrant(*GrantStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "grant(")
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+func (v *debugVisitor) VisitGrant(stmt *GrantStatement) error {
+	v.writeOpening("grant", stmt)
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitRevoke(*RevokeStatement) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "revoke(")
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+func (v *debugVisitor) VisitRevoke(stmt *RevokeStatement) error {
+	v.writeOpening("revoke", stmt)
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitCommit(*Commit) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "commit()")
+func (v *debugVisitor) VisitCommit(stmt *Commit) error {
+	v.writeOpening("commit", stmt)
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitRollback(*Rollback) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "rollback()")
+func (v *debugVisitor) VisitRollback(stmt *Rollback) error {
+	v.writeOpening("rollback", stmt)
+	v.writeEnd()
 	return nil
 }
 
@@ -289,16 +284,14 @@ func (v *debugVisitor) VisitValue(*Value) error {
 }
 
 func (v *debugVisitor) VisitAlias(alias *Alias) error {
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, "alias(")
+	v.writeOpening("alias", alias)
 	v.enter()
 	fmt.Fprint(v.writer, v.prefix())
 	fmt.Fprint(v.writer, alias.Name)
 	fmt.Fprintln(v.writer, ",")
 	alias.Node.Accept(v)
 	v.leave()
-	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprintln(v.writer, ")")
+	v.writeEnd()
 	return nil
 }
 
@@ -308,10 +301,12 @@ func (v *debugVisitor) VisitName(name *Name) error {
 		parts = append(parts, name.Parts[i].Name)
 	}
 	fmt.Fprint(v.writer, v.prefix())
-	fmt.Fprint(v.writer, "name(")
+	fmt.Fprint(v.writer, "identifier")
+	fmt.Fprint(v.writer, " [")
+	fmt.Fprint(v.writer, name.Pos())
+	fmt.Fprint(v.writer, "] (")
 	fmt.Fprint(v.writer, strings.Join(parts, "."))
-	fmt.Fprint(v.writer, ")")
-	fmt.Fprintln(v.writer)
+	fmt.Fprintln(v.writer, ")")
 
 	return nil
 }

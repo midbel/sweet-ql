@@ -364,7 +364,7 @@ func (n *Name) Accept(visit Visitor) error {
 
 func (n *Name) All() bool {
 	c := len(n.Parts)
-	return c == 0 || n.Parts[c-1].Name == ""
+	return c == 0 || n.Parts[c-1].Star()
 }
 
 func (n *Name) Schema() string {

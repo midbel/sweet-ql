@@ -80,21 +80,24 @@ func (p *Parser) parseCompound(stmt ast.Node) (ast.Node, error) {
 	switch {
 	case p.IsKeyword("UNION"):
 		u := &ast.UnionStatement{
-			Left: stmt,
+			Left:     stmt,
+			Position: p.GetCurrPosition(),
 		}
 		u.All, u.Distinct = allDistinct()
 		u.Right, err = p.ParseSelect()
 		return u, err
 	case p.IsKeyword("INTERSECT"):
 		i := &ast.IntersectStatement{
-			Left: stmt,
+			Left:     stmt,
+			Position: p.GetCurrPosition(),
 		}
 		i.All, i.Distinct = allDistinct()
 		i.Right, err = p.ParseSelect()
 		return i, err
 	case p.IsKeyword("EXCEPT"):
 		e := &ast.ExceptStatement{
-			Left: stmt,
+			Left:     stmt,
+			Position: p.GetCurrPosition(),
 		}
 		e.All, e.Distinct = allDistinct()
 		e.Right, err = p.ParseSelect()
