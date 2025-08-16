@@ -40,27 +40,7 @@ func (r RewriteRule) All() bool {
 	return r == RewriteAll
 }
 
-func (r RewriteRule) UseStdOp() bool {
-	return r&RewriteStdOp != 0
-}
-
-func (r RewriteRule) SetMissingCteAlias() bool {
-	return r&RewriteMissCteAlias != 0
-}
-
-func (r RewriteRule) SetMissingViewAlias() bool {
-	return r&RewriteMissViewAlias != 0
-}
-
-func (r RewriteRule) ReplaceCteWithSubquery() bool {
-	return r&RewriteWithSubqueries != 0
-}
-
-func (r RewriteRule) ReplaceSubqueryWithCte() bool {
-	return r&RewriteWithCte != 0
-}
-
-func (r RewriteRule) KeepAsIs() bool {
+func (r RewriteRule) Ignore() bool {
 	return r == 0
 }
 

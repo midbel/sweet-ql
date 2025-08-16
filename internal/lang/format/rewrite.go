@@ -5,7 +5,7 @@ import (
 )
 
 type Rewriter interface {
-	Rewrite(ast.Node) error
+	Rewrite(ast.Node) (ast.Node, error)
 }
 
 // rewrite operator to std one like != to <> and = true to is true
@@ -19,9 +19,9 @@ func StdOperator() Rewriter {
 	}
 }
 
-func (r rewriteStdOperator) Rewrite(stmt ast.Node) error {
+func (r rewriteStdOperator) Rewrite(stmt ast.Node) (ast.Node, error) {
 	walker := ast.Walk(r)
-	return stmt.Accept(walker)
+	return stmt, stmt.Accept(walker)
 }
 
 func (r rewriteStdOperator) VisitBinary(binary *ast.Binary) error {
@@ -75,20 +75,15 @@ type rewriteMissingAlias struct {
 }
 
 // add columns definition list to cte
-type rewriteMissingCteColumns struct {
+type rewriteMissingColumnsNames struct {
 	ast.Visitor
 }
 
-func (r rewriteMissingCteColumns) VisitCte(stmt *ast.CteStatement) error {
+func (r rewriteMissingColumnsNames) VisitCte(stmt *ast.CteStatement) error {
 	return nil
 }
 
-// add columns definition list to create view
-type rewriteMissingViewColumns struct {
-	ast.Visitor
-}
-
-func (r rewriteMissingViewColumns) VisitCreateView(stmt *ast.CreateViewStatement) error {
+func (r rewriteMissingColumnsNames) VisitCreateView(stmt *ast.CreateViewStatement) error {
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/lang/parser"
 )
 
@@ -71,7 +72,7 @@ func printTree(file string) error {
 			}
 			return err
 		}
-		_ = stmt
+		ast.Debug(os.Stdout, stmt)
 	}
 	return nil
 }

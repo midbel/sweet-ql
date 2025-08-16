@@ -9,10 +9,6 @@ type Node interface {
 	Pos() token.Position
 }
 
-type Transformer interface {
-	Transform(Node) (Node, error)
-}
-
 type CommentedNode struct {
 	Node
 	Before []string
