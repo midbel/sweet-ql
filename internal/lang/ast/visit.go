@@ -4,10 +4,6 @@ type VisitableNode interface {
 	Accept(Visitor) error
 }
 
-type Transformer interface {
-	Transform(Node) (Node, error)
-}
-
 type ControlVisitor interface {
 	VisitBody(*Body) error
 	VisitIf(*If) error

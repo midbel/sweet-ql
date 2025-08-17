@@ -306,6 +306,8 @@ func (v *debugVisitor) VisitName(name *Name) error {
 	fmt.Fprint(v.writer, name.Pos())
 	fmt.Fprint(v.writer, "] (")
 	fmt.Fprint(v.writer, strings.Join(parts, "."))
+	fmt.Fprint(v.writer, ",")
+	fmt.Fprint(v.writer, "type=?")
 	fmt.Fprintln(v.writer, ")")
 
 	return nil
