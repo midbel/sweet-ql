@@ -4,6 +4,10 @@ type VisitableNode interface {
 	Accept(Visitor) error
 }
 
+type TransformableNode interface {
+	Transform(Transformer) (Node, error)
+}
+
 type ControlVisitor interface {
 	VisitBody(*Body) error
 	VisitIf(*If) error
@@ -117,6 +121,57 @@ type DefinitionVisitor interface {
 	VisitCheck(*CheckConstraint) error
 	VisitDefault(*DefaultConstraint) error
 	VisitGenerated(*GeneratedConstraint) error
+}
+
+type StmtTransformer interface {
+	TransformValues(*ValuesStatement) (Node, error)
+	TransformSelect(*SelectStatement) (Node, error)
+	TransformUnion(*UnionStatement) (Node, error)
+	TransformIntersect(*IntersectStatement) (Node, error)
+	TransformExcept(*ExceptStatement) (Node, error)
+	TransformInsert(*InsertStatement) (Node, error)
+	TransformUpdate(*UpdateStatement) (Node, error)
+	TransformDelete(*DeleteStatement) (Node, error)
+	TransformTruncate(*TruncateStatement) (Node, error)
+	TransformWith(*WithStatement) (Node, error)
+	TransformCte(*CteStatement) (Node, error)
+	TransformMerge(*MergeStatement) (Node, error)
+
+	TransformCall(*CallStatement) (Node, error)
+
+	TransformMatch(*MatchStatement) (Node, error)
+	TransformJoin(*Join) (Node, error)
+	TransformOrder(*Order) (Node, error)
+	TransformLimit(*Limit) (Node, error)
+	TransformOffset(*Offset) (Node, error)
+}
+
+type ExprTransformer interface {
+	TransformBinary(*Binary) (Node, error)
+	TransformUnary(*Unary) (Node, error)
+	TransformList(*List) (Node, error)
+	TransformCollate(*Collate) (Node, error)
+	TransformIn(*In) (Node, error)
+	TransformIs(*Is) (Node, error)
+	TransformExists(*Exists) (Node, error)
+	TransformBetween(*Between) (Node, error)
+	TransformAll(*All) (Node, error)
+	TransformAny(*Any) (Node, error)
+	TransformNot(*Not) (Node, error)
+	TransformCast(*Cast) (Node, error)
+	TransformCallFunc(*Call) (Node, error)
+	TransformValue(*Value) (Node, error)
+	TransformAlias(*Alias) (Node, error)
+	TransformName(*Name) (Node, error)
+	TransformGroup(*Group) (Node, error)
+	TransformCase(*Case) (Node, error)
+	TransformWhen(*When) (Node, error)
+	TransformAssignment(*Assignment) (Node, error)
+}
+
+type Transformer interface {
+	StmtTransformer
+	ExprTransformer
 }
 
 type Visitor interface {
@@ -496,4 +551,163 @@ func (noopVisitor) VisitXmlRoot(*XmlRoot) error {
 
 func (noopVisitor) VisitXmlForest(*XmlForest) error {
 	return nil
+}
+
+type noopTransformer struct{}
+
+func Keep() Transformer {
+	var t noopTransformer
+	return t
+}
+
+func (noopTransformer) TransformValues(stmt *ValuesStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformSelect(stmt *SelectStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformUnion(stmt *UnionStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformIntersect(stmt *IntersectStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformExcept(stmt *ExceptStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformInsert(stmt *InsertStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformUpdate(stmt *UpdateStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformDelete(stmt *DeleteStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformTruncate(stmt *TruncateStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformWith(stmt *WithStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformCte(stmt *CteStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformMerge(stmt *MergeStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformCall(stmt *CallStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformMatch(stmt *MatchStatement) (Node, error) {
+	return stmt, nil
+}
+
+func (noopTransformer) TransformJoin(join *Join) (Node, error) {
+	return join, nil
+}
+
+func (noopTransformer) TransformOrder(order *Order) (Node, error) {
+	return order, nil
+}
+
+func (noopTransformer) TransformLimit(limit *Limit) (Node, error) {
+	return limit, nil
+}
+
+func (noopTransformer) TransformOffset(offset *Offset) (Node, error) {
+	return offset, nil
+}
+
+func (noopTransformer) TransformBinary(binary *Binary) (Node, error) {
+	return binary, nil
+}
+
+func (noopTransformer) TransformUnary(unary *Unary) (Node, error) {
+	return unary, nil
+}
+
+func (noopTransformer) TransformList(list *List) (Node, error) {
+	return list, nil
+}
+
+func (noopTransformer) TransformCollate(collate *Collate) (Node, error) {
+	return collate, nil
+}
+
+func (noopTransformer) TransformIn(in *In) (Node, error) {
+	return in, nil
+}
+
+func (noopTransformer) TransformIs(is *Is) (Node, error) {
+	return is, nil
+}
+
+func (noopTransformer) TransformExists(exists *Exists) (Node, error) {
+	return exists, nil
+}
+
+func (noopTransformer) TransformBetween(between *Between) (Node, error) {
+	return between, nil
+}
+
+func (noopTransformer) TransformAll(all *All) (Node, error) {
+	return all, nil
+}
+
+func (noopTransformer) TransformAny(any *Any) (Node, error) {
+	return any, nil
+}
+
+func (noopTransformer) TransformNot(not *Not) (Node, error) {
+	return not, nil
+}
+
+func (noopTransformer) TransformCast(cast *Cast) (Node, error) {
+	return cast, nil
+}
+
+func (noopTransformer) TransformCallFunc(call *Call) (Node, error) {
+	return call, nil
+}
+
+func (noopTransformer) TransformValue(value *Value) (Node, error) {
+	return value, nil
+}
+
+func (noopTransformer) TransformAlias(alias *Alias) (Node, error) {
+	return alias, nil
+}
+
+func (noopTransformer) TransformName(name *Name) (Node, error) {
+	return name, nil
+}
+
+func (noopTransformer) TransformGroup(group *Group) (Node, error) {
+	return group, nil
+}
+
+func (noopTransformer) TransformCase(cas *Case) (Node, error) {
+	return cas, nil
+}
+
+func (noopTransformer) TransformWhen(when *When) (Node, error) {
+	return when, nil
+}
+
+func (noopTransformer) TransformAssignment(assign *Assignment) (Node, error) {
+	return assign, nil
 }

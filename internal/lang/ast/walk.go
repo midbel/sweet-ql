@@ -23,6 +23,200 @@ func stopVisiting(err error) error {
 	return err
 }
 
+type walkTransformer struct {
+	inner Transformer
+}
+
+func Transform(inner Transformer) Transformer {
+	return walkTransformer{
+		inner: inner,
+	}
+}
+
+func (v walkTransformer) tryTransform(node Node) (Node, error) {
+	t, ok := node.(TransformableNode)
+	if !ok {
+		return node, nil
+	}
+	return t.Transform(v.inner)
+}
+
+func (v walkTransformer) TransformValues(_ *ValuesStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformSelect(stmt *SelectStatement) (Node, error) {
+	n, err := stmt.Transform(v.inner)
+	if err != nil {
+		return nil, err
+	}
+	if stmt != n {
+		return n, nil
+	}
+	for i, c := range stmt.Columns {
+		n, err := v.tryTransform(c)
+		if err != nil {
+			return nil, err
+		}
+		stmt.Columns[i] = n
+	}
+	for i, t := range stmt.Tables {
+		n, err := v.tryTransform(t)
+		if err != nil {
+			return nil, err
+		}
+		stmt.Tables[i] = n
+	}
+	if stmt.Where, err = v.tryTransform(stmt.Where); err != nil {
+		return nil, err
+	}
+	return stmt, nil
+}
+
+func (v walkTransformer) TransformUnion(stmt *UnionStatement) (Node, error) {
+	return v.tryTransform(stmt)
+}
+
+func (v walkTransformer) TransformIntersect(stmt *IntersectStatement) (Node, error) {
+	return v.tryTransform(stmt)
+}
+
+func (v walkTransformer) TransformExcept(stmt *ExceptStatement) (Node, error) {
+	return v.tryTransform(stmt)
+}
+
+func (v walkTransformer) TransformInsert(_ *InsertStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformUpdate(_ *UpdateStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformDelete(_ *DeleteStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformTruncate(_ *TruncateStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformWith(_ *WithStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformCte(_ *CteStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformMerge(_ *MergeStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformCall(_ *CallStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformMatch(_ *MatchStatement) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformJoin(_ *Join) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformOrder(_ *Order) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformLimit(_ *Limit) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformOffset(_ *Offset) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformBinary(binary *Binary) (Node, error) {
+	return binary.Transform(v.inner)
+}
+
+func (v walkTransformer) TransformUnary(_ *Unary) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformList(_ *List) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformCollate(_ *Collate) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformIn(_ *In) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformIs(_ *Is) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformExists(_ *Exists) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformBetween(_ *Between) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformAll(_ *All) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformAny(_ *Any) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformNot(_ *Not) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformCast(_ *Cast) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformCallFunc(_ *Call) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformValue(_ *Value) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformAlias(_ *Alias) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformName(_ *Name) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformGroup(_ *Group) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformCase(_ *Case) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformWhen(_ *When) (Node, error) {
+	return nil, nil
+}
+
+func (v walkTransformer) TransformAssignment(_ *Assignment) (Node, error) {
+	return nil, nil
+}
+
 type walkVisitor struct {
 	inner Visitor
 }

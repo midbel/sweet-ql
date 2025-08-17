@@ -33,6 +33,10 @@ func (i *List) Accept(visit Visitor) error {
 	return visit.VisitList(i)
 }
 
+func (i *List) Transform(tr Transformer) (Node, error) {
+	return tr.TransformList(i)
+}
+
 func (i *List) Len() int {
 	return len(i.Values)
 }
@@ -50,6 +54,10 @@ func (g *Group) Accept(visit Visitor) error {
 	return visit.VisitGroup(g)
 }
 
+func (g *Group) Transform(tr Transformer) (Node, error) {
+	return tr.TransformGroup(g)
+}
+
 type Cast struct {
 	token.Position
 
@@ -63,6 +71,10 @@ func (c *Cast) Pos() token.Position {
 
 func (c *Cast) Accept(visit Visitor) error {
 	return visit.VisitCast(c)
+}
+
+func (c *Cast) Transform(tr Transformer) (Node, error) {
+	return tr.TransformCast(c)
 }
 
 type Type struct {
@@ -90,6 +102,10 @@ func (n *Not) Accept(visit Visitor) error {
 	return visit.VisitNot(n)
 }
 
+func (n *Not) Transform(tr Transformer) (Node, error) {
+	return tr.TransformNot(n)
+}
+
 type Collate struct {
 	token.Position
 	Ident Node
@@ -100,8 +116,12 @@ func (c *Collate) Pos() token.Position {
 	return c.Position
 }
 
-func (_ Collate) Accept(visit Visitor) error {
+func (_ *Collate) Accept(visit Visitor) error {
 	return nil
+}
+
+func (c *Collate) Transform(tr Transformer) (Node, error) {
+	return nil, nil
 }
 
 type Exists struct {
@@ -115,6 +135,10 @@ func (e *Exists) Pos() token.Position {
 
 func (e *Exists) Accept(visit Visitor) error {
 	return visit.VisitExists(e)
+}
+
+func (e *Exists) Transform(tr Transformer) (Node, error) {
+	return tr.TransformExists(e)
 }
 
 type Call struct {
@@ -134,6 +158,10 @@ func (c *Call) Accept(visit Visitor) error {
 	return visit.VisitCallFunc(c)
 }
 
+func (c *Call) Transform(tr Transformer) (Node, error) {
+	return tr.TransformCallFunc(c)
+}
+
 func (c *Call) GetIdent() string {
 	n, ok := c.Ident.(*Name)
 	if !ok {
@@ -151,8 +179,12 @@ func (r *Row) Pos() token.Position {
 	return r.Position
 }
 
-func (_ Row) Accept(visit Visitor) error {
+func (r *Row) Accept(visit Visitor) error {
 	return nil
+}
+
+func (r *Row) Transform(tr Transformer) (Node, error) {
+	return nil, nil
 }
 
 type Unary struct {
@@ -169,6 +201,10 @@ func (u *Unary) Accept(visit Visitor) error {
 	return visit.VisitUnary(u)
 }
 
+func (u *Unary) Transform(tr Transformer) (Node, error) {
+	return tr.TransformUnary(u)
+}
+
 type Binary struct {
 	token.Position
 	Left  Node
@@ -182,6 +218,10 @@ func (b *Binary) Pos() token.Position {
 
 func (b *Binary) Accept(visit Visitor) error {
 	return visit.VisitBinary(b)
+}
+
+func (b *Binary) Transform(tr Transformer) (Node, error) {
+	return tr.TransformBinary(b)
 }
 
 func (b *Binary) IsEquality() bool {
@@ -205,6 +245,10 @@ func (a *All) Accept(visit Visitor) error {
 	return visit.VisitAll(a)
 }
 
+func (a *All) Transform(tr Transformer) (Node, error) {
+	return tr.TransformAll(a)
+}
+
 type Any struct {
 	token.Position
 	Node
@@ -216,6 +260,10 @@ func (a *Any) Pos() token.Position {
 
 func (a *Any) Accept(visit Visitor) error {
 	return visit.VisitAny(a)
+}
+
+func (a *Any) Transform(tr Transformer) (Node, error) {
+	return tr.TransformAny(a)
 }
 
 type Is struct {
@@ -232,6 +280,10 @@ func (i *Is) Accept(visit Visitor) error {
 	return visit.VisitIs(i)
 }
 
+func (i *Is) Transform(tr Transformer) (Node, error) {
+	return tr.TransformIs(i)
+}
+
 type In struct {
 	token.Position
 	Ident Node
@@ -244,6 +296,10 @@ func (i *In) Pos() token.Position {
 
 func (i *In) Accept(visit Visitor) error {
 	return visit.VisitIn(i)
+}
+
+func (i *In) Transform(tr Transformer) (Node, error) {
+	return tr.TransformIn(i)
 }
 
 type Between struct {
@@ -261,6 +317,10 @@ func (b *Between) Accept(visit Visitor) error {
 	return visit.VisitBetween(b)
 }
 
+func (b *Between) Transform(tr Transformer) (Node, error) {
+	return tr.TransformBetween(b)
+}
+
 type Placeholder struct {
 	token.Position
 	Node
@@ -270,8 +330,12 @@ func (p *Placeholder) Pos() token.Position {
 	return p.Position
 }
 
-func (_ Placeholder) Accept(visit Visitor) error {
+func (p *Placeholder) Accept(visit Visitor) error {
 	return nil
+}
+
+func (p *Placeholder) Transform(tr Transformer) (Node, error) {
+	return nil, nil
 }
 
 type Value struct {
@@ -285,6 +349,10 @@ func (v *Value) Pos() token.Position {
 
 func (v *Value) Accept(visit Visitor) error {
 	return visit.VisitValue(v)
+}
+
+func (v *Value) Transform(tr Transformer) (Node, error) {
+	return tr.TransformValue(v)
 }
 
 func (v *Value) Type() StaticType {
@@ -340,6 +408,10 @@ func (a *Alias) Accept(visit Visitor) error {
 	return visit.VisitAlias(a)
 }
 
+func (a *Alias) Transform(tr Transformer) (Node, error) {
+	return tr.TransformAlias(a)
+}
+
 type Identifier struct {
 	Quoted bool
 	Name   string
@@ -360,6 +432,10 @@ func (n *Name) Pos() token.Position {
 
 func (n *Name) Accept(visit Visitor) error {
 	return visit.VisitName(n)
+}
+
+func (n *Name) Transform(tr Transformer) (Node, error) {
+	return tr.TransformName(n)
 }
 
 func (n *Name) All() bool {

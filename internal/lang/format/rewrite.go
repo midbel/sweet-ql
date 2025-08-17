@@ -10,35 +10,50 @@ type Rewriter interface {
 
 // rewrite operator to std one like != to <> and = true to is true
 type rewriteStdOperator struct {
-	ast.Visitor
+	ast.Transformer
 }
 
 func StdOperator() Rewriter {
 	return rewriteStdOperator{
-		Visitor: ast.Noop(),
+		Transformer: ast.Keep(),
 	}
 }
 
 func (r rewriteStdOperator) Rewrite(stmt ast.Node) (ast.Node, error) {
-	walker := ast.Walk(r)
-	return stmt, stmt.Accept(walker)
+	t, ok := stmt.(ast.TransformableNode)
+	if !ok {
+		return stmt, nil
+	}
+	walker := ast.Transform(r)
+	return t.Transform(walker)
 }
 
-func (r rewriteStdOperator) VisitBinary(binary *ast.Binary) error {
+func (r rewriteStdOperator) TransformBinary(binary *ast.Binary) (ast.Node, error) {
 	if binary.IsRelation() {
-		return nil
+		return binary, nil
 	}
 	if binary.Op == "!=" {
 		binary.Op = "<>"
 	}
 	if v, ok := binary.Right.(*ast.Value); ok && v.Constant() {
+		is := &ast.Is{
+			Position: binary.Pos(),
+			Ident:    binary.Left,
+			Value:    binary.Right,
+		}
 		switch binary.Op {
 		case "=":
 		case "<>":
+			not := &ast.Not{
+				Position: binary.Pos(),
+				Node:     is,
+			}
+			return not, nil
 		default:
 		}
+		return is, nil
 	}
-	return nil
+	return binary, nil
 }
 
 // transform all subqueries to an equivalent cte
