@@ -26,6 +26,7 @@ var factory = map[string]func() Rewriter{
 	"no-returning":         NoReturning,
 	"limit-to-fetch":       nil,
 	"add-primary-key":      nil,
+	"ansi":                 RewriteAnsi,
 }
 
 func RewriterByName(name string) (Rewriter, error) {
@@ -37,6 +38,31 @@ func RewriterByName(name string) (Rewriter, error) {
 		return fn(), nil
 	}
 	return nil, fmt.Errorf("%s: unsupported rewriter", name)
+}
+
+type rewriteAnsi struct {
+	inner []Rewriter
+}
+
+func RewriteAnsi() Rewriter {
+	all := []Rewriter{
+		StdOperator(),
+		NoReturning(),
+	}
+	return rewriteAnsi{
+		inner: all,
+	}
+}
+
+func (r rewriteAnsi) Rewrite(stmt ast.Node) (ast.Node, error) {
+	var err error
+	for i := range r.inner {
+		stmt, err = r.inner[i].Rewrite(stmt)
+		if err != nil {
+			break
+		}
+	}
+	return stmt, err
 }
 
 // rewrite operator to std one like != to <> and = true to is true
