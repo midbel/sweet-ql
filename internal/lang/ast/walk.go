@@ -5,8 +5,9 @@ import (
 )
 
 var (
-	ErrStop  = errors.New("stop visit")
-	ErrVisit = errors.New("don't visit node")
+	ErrStop      = errors.New("stop visit")
+	ErrVisit     = errors.New("don't visit node")
+	ErrTransform = errors.New("transform")
 )
 
 func doneVisiting(err error) error {
