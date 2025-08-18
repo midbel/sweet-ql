@@ -36,7 +36,7 @@ type Writer struct {
 	ForceOptional bool
 	Compact       CompactMode
 	Upperize      UpperMode
-	Rules         RewriteRule
+	Rules         []Rewriter
 
 	noColor   bool
 	currDepth int
@@ -53,7 +53,6 @@ func NewWriter(w io.Writer) *Writer {
 		Formatter: GetFormatter(),
 		Upperize:  UpperNone,
 		Compact:   compactNone,
-		Rules:     0,
 	}
 	if w != os.Stdout {
 		ws.noColor = true
@@ -72,10 +71,6 @@ func (w *Writer) Format(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	var rs []Rewriter
-	rs = []Rewriter{
-		StdOperator(),
-	}
 	for {
 		stmt, err := p.Parse()
 		if err != nil {
@@ -84,10 +79,8 @@ func (w *Writer) Format(r io.Reader) error {
 			}
 			return err
 		}
-		// if !w.Rules.Ignore() {
-		// }
-		for i := range rs {
-			stmt, err = rs[i].Rewrite(stmt)
+		for i := range w.Rules {
+			stmt, err = w.Rules[i].Rewrite(stmt)
 			if err != nil {
 				return err
 			}

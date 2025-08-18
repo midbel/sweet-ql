@@ -61,7 +61,10 @@ func upperizeRules(writer *format.Writer) func(string) error {
 
 func rewriteRules(writer *format.Writer) func(string) error {
 	return func(value string) error {
-		writer.Rules = format.GetRewriteRule(value)
-		return nil
+		rewrit, err := format.RewriterByName(value)
+		if err == nil {
+			writer.Rules = append(writer.Rules, rewrit)
+		}
+		return err
 	}
 }
