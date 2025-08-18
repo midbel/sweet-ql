@@ -1,49 +1,5 @@
 package format
 
-type RewriteRule uint16
-
-const (
-	RewriteStdOp = 1 << iota
-	RewriteMissCteAlias
-	RewriteMissViewAlias
-	RewriteWithCte
-	RewriteWithSubqueries
-
-	RewriteAll = RewriteStdOp |
-		RewriteMissCteAlias |
-		RewriteMissViewAlias |
-		RewriteWithCte |
-		RewriteWithSubqueries
-)
-
-func GetRewriteRule(rule string) RewriteRule {
-	var value RewriteRule
-	switch rule {
-	case "all", "":
-		value = RewriteAll
-	case "use-std-op":
-		value = RewriteStdOp
-	case "missing-cte-alias":
-		value = RewriteMissCteAlias
-	case "missing-view-alias":
-		value = RewriteMissViewAlias
-	case "subquery-as-cte":
-		value = RewriteWithCte
-	case "cte-as-subquery":
-		value = RewriteWithSubqueries
-	default:
-	}
-	return value
-}
-
-func (r RewriteRule) All() bool {
-	return r == RewriteAll
-}
-
-func (r RewriteRule) Ignore() bool {
-	return r == 0
-}
-
 type CompactMode uint64
 
 const (
