@@ -1037,7 +1037,7 @@ func (r *valueCompare) VisitBinary(binary *ast.Binary) error {
 			Position: binary.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "avoid tautological conditional such as 1=1",
+			Reason:   "unnecessary condition used - avoid comparing literal values",
 		}
 		r.issues = append(r.issues, i)
 	}
