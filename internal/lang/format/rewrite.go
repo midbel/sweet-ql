@@ -2,7 +2,10 @@ package format
 
 import (
 	"fmt"
+	"slices"
+	"strconv"
 
+	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
@@ -14,9 +17,9 @@ var factory = map[string]func() Rewriter{
 	"std-operator":         StdOperator,
 	"cte-to-subquery":      nil,
 	"subquery-to-cte":      nil,
-	"groupby-field":        nil,
+	"groupby-field":        GroupbyFields,
+	"groupby-pos":          GroupbyPosToFields,
 	"groupby-aggr":         nil,
-	"groupby-pos":          nil,
 	"missing-alias-fields": MissingAliasFields,
 	"missing-alias-tables": MissingAliasTables,
 	"missing-cte-fields":   MissingCteFields,
@@ -146,6 +149,12 @@ type rewriteGroupbyFields struct {
 	ast.Transformer
 }
 
+func GroupbyFields() Rewriter {
+	return rewriteGroupbyFields{
+		Transformer: ast.Keep(),
+	}
+}
+
 func (r rewriteGroupbyFields) Rewrite(stmt ast.Node) (ast.Node, error) {
 	t, ok := stmt.(ast.TransformableNode)
 	if !ok {
@@ -156,12 +165,70 @@ func (r rewriteGroupbyFields) Rewrite(stmt ast.Node) (ast.Node, error) {
 }
 
 func (r rewriteGroupbyFields) TransformSelect(stmt *ast.SelectStatement) (ast.Node, error) {
+	if len(stmt.Groups) == 0 {
+		return stmt, nil
+	}
+	for i, c := range stmt.Columns {
+		err := r.addMissingField(c, i+1, stmt)
+		if err != nil {
+			return stmt, err
+		}
+	}
 	return stmt, nil
+}
+
+func (r rewriteGroupbyFields) addMissingField(c ast.Node, pos int, stmt *ast.SelectStatement) error {
+	if a, ok := c.(*ast.Alias); ok {
+		c = a.Node
+	}
+	var id []ast.Identifier
+	switch v := c.(type) {
+	case *ast.Name:
+		id = v.Parts
+	case *ast.Call:
+		if lang.IsAggregateFunc(v.GetIdent()) {
+			return nil
+		}
+		if len(v.Args) == 0 {
+			return fmt.Errorf("function without argument")
+		}
+		x, ok := v.Args[0].(*ast.Name)
+		if !ok {
+			return fmt.Errorf("first argument expected to be an identifier")
+		}
+		id, c = x.Parts, x
+	default:
+		return nil
+	}
+	ok := slices.ContainsFunc(stmt.Groups, func(n ast.Node) bool {
+		switch n := n.(type) {
+		case *ast.Name:
+			return slices.Equal(id, n.Parts)
+		case *ast.Value:
+			x, err := strconv.Atoi(n.Literal)
+			if err != nil {
+				return false
+			}
+			return x == pos
+		default:
+			return false
+		}
+	})
+	if !ok {
+		stmt.Groups = append(stmt.Groups, c)
+	}
+	return nil
 }
 
 // when position are used in group by, replace by the identifier
 type rewriteGroupbyPosField struct {
 	ast.Transformer
+}
+
+func GroupbyPosToFields() Rewriter {
+	return rewriteGroupbyPosField{
+		Transformer: ast.Keep(),
+	}
 }
 
 func (r rewriteGroupbyPosField) Rewrite(stmt ast.Node) (ast.Node, error) {
@@ -174,6 +241,30 @@ func (r rewriteGroupbyPosField) Rewrite(stmt ast.Node) (ast.Node, error) {
 }
 
 func (r rewriteGroupbyPosField) TransformSelect(stmt *ast.SelectStatement) (ast.Node, error) {
+	for i, g := range stmt.Groups {
+		n, ok := g.(*ast.Value)
+		if !ok {
+			continue
+		}
+		x, err := strconv.Atoi(n.Literal)
+		if err != nil {
+			continue
+		}
+		x--
+		if x < 0 || x >= len(stmt.Columns) {
+			return nil, fmt.Errorf("no column at given position")
+		}
+		c := stmt.Columns[x]
+		if a, ok := c.(*ast.Alias); ok {
+			c = a.Node
+		}
+		switch c := c.(type) {
+		case *ast.Name:
+			stmt.Groups[i] = c
+		case *ast.Call:
+		default:
+		}
+	}
 	return stmt, nil
 }
 
@@ -215,7 +306,25 @@ func (r rewriteMissingAlias) Rewrite(stmt ast.Node) (ast.Node, error) {
 }
 
 func (r rewriteMissingAlias) TransformSelect(stmt *ast.SelectStatement) (ast.Node, error) {
+	if r.mode == AliasFields || r.mode == AliasBoth {
+		r.addMissingAliasToFields(stmt)
+	}
+	if r.mode == AliasTables || r.mode == AliasBoth {
+		r.addMissingAliasToTables(stmt)
+	}
 	return stmt, nil
+}
+
+func (r rewriteMissingAlias) addMissingAliasToFields(stmt *ast.SelectStatement) {
+	for i, c := range stmt.Columns {
+		_, _ = i, c
+	}
+}
+
+func (r rewriteMissingAlias) addMissingAliasToTables(stmt *ast.SelectStatement) {
+	for i, t := range stmt.Tables {
+		_, _ = i, t
+	}
 }
 
 type MissingMode int8
@@ -327,13 +436,16 @@ func (r rewriteReturning) Rewrite(stmt ast.Node) (ast.Node, error) {
 }
 
 func (r rewriteReturning) TransformInsert(stmt *ast.InsertStatement) (ast.Node, error) {
+	stmt.Returning = nil
 	return stmt, nil
 }
 
 func (r rewriteReturning) TransformUpdate(stmt *ast.UpdateStatement) (ast.Node, error) {
+	stmt.Returning = nil
 	return stmt, nil
 }
 
 func (r rewriteReturning) TransformDelete(stmt *ast.DeleteStatement) (ast.Node, error) {
+	stmt.Returning = nil
 	return stmt, nil
 }
