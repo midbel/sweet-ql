@@ -1001,6 +1001,67 @@ func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
 	return nil
 }
 
+// check that there are no comparison between literal values only such as 1=1
+type valueCompare struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func ValueCompare(level Severity) Rule {
+	return &valueCompare{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *valueCompare) Name() string {
+	return "value-compare"
+}
+
+func (r *valueCompare) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *valueCompare) VisitBinary(binary *ast.Binary) error {
+	_, ok1 := binary.Left.(*ast.Value)
+	_, ok2 := binary.Right.(*ast.Value)
+	if ok1 && ok2 {
+		i := Issue{
+			Position: binary.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "avoid tautological conditional such as 1=1",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
+}
+
+func (r *valueCompare) VisitBetween(between *ast.Between) error {
+	return nil
+}
+
+func (r *valueCompare) VisitIs(is *ast.Is) error {
+	if _, ok := is.Ident.(*ast.Value); !ok {
+		return nil
+	}
+	return nil
+}
+
+func (r *valueCompare) VisitIn(in *ast.In) error {
+	if _, ok := in.Ident.(*ast.Value); !ok {
+		return nil
+	}
+	return nil
+}
+
 type selfCompare struct {
 	ast.Visitor
 	severity Severity
