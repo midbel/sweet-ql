@@ -1037,7 +1037,7 @@ func (r *valueCompare) VisitBinary(binary *ast.Binary) error {
 			Position: binary.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "unnecessary condition used - avoid comparing literal values",
+			Reason:   "avoid comparing literal values together",
 		}
 		r.issues = append(r.issues, i)
 	}
@@ -1045,6 +1045,18 @@ func (r *valueCompare) VisitBinary(binary *ast.Binary) error {
 }
 
 func (r *valueCompare) VisitBetween(between *ast.Between) error {
+	_, ok1 := between.Ident.(*ast.Value)
+	_, ok2 := between.Lower.(*ast.Value)
+	_, ok3 := between.Upper.(*ast.Value)
+	if ok1 && ok2 && ok3 {
+		i := Issue{
+			Position: between.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "avoid comparing literal values together",
+		}
+		r.issues = append(r.issues, i)
+	}
 	return nil
 }
 
@@ -1052,12 +1064,51 @@ func (r *valueCompare) VisitIs(is *ast.Is) error {
 	if _, ok := is.Ident.(*ast.Value); !ok {
 		return nil
 	}
+	if _, ok := is.Value.(*ast.Value); ok {
+		i := Issue{
+			Position: is.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "avoid comparing literal values together",
+		}
+		r.issues = append(r.issues, i)
+	}
 	return nil
 }
 
 func (r *valueCompare) VisitIn(in *ast.In) error {
 	if _, ok := in.Ident.(*ast.Value); !ok {
 		return nil
+	}
+	switch val := in.Value.(type) {
+	case *ast.Value:
+		i := Issue{
+			Position: in.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "avoid comparing literal values together",
+		}
+		r.issues = append(r.issues, i)
+	case *ast.List:
+		var found bool
+		for i := range val.Values {
+			if _, ok := val.Values[i].(*ast.Value); !ok {
+				found = false
+				break
+			}
+			found = true
+		}
+		if !found {
+			break
+		}
+		i := Issue{
+			Position: in.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "avoid comparing literal values together",
+		}
+		r.issues = append(r.issues, i)
+	default:
 	}
 	return nil
 }
