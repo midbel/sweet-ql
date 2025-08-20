@@ -13,6 +13,14 @@ type Rewriter interface {
 	Rewrite(ast.Node) (ast.Node, error)
 }
 
+type NameFunc func(int) string
+
+func NameWithPrefix(prefix string) NameFunc {
+	return func(ix int) string {
+		return fmt.Sprintf("%s%03d", prefix, ix)
+	}
+}
+
 var factory = map[string]func() Rewriter{
 	"std-operator":         StdOperator,
 	"cte-to-subquery":      nil,
@@ -280,12 +288,14 @@ const (
 type rewriteMissingAlias struct {
 	ast.Transformer
 	mode AliasMode
+	name NameFunc
 }
 
 func MissingAliasFields() Rewriter {
 	return rewriteMissingAlias{
 		Transformer: ast.Keep(),
 		mode:        AliasFields,
+		name:        NameWithPrefix("sel"),
 	}
 }
 
@@ -293,6 +303,7 @@ func MissingAliasTables() Rewriter {
 	return rewriteMissingAlias{
 		Transformer: ast.Keep(),
 		mode:        AliasTables,
+		name:        NameWithPrefix("tbl"),
 	}
 }
 
@@ -315,9 +326,31 @@ func (r rewriteMissingAlias) TransformSelect(stmt *ast.SelectStatement) (ast.Nod
 	return stmt, nil
 }
 
+func (r rewriteMissingAlias) TransformCte(stmt *ast.CteStatement) (ast.Node, error) {
+	node, err := r.Rewrite(stmt.Node)
+	if err == nil {
+		stmt.Node = node
+	}
+	return stmt, err
+}
+
 func (r rewriteMissingAlias) addMissingAliasToFields(stmt *ast.SelectStatement) {
 	for i, c := range stmt.Columns {
-		_, _ = i, c
+		if _, ok := c.(*ast.Alias); ok {
+			continue
+		}
+		if n, ok := c.(*ast.Name); ok && n.All() {
+			continue
+		}
+		id := ast.Identifier{
+			Name: r.name(i + 1),
+		}
+		as := ast.Alias{
+			Identifier: id,
+			Node:       c,
+			Position:   c.Pos(),
+		}
+		stmt.Columns[i] = &as
 	}
 }
 
@@ -339,12 +372,14 @@ const (
 type rewriteMissingColumnsNames struct {
 	ast.Transformer
 	mode MissingMode
+	name NameFunc
 }
 
 func MissingCteFields() Rewriter {
 	return rewriteMissingColumnsNames{
 		Transformer: ast.Keep(),
 		mode:        CteMissing,
+		name:        NameWithPrefix("cte"),
 	}
 }
 
@@ -352,6 +387,7 @@ func MissingViewFields() Rewriter {
 	return rewriteMissingColumnsNames{
 		Transformer: ast.Keep(),
 		mode:        ViewMissing,
+		name:        NameWithPrefix("view"),
 	}
 }
 
@@ -365,11 +401,72 @@ func (r rewriteMissingColumnsNames) Rewrite(stmt ast.Node) (ast.Node, error) {
 }
 
 func (r rewriteMissingColumnsNames) TransformCte(stmt *ast.CteStatement) (ast.Node, error) {
+	if r.mode != CteMissing && r.mode != AllMissing {
+		return stmt, nil
+	}
+	names, err := r.getColumns(stmt.Node)
+	if err != nil {
+		return nil, err
+	}
+	stmt.Columns = names
 	return stmt, nil
 }
 
 func (r rewriteMissingColumnsNames) TransformCreateView(stmt *ast.CreateViewStatement) (ast.Node, error) {
+	if r.mode != ViewMissing && r.mode != AllMissing {
+		return stmt, nil
+	}
+	names, err := r.getColumns(stmt.Select)
+	if err != nil {
+		return nil, err
+	}
+	stmt.Columns = names
 	return stmt, nil
+}
+
+func (r rewriteMissingColumnsNames) getColumns(stmt ast.Node) ([]ast.Node, error) {
+	q, ok := stmt.(*ast.SelectStatement)
+	if !ok {
+		return nil, fmt.Errorf("unexpected query type")
+	}
+	var (
+		names []ast.Node
+		seen  = make(map[ast.Identifier]struct{})
+	)
+	for i, c := range q.Columns {
+		var n ast.Name
+		switch x := c.(type) {
+		case *ast.Value:
+			id := ast.Identifier{
+				Name: r.name(i + 1),
+			}
+			n.Parts = append(n.Parts, id)
+		case *ast.Name:
+			if x.All() {
+				return nil, nil
+			}
+			n.Parts = append(n.Parts, x.Parts[len(x.Parts)-1])
+		case *ast.Alias:
+			n.Parts = append(n.Parts, x.Identifier)
+		case *ast.Call:
+			id := ast.Identifier{
+				Name: r.name(i + 1),
+			}
+			n.Parts = append(n.Parts, id)
+		default:
+			id := ast.Identifier{
+				Name: r.name(i + 1),
+			}
+			n.Parts = append(n.Parts, id)
+		}
+		id := n.Parts[len(n.Parts)-1]
+		if _, ok := seen[id]; ok {
+			return nil, fmt.Errorf("duplicate identifier")
+		}
+		seen[id] = struct{}{}
+		names = append(names, &n)
+	}
+	return names, nil
 }
 
 // rewrite literal value in join with placeholders

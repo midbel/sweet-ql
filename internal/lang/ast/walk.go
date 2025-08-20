@@ -102,12 +102,34 @@ func (v walkTransformer) TransformTruncate(_ *TruncateStatement) (Node, error) {
 	return nil, nil
 }
 
-func (v walkTransformer) TransformWith(_ *WithStatement) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformWith(stmt *WithStatement) (Node, error) {
+	n, err := stmt.Transform(v.inner)
+	if err != nil {
+		return nil, err
+	}
+	if stmt != n {
+		return n, nil
+	}
+	for i := range stmt.Queries {
+		stmt.Queries[i], err = v.tryTransform(stmt.Queries[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	stmt.Node, err = v.tryTransform(stmt.Node)
+	return stmt, err
 }
 
-func (v walkTransformer) TransformCte(_ *CteStatement) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformCte(stmt *CteStatement) (Node, error) {
+	n, err := stmt.Transform(v.inner)
+	if err != nil {
+		return nil, err
+	}
+	if stmt != n {
+		return n, nil
+	}
+	stmt.Node, err = v.tryTransform(stmt.Node)
+	return stmt, err
 }
 
 func (v walkTransformer) TransformMerge(_ *MergeStatement) (Node, error) {
