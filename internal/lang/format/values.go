@@ -28,6 +28,21 @@ func (w *Writer) VisitGroup(group *ast.Group) error {
 	return nil
 }
 
+func (w *Writer) VisitPlaceholder(placeholder *ast.Placeholder) error {
+	if placeholder.Node == nil {
+		w.WriteString("?")
+		return nil
+	}
+	switch placeholder.Node.(type) {
+	case *ast.Name:
+		w.WriteString(":")
+	case *ast.Value:
+		w.WriteString("$")
+	default:
+	}
+	return placeholder.Node.Accept(w)
+}
+
 func (w *Writer) VisitValue(value *ast.Value) error {
 	if value.Constant() {
 		if w.withColor() {

@@ -123,7 +123,7 @@ func (j *Join) Accept(visit Visitor) error {
 }
 
 func (j *Join) Transform(tr Transformer) (Node, error) {
-	return nil, nil
+	return tr.TransformJoin(j)
 }
 
 type WindowDefinition struct {

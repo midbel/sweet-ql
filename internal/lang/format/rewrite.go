@@ -13,12 +13,26 @@ type Rewriter interface {
 	Rewrite(ast.Node) (ast.Node, error)
 }
 
-type NameFunc func(int) string
+type NameFunc func(int, ast.Node) string
 
 func NameWithPrefix(prefix string) NameFunc {
-	return func(ix int) string {
+	return func(ix int, _ ast.Node) string {
 		return fmt.Sprintf("%s%03d", prefix, ix)
 	}
+}
+
+func SelfName(ix int, node ast.Node) string {
+	switch n := node.(type) {
+	case *ast.Name:
+		if n.All() {
+			return fmt.Sprintf("s%03d", ix)
+		}
+		return n.Parts[len(n.Parts)-1].Name
+	case *ast.Call:
+		return fmt.Sprintf("%s%03d", n.GetIdent(), ix)
+	default:
+	}
+	return ""
 }
 
 var factory = map[string]func() Rewriter{
@@ -58,6 +72,7 @@ type rewriteAnsi struct {
 func RewriteAnsi() Rewriter {
 	all := []Rewriter{
 		StdOperator(),
+		GroupbyFields(),
 		NoReturning(),
 	}
 	return rewriteAnsi{
@@ -343,7 +358,7 @@ func (r rewriteMissingAlias) addMissingAliasToFields(stmt *ast.SelectStatement) 
 			continue
 		}
 		id := ast.Identifier{
-			Name: r.name(i + 1),
+			Name: r.name(i+1, c),
 		}
 		as := ast.Alias{
 			Identifier: id,
@@ -438,7 +453,7 @@ func (r rewriteMissingColumnsNames) getColumns(stmt ast.Node) ([]ast.Node, error
 		switch x := c.(type) {
 		case *ast.Value:
 			id := ast.Identifier{
-				Name: r.name(i + 1),
+				Name: r.name(i+1, c),
 			}
 			n.Parts = append(n.Parts, id)
 		case *ast.Name:
@@ -450,12 +465,12 @@ func (r rewriteMissingColumnsNames) getColumns(stmt ast.Node) ([]ast.Node, error
 			n.Parts = append(n.Parts, x.Identifier)
 		case *ast.Call:
 			id := ast.Identifier{
-				Name: r.name(i + 1),
+				Name: r.name(i+1, c),
 			}
 			n.Parts = append(n.Parts, id)
 		default:
 			id := ast.Identifier{
-				Name: r.name(i + 1),
+				Name: r.name(i+1, c),
 			}
 			n.Parts = append(n.Parts, id)
 		}
@@ -469,20 +484,31 @@ func (r rewriteMissingColumnsNames) getColumns(stmt ast.Node) ([]ast.Node, error
 	return names, nil
 }
 
+type LiteralMode int8
+
+const (
+	LiteralWhere LiteralMode = 1 << iota
+	LiteralJoin
+	LiteralAll
+)
+
 // rewrite literal value in join with placeholders
 type rewriteLiteralWithPlaceholder struct {
 	ast.Transformer
+	mode LiteralMode
 }
 
 func ReplaceLiteralJoin() Rewriter {
 	return rewriteLiteralWithPlaceholder{
 		Transformer: ast.Keep(),
+		mode:        LiteralJoin,
 	}
 }
 
 func ReplaceLiteralWhere() Rewriter {
 	return rewriteLiteralWithPlaceholder{
 		Transformer: ast.Keep(),
+		mode:        LiteralWhere,
 	}
 }
 
@@ -493,6 +519,38 @@ func (r rewriteLiteralWithPlaceholder) Rewrite(stmt ast.Node) (ast.Node, error) 
 	}
 	walker := ast.Transform(r)
 	return t.Transform(walker)
+}
+
+func (r rewriteLiteralWithPlaceholder) TransformSelect(stmt *ast.SelectStatement) (ast.Node, error) {
+	if r.mode == LiteralWhere || r.mode == LiteralAll {
+		if stmt.Where != nil {
+
+		}
+	}
+	return stmt, nil
+}
+
+func (r rewriteLiteralWithPlaceholder) TransformJoin(join *ast.Join) (ast.Node, error) {
+	if r.mode == LiteralJoin || r.mode == LiteralAll {
+
+	}
+	return join, nil
+}
+
+func (r rewriteLiteralWithPlaceholder) TransformBinary(binary *ast.Binary) (ast.Node, error) {
+	return binary, nil
+}
+
+func (r rewriteLiteralWithPlaceholder) TransformBetween(between *ast.Between) (ast.Node, error) {
+	return between, nil
+}
+
+func (r rewriteLiteralWithPlaceholder) TransformIs(is *ast.Is) (ast.Node, error) {
+	return is, nil
+}
+
+func (r rewriteLiteralWithPlaceholder) TransformIn(in *ast.In) (ast.Node, error) {
+	return in, nil
 }
 
 // rewrite use of limit/offset to offset/fetch

@@ -331,11 +331,11 @@ func (p *Placeholder) Pos() token.Position {
 }
 
 func (p *Placeholder) Accept(visit Visitor) error {
-	return nil
+	return visit.VisitPlaceholder(p)
 }
 
 func (p *Placeholder) Transform(tr Transformer) (Node, error) {
-	return nil, nil
+	return p, nil
 }
 
 type Value struct {

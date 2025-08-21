@@ -279,6 +279,10 @@ func (v *debugVisitor) VisitCast(*Cast) error {
 	return nil
 }
 
+func (v *debugVisitor) VisitPlaceholder(*Placeholder) error {
+	return nil
+}
+
 func (v *debugVisitor) VisitValue(*Value) error {
 	return nil
 }

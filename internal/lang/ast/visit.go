@@ -66,6 +66,7 @@ type ExprVisitor interface {
 	VisitCast(*Cast) error
 	VisitCallFunc(*Call) error
 
+	VisitPlaceholder(*Placeholder) error
 	VisitValue(*Value) error
 	VisitAlias(*Alias) error
 	VisitName(*Name) error
@@ -346,6 +347,10 @@ func (noopVisitor) VisitNot(*Not) error {
 }
 
 func (noopVisitor) VisitCast(*Cast) error {
+	return nil
+}
+
+func (noopVisitor) VisitPlaceholder(*Placeholder) error {
 	return nil
 }
 

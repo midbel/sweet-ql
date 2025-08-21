@@ -613,6 +613,10 @@ func (v walkVisitor) VisitCast(_ *Cast) error {
 	return nil
 }
 
+func (v walkVisitor) VisitPlaceholder(placeholder *Placeholder) error {
+	return placeholder.Accept(v.inner)
+}
+
 func (v walkVisitor) VisitValue(value *Value) error {
 	return value.Accept(v.inner)
 }
