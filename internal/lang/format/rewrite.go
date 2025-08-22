@@ -492,16 +492,26 @@ const (
 	LiteralAll
 )
 
+type PlaceholderType int8
+
+const (
+	TypeClassic PlaceholderType = 1 << iota
+	TypeName
+	TypePosition
+)
+
 // rewrite literal value in join with placeholders
 type rewriteLiteralWithPlaceholder struct {
 	ast.Transformer
 	mode LiteralMode
+	kind PlaceholderType
 }
 
 func ReplaceLiteralJoin() Rewriter {
 	return rewriteLiteralWithPlaceholder{
 		Transformer: ast.Keep(),
 		mode:        LiteralJoin,
+		kind:        TypeClassic,
 	}
 }
 
@@ -509,6 +519,7 @@ func ReplaceLiteralWhere() Rewriter {
 	return rewriteLiteralWithPlaceholder{
 		Transformer: ast.Keep(),
 		mode:        LiteralWhere,
+		kind:        TypeClassic,
 	}
 }
 
@@ -523,34 +534,91 @@ func (r rewriteLiteralWithPlaceholder) Rewrite(stmt ast.Node) (ast.Node, error) 
 
 func (r rewriteLiteralWithPlaceholder) TransformSelect(stmt *ast.SelectStatement) (ast.Node, error) {
 	if r.mode == LiteralWhere || r.mode == LiteralAll {
-		if stmt.Where != nil {
-
+		where, err := r.replaceWithPlaceholder(stmt.Where)
+		if err == nil {
+			stmt.Where = where
 		}
+		return stmt, err
 	}
 	return stmt, nil
 }
 
 func (r rewriteLiteralWithPlaceholder) TransformJoin(join *ast.Join) (ast.Node, error) {
 	if r.mode == LiteralJoin || r.mode == LiteralAll {
-
+		where, err := r.replaceWithPlaceholder(join.Where)
+		if err == nil {
+			join.Where = where
+		}
+		return join, err
 	}
 	return join, nil
 }
 
-func (r rewriteLiteralWithPlaceholder) TransformBinary(binary *ast.Binary) (ast.Node, error) {
+func (r rewriteLiteralWithPlaceholder) replaceWithPlaceholder(node ast.Node) (ast.Node, error) {
+	replace := replaceWithPlaceholder{
+		Transformer: r.Transformer,
+	}
+	return replace.Rewrite(node)
+}
+
+type replaceWithPlaceholder struct {
+	ast.Transformer
+	kind PlaceholderType
+}
+
+func (r replaceWithPlaceholder) Rewrite(stmt ast.Node) (ast.Node, error) {
+	t, ok := stmt.(ast.TransformableNode)
+	if !ok {
+		return stmt, nil
+	}
+	walker := ast.Transform(r)
+	return t.Transform(walker)
+}
+
+func (r replaceWithPlaceholder) TransformBinary(binary *ast.Binary) (ast.Node, error) {
+	if _, ok := binary.Left.(*ast.Value); ok {
+		binary.Left = r.create(binary.Left)
+	}
+	if _, ok := binary.Right.(*ast.Value); ok {
+		binary.Right = r.create(binary.Right)
+	}
 	return binary, nil
 }
 
-func (r rewriteLiteralWithPlaceholder) TransformBetween(between *ast.Between) (ast.Node, error) {
+func (r replaceWithPlaceholder) TransformBetween(between *ast.Between) (ast.Node, error) {
+	if _, ok := between.Lower.(*ast.Value); ok {
+		between.Lower = r.create(between.Lower)
+	}
+	if _, ok := between.Upper.(*ast.Value); ok {
+		between.Upper = r.create(between.Upper)
+	}
 	return between, nil
 }
 
-func (r rewriteLiteralWithPlaceholder) TransformIs(is *ast.Is) (ast.Node, error) {
+func (r replaceWithPlaceholder) TransformIs(is *ast.Is) (ast.Node, error) {
+	if _, ok := is.Value.(*ast.Value); ok {
+		is.Value = r.create(is.Value)
+	}
 	return is, nil
 }
 
-func (r rewriteLiteralWithPlaceholder) TransformIn(in *ast.In) (ast.Node, error) {
+func (r replaceWithPlaceholder) TransformIn(in *ast.In) (ast.Node, error) {
 	return in, nil
+}
+
+func (r replaceWithPlaceholder) TransformNot(not *ast.Not) (ast.Node, error) {
+	n, err := r.Rewrite(not.Node)
+	if err != nil {
+		return nil, err
+	}
+	not.Node = n
+	return not, nil
+}
+
+func (r replaceWithPlaceholder) create(n ast.Node) ast.Node {
+	return &ast.Placeholder{
+		Position: n.Pos(),
+	}
 }
 
 // rewrite use of limit/offset to offset/fetch
@@ -568,7 +636,24 @@ func (r rewriteLimitToFetch) Rewrite(stmt ast.Node) (ast.Node, error) {
 }
 
 func (r rewriteLimitToFetch) TransformSelect(stmt *ast.SelectStatement) (ast.Node, error) {
+	stmt.Limit = r.rewriteLimit(stmt.Limit)
 	return stmt, nil
+}
+
+func (r rewriteLimitToFetch) rewriteLimit(node ast.Node) ast.Node {
+	if node == nil {
+		return nil
+	}
+	limit, ok := node.(*ast.Limit)
+	if !ok {
+		return node
+	}
+	offset := ast.Offset{
+		Position: limit.Position,
+		Count:    limit.Count,
+		Offset:   limit.Offset,
+	}
+	return &offset
 }
 
 type rewriteReturning struct {

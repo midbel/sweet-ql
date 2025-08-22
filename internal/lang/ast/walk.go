@@ -161,6 +161,16 @@ func (v walkTransformer) TransformOffset(_ *Offset) (Node, error) {
 }
 
 func (v walkTransformer) TransformBinary(binary *Binary) (Node, error) {
+	if binary.IsRelation() {
+		var err error
+		if binary.Left, err = v.tryTransform(binary.Left); err != nil {
+			return nil, err
+		}
+		if binary.Right, err = v.tryTransform(binary.Right); err != nil {
+			return nil, err
+		}
+		return binary, nil
+	}
 	return binary.Transform(v.inner)
 }
 
@@ -176,12 +186,12 @@ func (v walkTransformer) TransformCollate(_ *Collate) (Node, error) {
 	return nil, nil
 }
 
-func (v walkTransformer) TransformIn(_ *In) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformIn(in *In) (Node, error) {
+	return in, nil
 }
 
-func (v walkTransformer) TransformIs(_ *Is) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformIs(is *Is) (Node, error) {
+	return v.tryTransform(is)
 }
 
 func (v walkTransformer) TransformExists(_ *Exists) (Node, error) {
@@ -200,8 +210,8 @@ func (v walkTransformer) TransformAny(_ *Any) (Node, error) {
 	return nil, nil
 }
 
-func (v walkTransformer) TransformNot(_ *Not) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformNot(not *Not) (Node, error) {
+	return v.tryTransform(not)
 }
 
 func (v walkTransformer) TransformCast(_ *Cast) (Node, error) {
