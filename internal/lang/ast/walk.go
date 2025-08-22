@@ -187,7 +187,7 @@ func (v walkTransformer) TransformCollate(_ *Collate) (Node, error) {
 }
 
 func (v walkTransformer) TransformIn(in *In) (Node, error) {
-	return in, nil
+	return v.tryTransform(in)
 }
 
 func (v walkTransformer) TransformIs(is *Is) (Node, error) {
@@ -198,8 +198,8 @@ func (v walkTransformer) TransformExists(_ *Exists) (Node, error) {
 	return nil, nil
 }
 
-func (v walkTransformer) TransformBetween(_ *Between) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformBetween(between *Between) (Node, error) {
+	return v.tryTransform(between)
 }
 
 func (v walkTransformer) TransformAll(_ *All) (Node, error) {
@@ -230,8 +230,8 @@ func (v walkTransformer) TransformAlias(_ *Alias) (Node, error) {
 	return nil, nil
 }
 
-func (v walkTransformer) TransformName(_ *Name) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformName(name *Name) (Node, error) {
+	return name, nil
 }
 
 func (v walkTransformer) TransformGroup(_ *Group) (Node, error) {

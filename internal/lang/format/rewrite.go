@@ -49,7 +49,7 @@ var factory = map[string]func() Rewriter{
 	"placeholder-join":     ReplaceLiteralJoin,
 	"placeholder-where":    ReplaceLiteralWhere,
 	"no-returning":         NoReturning,
-	"limit-to-fetch":       nil,
+	"limit-to-fetch":       RewriteLimit,
 	"add-primary-key":      nil,
 	"ansi":                 RewriteAnsi,
 }
@@ -73,6 +73,7 @@ func RewriteAnsi() Rewriter {
 	all := []Rewriter{
 		StdOperator(),
 		GroupbyFields(),
+		RewriteLimit(),
 		NoReturning(),
 	}
 	return rewriteAnsi{
@@ -578,9 +579,13 @@ func (r replaceWithPlaceholder) Rewrite(stmt ast.Node) (ast.Node, error) {
 func (r replaceWithPlaceholder) TransformBinary(binary *ast.Binary) (ast.Node, error) {
 	if _, ok := binary.Left.(*ast.Value); ok {
 		binary.Left = r.create(binary.Left)
+	} else {
+		binary.Left, _ = r.Rewrite(binary.Left)
 	}
 	if _, ok := binary.Right.(*ast.Value); ok {
 		binary.Right = r.create(binary.Right)
+	} else {
+		binary.Right, _ = r.Rewrite(binary.Right)
 	}
 	return binary, nil
 }
@@ -624,6 +629,12 @@ func (r replaceWithPlaceholder) create(n ast.Node) ast.Node {
 // rewrite use of limit/offset to offset/fetch
 type rewriteLimitToFetch struct {
 	ast.Transformer
+}
+
+func RewriteLimit() Rewriter {
+	return rewriteLimitToFetch{
+		Transformer: ast.Keep(),
+	}
 }
 
 func (r rewriteLimitToFetch) Rewrite(stmt ast.Node) (ast.Node, error) {
