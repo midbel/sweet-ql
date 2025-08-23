@@ -7,6 +7,7 @@ import (
 
 	"github.com/midbel/sweet/internal/lang"
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/slx"
 )
 
 type Rewriter interface {
@@ -38,7 +39,7 @@ func SelfName(ix int, node ast.Node) string {
 var factory = map[string]func() Rewriter{
 	"std-operator":         StdOperator,
 	"cte-to-subquery":      nil,
-	"subquery-to-cte":      nil,
+	"subquery-to-cte":      SubqueryToCte,
 	"groupby-field":        GroupbyFields,
 	"groupby-pos":          GroupbyPosToFields,
 	"groupby-aggr":         nil,
@@ -143,15 +144,76 @@ func (r rewriteStdOperator) TransformBinary(binary *ast.Binary) (ast.Node, error
 // transform all subqueries to an equivalent cte
 type rewriteSubqueryToCte struct {
 	ast.Transformer
+	queries []ast.Node
+	name    NameFunc
+	found   int
 }
 
-func (r rewriteSubqueryToCte) Rewrite(stmt ast.Node) (ast.Node, error) {
+func SubqueryToCte() Rewriter {
+	return &rewriteSubqueryToCte{
+		Transformer: ast.Keep(),
+		name:        NameWithPrefix("subquery"),
+	}
+}
+
+func (r *rewriteSubqueryToCte) Rewrite(stmt ast.Node) (ast.Node, error) {
+	node, err := r.rewrite(stmt)
+	if err != nil {
+		return nil, err
+	}
+	if w, ok := node.(*ast.WithStatement); ok {
+		w.Queries = append(w.Queries, r.queries...)
+		node = w
+	} else {
+		q := &ast.WithStatement{
+			Position: stmt.Pos(),
+			Queries:  r.queries,
+			Node:     node,
+		}
+		node = q
+	}
+	return node, nil
+}
+
+func (r *rewriteSubqueryToCte) rewrite(stmt ast.Node) (ast.Node, error) {
 	t, ok := stmt.(ast.TransformableNode)
 	if !ok {
 		return stmt, nil
 	}
 	walker := ast.Transform(r)
 	return t.Transform(walker)
+}
+
+func (r *rewriteSubqueryToCte) TransformJoin(join *ast.Join) (ast.Node, error) {
+	if a, ok := join.Table.(*ast.Alias); ok {
+		node, err := r.rewrite(a.Node)
+		if err != nil {
+			return nil, err
+		}
+		a.Node = node
+	}
+	return join, nil
+}
+
+func (r *rewriteSubqueryToCte) TransformGroup(group *ast.Group) (ast.Node, error) {
+	stmt, ok := group.Node.(*ast.SelectStatement)
+	if !ok {
+		return group, nil
+	}
+	r.found++
+	id := ast.Identifier{
+		Name: r.name(r.found, stmt),
+	}
+	name := ast.Name{
+		Position: group.Position,
+		Parts:    slx.One(id),
+	}
+	cte := ast.CteStatement{
+		Ident: id.Name,
+		Node:  stmt,
+	}
+	r.queries = append(r.queries, &cte)
+	return &name, nil
 }
 
 // transform all cte to subquery where they are used

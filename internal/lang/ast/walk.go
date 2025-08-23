@@ -144,8 +144,20 @@ func (v walkTransformer) TransformMatch(_ *MatchStatement) (Node, error) {
 	return nil, nil
 }
 
-func (v walkTransformer) TransformJoin(_ *Join) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformJoin(join *Join) (Node, error) {
+	table, err := v.tryTransform(join.Table)
+	if err != nil {
+		return nil, err
+	}
+	join.Table = table
+
+	where, err := v.tryTransform(join.Where)
+	if err != nil {
+		return nil, err
+	}
+	join.Where = where
+
+	return join, nil
 }
 
 func (v walkTransformer) TransformOrder(_ *Order) (Node, error) {
@@ -222,20 +234,24 @@ func (v walkTransformer) TransformCallFunc(_ *Call) (Node, error) {
 	return nil, nil
 }
 
-func (v walkTransformer) TransformValue(_ *Value) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformValue(value *Value) (Node, error) {
+	return value, nil
 }
 
-func (v walkTransformer) TransformAlias(_ *Alias) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformAlias(alias *Alias) (Node, error) {
+	node, err := v.tryTransform(alias.Node)
+	if err == nil {
+		alias.Node = node
+	}
+	return alias, err
 }
 
 func (v walkTransformer) TransformName(name *Name) (Node, error) {
 	return name, nil
 }
 
-func (v walkTransformer) TransformGroup(_ *Group) (Node, error) {
-	return nil, nil
+func (v walkTransformer) TransformGroup(group *Group) (Node, error) {
+	return v.tryTransform(group)
 }
 
 func (v walkTransformer) TransformCase(_ *Case) (Node, error) {
