@@ -156,14 +156,20 @@ func SubqueryToCte() Rewriter {
 	}
 }
 
+func (r *rewriteSubqueryToCte) Reset() {
+	r.found = 0
+	r.queries = r.queries[:0]
+}
+
 func (r *rewriteSubqueryToCte) Rewrite(stmt ast.Node) (ast.Node, error) {
+	defer r.Reset()
+
 	node, err := r.rewrite(stmt)
 	if err != nil {
 		return nil, err
 	}
 	if w, ok := node.(*ast.WithStatement); ok {
 		w.Queries = append(w.Queries, r.queries...)
-		node = w
 	} else {
 		q := &ast.WithStatement{
 			Position: stmt.Pos(),
@@ -182,6 +188,17 @@ func (r *rewriteSubqueryToCte) rewrite(stmt ast.Node) (ast.Node, error) {
 	}
 	walker := ast.Transform(r)
 	return t.Transform(walker)
+}
+
+func (r *rewriteSubqueryToCte) TransformSelect(stmt *ast.SelectStatement) (ast.Node, error) {
+	for i := range stmt.Tables {
+		node, err := r.rewrite(stmt.Tables[i])
+		if err != nil {
+			return nil, err
+		}
+		stmt.Tables[i] = node
+	}
+	return stmt, ast.ErrTransform
 }
 
 func (r *rewriteSubqueryToCte) TransformJoin(join *ast.Join) (ast.Node, error) {

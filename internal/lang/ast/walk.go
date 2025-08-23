@@ -17,6 +17,13 @@ func doneVisiting(err error) error {
 	return err
 }
 
+func doneTransform(err error) error {
+	if errors.Is(err, ErrTransform) {
+		return nil
+	}
+	return err
+}
+
 func stopVisiting(err error) error {
 	if errors.Is(err, ErrStop) {
 		return nil
@@ -39,7 +46,8 @@ func (v walkTransformer) tryTransform(node Node) (Node, error) {
 	if !ok {
 		return node, nil
 	}
-	return t.Transform(v.inner)
+	node, err := t.Transform(v.inner)
+	return node, doneTransform(err)
 }
 
 func (v walkTransformer) TransformValues(_ *ValuesStatement) (Node, error) {
@@ -49,7 +57,7 @@ func (v walkTransformer) TransformValues(_ *ValuesStatement) (Node, error) {
 func (v walkTransformer) TransformSelect(stmt *SelectStatement) (Node, error) {
 	n, err := stmt.Transform(v.inner)
 	if err != nil {
-		return nil, err
+		return n, doneTransform(err)
 	}
 	if stmt != n {
 		return n, nil
@@ -145,6 +153,13 @@ func (v walkTransformer) TransformMatch(_ *MatchStatement) (Node, error) {
 }
 
 func (v walkTransformer) TransformJoin(join *Join) (Node, error) {
+	n, err := join.Transform(v.inner)
+	if err != nil {
+		return nil, err
+	}
+	if join != n {
+		return n, nil
+	}
 	table, err := v.tryTransform(join.Table)
 	if err != nil {
 		return nil, err
