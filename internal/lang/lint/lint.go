@@ -2,6 +2,7 @@ package lint
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 
@@ -9,6 +10,58 @@ import (
 	"github.com/midbel/sweet/internal/lang/parser"
 	"github.com/midbel/sweet/internal/token"
 )
+
+var supportedRules = map[string]func(Severity) Rule{
+	"no-star":                  NoStar,
+	"only-name":                OnlyName,
+	"duplicated-name":          DuplicatedName,
+	"ambiguous-name":           AmbiguousName,
+	"no-cte":                   NoCte,
+	"cte-unused":               CteUnused,
+	"cte-name":                 CteNames,
+	"std-operator":             StdOperator,
+	"self-compare":             SelfCompare,
+	"missing-where":            MissingWhere,
+	"order-with-offset":        OrderWithOffset,
+	"enforce-type":             EnforceType,
+	"enforce-fetch":            EnforceFetch,
+	"enforce-limit":            EnforceFetch,
+	"columns-count":            ColumnsCount,
+	"columns-names":            ColumnsNames,
+	"set-offset-last":          SetOffsetFetchLast,
+	"set-order-last":           SetOrderLast,
+	"no-subquery":              NoSubquery,
+	"subquery-columns-count":   SubqueryColumnsCount,
+	"subquery-names":           SubqueryNames,
+	"recommand-use-alias":      RecommandedAlias,
+	"missing-alias":            MissingAlias,
+	"no-alias":                 NoAlias,
+	"self-alias":               SelfAlias,
+	"ambiguous-alias":          AmbiguousAlias,
+	"invalid-alias":            InvalidAlias,
+	"undefined-alias":          UndefinedAlias,
+	"identifier-without-quote": MissingIdentQuoted,
+	"identifier-with-quote":    NoIdentQuoted,
+	"recommand-use-quote":      RecommandedQuoted,
+	"no-literal-join":          NoLiteralJoin,
+	"unused-join":              JoinUnused,
+	"groupby-columns":          GroupbyColumns,
+	"no-literal-groupby":       NoLiteralGroupby,
+	"groupby-distinct":         GroupbyDistinct,
+	"grouby-aggr-func":         GroupbyAggrFunc,
+	"having-aggr-func":         HavingAggrFunc,
+}
+
+func RuleByName(name string, level Severity) (Rule, error) {
+	fn, ok := supportedRules[name]
+	if !ok {
+		return nil, fmt.Errorf("%s: unknown/unsupported lint rule", name)
+	}
+	if fn == nil {
+		return nil, fmt.Errorf("%s: rule not yet implemented", name)
+	}
+	return fn(level), nil
+}
 
 type Severity int8
 

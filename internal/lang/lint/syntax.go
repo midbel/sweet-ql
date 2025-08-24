@@ -49,6 +49,51 @@ func (r *noStar) VisitName(name *ast.Name) error {
 	return nil
 }
 
+type onlyName struct {
+	ast.Visitor
+	issues   []Issue
+	severity Severity
+}
+
+func OnlyName(level Severity) Rule {
+	return &duplicatedName{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *onlyName) Name() string {
+	return "only-name"
+}
+
+func (r *onlyName) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *onlyName) VisitSelect(stmt *ast.SelectStatement) error {
+	for _, c := range stmt.Columns {
+		if a, ok := c.(*ast.Alias); ok {
+			c = a.Node
+		}
+		if _, ok := c.(*ast.Name); !ok {
+			i := Issue{
+				Position: c.Pos(),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "only name expected in select clause",
+			}
+			r.issues = append(r.issues, i)
+		}
+	}
+	return nil
+}
+
 type duplicatedName struct {
 	ast.Visitor
 	issues   []Issue

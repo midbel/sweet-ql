@@ -10,46 +10,6 @@ import (
 	"github.com/midbel/sweet/internal/lang/lint"
 )
 
-var supportedRules = map[string]func(lint.Severity) lint.Rule{
-	"no-star":                  lint.NoStar,
-	"duplicated-name":          lint.DuplicatedName,
-	"ambiguous-name":           lint.AmbiguousName,
-	"no-cte":                   lint.NoCte,
-	"cte-unused":               lint.CteUnused,
-	"cte-name":                 lint.CteNames,
-	"std-operator":             lint.StdOperator,
-	"self-compare":             lint.SelfCompare,
-	"missing-where":            lint.MissingWhere,
-	"order-with-offset":        lint.OrderWithOffset,
-	"enforce-type":             lint.EnforceType,
-	"enforce-fetch":            lint.EnforceFetch,
-	"enforce-limit":            lint.EnforceFetch,
-	"columns-count":            lint.ColumnsCount,
-	"columns-names":            lint.ColumnsNames,
-	"set-offset-last":          lint.SetOffsetFetchLast,
-	"set-order-last":           lint.SetOrderLast,
-	"no-subquery":              lint.NoSubquery,
-	"subquery-columns-count":   lint.SubqueryColumnsCount,
-	"subquery-names":           lint.SubqueryNames,
-	"recommand-use-alias":      lint.RecommandedAlias,
-	"missing-alias":            lint.MissingAlias,
-	"no-alias":                 lint.NoAlias,
-	"self-alias":               lint.SelfAlias,
-	"ambiguous-alias":          lint.AmbiguousAlias,
-	"invalid-alias":            lint.InvalidAlias,
-	"undefined-alias":          lint.UndefinedAlias,
-	"identifier-without-quote": lint.MissingIdentQuoted,
-	"identifier-with-quote":    lint.NoIdentQuoted,
-	"recommand-use-quote":      lint.RecommandedQuoted,
-	"no-literal-join":          lint.NoLiteralJoin,
-	"unused-join":              lint.JoinUnused,
-	"groupby-columns":          lint.GroupbyColumns,
-	"no-literal-groupby":       lint.NoLiteralGroupby,
-	"groupby-distinct":         lint.GroupbyDistinct,
-	"grouby-aggr-func":         lint.GroupbyAggrFunc,
-	"having-aggr-func":         lint.HavingAggrFunc,
-}
-
 func runLint(args []string) error {
 	var (
 		set   = flag.NewFlagSet("lint", flag.ExitOnError)
@@ -81,12 +41,11 @@ func runLint(args []string) error {
 				level = lint.Warning
 			}
 		}
-		fn, ok := supportedRules[rule]
-		if !ok {
-			return fmt.Errorf("%s: unknown/unsupported lint rule", rule)
+		check, err := lint.RuleByName(rule, level)
+		if err == nil {
+			rules = append(rules, check)
 		}
-		rules = append(rules, fn(level))
-		return nil
+		return err
 	})
 	if err := set.Parse(args); err != nil {
 		return err
