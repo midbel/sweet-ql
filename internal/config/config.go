@@ -53,6 +53,8 @@ const (
 	optionDialect       = "dialect"
 	optionFormat        = "format"
 	optionLint          = "lint"
+	optionFmtCompact    = "compact"
+	optionFmtUpper      = "upperize"
 	optionFmtQuote      = "quote"
 	optionFmtIndent     = "indent"
 	optionFmtIndentSize = "size"
@@ -147,6 +149,9 @@ func (p *Parser) parseFormat() (*FormatBuilder, error) {
 			err = p.parseFormatNewline(&fb)
 		case optionFmtComma:
 			err = p.parseFormatComma(&fb)
+		case optionFmtSemicolon:
+		case optionFmtCompact:
+		case optionFmtUpper:
 		default:
 			err = p.unsupported()
 		}
@@ -184,23 +189,15 @@ func (p *Parser) parseFormatQuote(fb *FormatBuilder) error {
 	return nil
 }
 
-func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
-	p.next()
-	if p.is(Set) {
-		p.next()
-		if !p.is(Literal) {
-			return p.unexpected()
-		}
-		p.next()
-		if !p.is(EOL) {
-			return p.unexpected()
-		}
-		p.next()
-	}
+func (p *Parser) parseFormatIndentFull(fb *FormatBuilder) error {
 	if !p.is(Beg) {
 		return p.unexpected()
 	}
 	p.next()
+	var (
+		char  string
+		count int
+	)
 	for !p.done() && !p.is(End) {
 		p.skipComments()
 		if !p.is(Literal) {
@@ -209,7 +206,9 @@ func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
 		var err error
 		switch p.getCurrentLiteral() {
 		case optionFmtIndentSize:
+			count = 0
 		case optionFmtIndentChar:
+			char = p.getCurrentLiteral()
 		default:
 			err = p.unsupported()
 		}
@@ -222,6 +221,34 @@ func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
 	}
 	p.next()
 	return nil
+}
+
+func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
+	p.next()
+	if !p.is(Set) {
+		return p.parseFormatIndentFull(fb)
+	}
+	p.next()
+	if !p.is(Literal) {
+		return p.unexpected()
+	}
+	var option format.WriterOption
+	switch p.getCurrentLiteral() {
+	case "space":
+		option = format.WithSpace(4)
+	case "tab":
+		option = format.WithTabs()
+	default:
+		return p.invalid()
+	}
+	fb.options = append(fb.options, option)
+	p.next()
+	if !p.eof() {
+		return p.unexpected()
+	}
+	p.next()
+	return nil
+
 }
 
 func (p *Parser) parseFormatNewline(fb *FormatBuilder) error {
@@ -260,7 +287,7 @@ func (p *Parser) parseFormatComma(fb *FormatBuilder) error {
 	}
 	var option format.WriterOption
 	switch p.getCurrentLiteral() {
-	case "before":
+	case "before", "prepend":
 		option = format.WithCommaBefore()
 	case "after", "":
 		option = format.WithCommaAfter()
