@@ -23,6 +23,62 @@ func GetFormatter() lang.Formatter {
 	return ansiFormatter{}
 }
 
+type WriterOption func(*Writer) error
+
+func WithQuote() WriterOption {
+	return func(w *Writer) error {
+		w.UseQuote = true
+		return nil
+	}
+}
+
+func WithCrlf() WriterOption {
+	return func(w *Writer) error {
+		w.UseCrlf = true
+		return nil
+	}
+}
+
+func WithNL() WriterOption {
+	return func(w *Writer) error {
+		w.UseCrlf = false
+		return nil
+	}
+}
+
+func WithCommaBefore() WriterOption {
+	return func(w *Writer) error {
+		w.PrependComma = true
+		return nil
+	}
+}
+
+func WithCommaAfter() WriterOption {
+	return func(w *Writer) error {
+		w.PrependComma = false
+		return nil
+	}
+}
+
+func WithTabs() WriterOption {
+	return func(w *Writer) error {
+		w.UseSpace = false
+		w.UseIndent = 0
+		return nil
+	}
+}
+
+func WithSpace(indent int) WriterOption {
+	return func(w *Writer) error {
+		if indent < 0 {
+			return fmt.Errorf("negative indent")
+		}
+		w.UseSpace = true
+		w.UseIndent = indent
+		return nil
+	}
+}
+
 type Writer struct {
 	ast.Visitor
 	inner *bufio.Writer

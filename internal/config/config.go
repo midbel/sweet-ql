@@ -6,20 +6,329 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"unicode/utf8"
+
+	"github.com/midbel/sweet/internal/lang/format"
 )
 
-type FormatBuilder struct{}
+type Formatter interface {
+	Format(io.Reader) error
+}
 
-type LintBuilder struct{}
+const (
+	DialectAnsi = "ansi"
+)
+
+type CommaPos int8
+
+const (
+	CommaBefore CommaPos = 1 << iota
+	CommaAfter
+)
+
+type FormatBuilder struct {
+	options []format.WriterOption
+}
+
+func (b *FormatBuilder) Build(w io.Writer) (Formatter, error) {
+	ws := format.NewWriter(w)
+	for i := range b.options {
+		if err := b.options[i](ws); err != nil {
+			return nil, err
+		}
+	}
+	return ws, nil
+}
 
 type Builder struct {
 	Name    string
 	Path    []string
 	Dialect string
-	Format  *FormatBuilder
-	Lint    *LintBuilder
-	Sub     []*Builder
+	*FormatBuilder
+	Sub []*Builder
+}
+
+const (
+	optionDialect       = "dialect"
+	optionFormat        = "format"
+	optionLint          = "lint"
+	optionFmtQuote      = "quote"
+	optionFmtIndent     = "indent"
+	optionFmtIndentSize = "size"
+	optionFmtIndentChar = "char"
+	optionFmtNewline    = "newline"
+	optionFmtComma      = "comma"
+	optionFmtSemicolon  = "semicolon"
+)
+
+type Parser struct {
+	scan *Scanner
+	curr Token
+	peek Token
+}
+
+func Parse(r io.Reader) *Parser {
+	p := Parser{
+		scan: Scan(r),
+	}
+	p.next()
+	p.next()
+
+	return &p
+}
+
+func (p *Parser) Parse() (*Builder, error) {
+	var b Builder
+	b.Dialect = DialectAnsi
+	return &b, p.parse(&b)
+}
+
+func (p *Parser) parse(b *Builder) error {
+	for !p.done() {
+		p.skipComments()
+		if !p.is(Literal) {
+			return p.unexpected()
+		}
+		var err error
+		switch p.getCurrentLiteral() {
+		case optionDialect:
+			err = p.parseDialect(b)
+		case optionFormat:
+			b.FormatBuilder, err = p.parseFormat()
+		case optionLint:
+			err = p.parseLint()
+		default:
+			err = p.unsupported()
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Parser) parseDialect(b *Builder) error {
+	if !p.is(Set) {
+		return p.unexpected()
+	}
+	p.next()
+	if !p.is(Literal) {
+		return p.unexpected()
+	}
+	b.Dialect = p.getCurrentLiteral()
+	p.next()
+	if !p.eol() {
+		return p.unexpected()
+	}
+	p.next()
+	return nil
+}
+
+func (p *Parser) parseFormat() (*FormatBuilder, error) {
+	p.next()
+	if !p.is(Beg) {
+		return nil, p.unexpected()
+	}
+	p.next()
+	var fb FormatBuilder
+	for !p.done() && !p.is(End) {
+		p.skipComments()
+		if !p.is(Literal) {
+			return nil, p.unexpected()
+		}
+		var err error
+		switch p.getCurrentLiteral() {
+		case optionFmtQuote:
+			err = p.parseFormatQuote(&fb)
+		case optionFmtIndent:
+			err = p.parseFormatIndent(&fb)
+		case optionFmtNewline:
+			err = p.parseFormatNewline(&fb)
+		case optionFmtComma:
+			err = p.parseFormatComma(&fb)
+		default:
+			err = p.unsupported()
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !p.is(End) {
+		return nil, p.unsupported()
+	}
+	p.next()
+	return &fb, nil
+}
+
+func (p *Parser) parseFormatQuote(fb *FormatBuilder) error {
+	p.next()
+	if !p.is(Set) {
+		return p.unexpected()
+	}
+	if !p.is(Literal) {
+		return p.unexpected()
+	}
+	switch p.getCurrentLiteral() {
+	case "double", "true", "on":
+		fb.options = append(fb.options, format.WithQuote())
+	case "", "false", "off":
+	default:
+		return p.invalid()
+	}
+	p.next()
+	if !p.eol() {
+		return p.unexpected()
+	}
+	p.next()
+	return nil
+}
+
+func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
+	p.next()
+	if p.is(Set) {
+		p.next()
+		if !p.is(Literal) {
+			return p.unexpected()
+		}
+		p.next()
+		if !p.is(EOL) {
+			return p.unexpected()
+		}
+		p.next()
+	}
+	if !p.is(Beg) {
+		return p.unexpected()
+	}
+	p.next()
+	for !p.done() && !p.is(End) {
+		p.skipComments()
+		if !p.is(Literal) {
+			return p.unexpected()
+		}
+		var err error
+		switch p.getCurrentLiteral() {
+		case optionFmtIndentSize:
+		case optionFmtIndentChar:
+		default:
+			err = p.unsupported()
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if !p.is(End) {
+		return p.unexpected()
+	}
+	p.next()
+	return nil
+}
+
+func (p *Parser) parseFormatNewline(fb *FormatBuilder) error {
+	p.next()
+	if !p.is(Set) {
+		return p.unexpected()
+	}
+	if !p.is(Literal) {
+		return p.unexpected()
+	}
+	var option format.WriterOption
+	switch p.getCurrentLiteral() {
+	case "crlf":
+		option = format.WithCrlf()
+	case "nl", "":
+		option = format.WithNL()
+	default:
+		return p.invalid()
+	}
+	fb.options = append(fb.options, option)
+	p.next()
+	if !p.eol() {
+		return p.unexpected()
+	}
+	p.next()
+	return nil
+}
+
+func (p *Parser) parseFormatComma(fb *FormatBuilder) error {
+	p.next()
+	if !p.is(Set) {
+		return p.unexpected()
+	}
+	if !p.is(Literal) {
+		return p.unexpected()
+	}
+	var option format.WriterOption
+	switch p.getCurrentLiteral() {
+	case "before":
+		option = format.WithCommaBefore()
+	case "after", "":
+		option = format.WithCommaAfter()
+	default:
+		return p.invalid()
+	}
+	fb.options = append(fb.options, option)
+	p.next()
+	if !p.eol() {
+		return p.unexpected()
+	}
+	p.next()
+	return nil
+}
+
+func (p *Parser) parseLint() error {
+	p.next()
+	if !p.is(Beg) {
+		return p.unexpected()
+	}
+	p.next()
+	for !p.done() && !p.is(End) {
+
+	}
+	if !p.is(End) {
+		return p.unexpected()
+	}
+	p.next()
+	return nil
+}
+
+func (p *Parser) skipComments() {
+	for p.is(Comment) {
+		p.next()
+	}
+}
+
+func (p *Parser) getCurrentLiteral() string {
+	return p.curr.Literal
+}
+
+func (p *Parser) is(kind rune) bool {
+	return p.curr.Type == kind
+}
+
+func (p *Parser) eol() bool {
+	return p.is(EOL) || p.is(Comment)
+}
+
+func (p *Parser) done() bool {
+	return p.is(EOF)
+}
+
+func (p *Parser) unexpected() error {
+	return fmt.Errorf("unexpected token %s", p.curr)
+}
+
+func (p *Parser) unsupported() error {
+	return fmt.Errorf("unsupported option %s", p.getCurrentLiteral())
+}
+
+func (p *Parser) invalid() error {
+	return fmt.Errorf("invalid value %s", p.getCurrentLiteral())
+}
+
+func (p *Parser) next() {
+	p.curr = p.peek
+	p.peek = p.scan.Scan()
 }
 
 const (
@@ -28,11 +337,21 @@ const (
 	Invalid
 	Comment
 	Literal
+	Boolean
 	Beg
 	End
 	Set
 	All
 )
+
+var booleans = []string{
+	"false",
+	"true",
+	"on",
+	"off",
+	"yes",
+	"no",
+}
 
 type Token struct {
 	Literal string
@@ -52,6 +371,8 @@ func (t Token) String() string {
 		prefix = "comment"
 	case Literal:
 		prefix = "literal"
+	case Boolean:
+		prefix = "boolean"
 	case Beg:
 		return "<begin>"
 	case End:
@@ -148,6 +469,11 @@ func (s *Scanner) scanLiteral(tok *Token) {
 	}
 	tok.Literal = s.literal()
 	tok.Type = Literal
+
+	ok := slices.Contains(booleans, tok.Literal)
+	if ok {
+		tok.Type = Boolean
+	}
 }
 
 func (s *Scanner) scanComment(tok *Token) {
