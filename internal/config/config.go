@@ -7,14 +7,11 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/midbel/sweet/internal/lang/format"
 )
-
-type Formatter interface {
-	Format(io.Reader) error
-}
 
 const (
 	DialectAnsi = "ansi"
@@ -24,8 +21,8 @@ type FormatBuilder struct {
 	options []format.WriterOption
 }
 
-func (b *FormatBuilder) Build(w io.Writer) (Formatter, error) {
-	return format.New(w, b.options)
+func (b *FormatBuilder) Build(w io.Writer) (*format.Writer, error) {
+	return format.New(w, b.options...)
 }
 
 type Builder struct {
@@ -134,9 +131,10 @@ func (p *Parser) parseFormat() (*FormatBuilder, error) {
 			err = p.parseFormatNewline(&fb)
 		case optionFmtComma:
 			err = p.parseFormatComma(&fb)
-		case optionFmtSemicolon:
 		case optionFmtCompact:
+			err = p.parseFormatCompact(&fb)
 		case optionFmtUpper:
+			err = p.parseFormatUpper(&fb)
 		default:
 			err = p.unsupported()
 		}
@@ -157,7 +155,7 @@ func (p *Parser) parseFormatQuote(fb *FormatBuilder) error {
 		return p.unexpected()
 	}
 	p.next()
-	if !p.is(Literal) {
+	if !p.is(Literal) && !p.is(Boolean) {
 		return p.unexpected()
 	}
 	switch p.getCurrentLiteral() {
@@ -201,31 +199,34 @@ func (p *Parser) parseFormatIndentFull(fb *FormatBuilder) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(">>>>", char, count)
 	}
 	if !p.is(End) {
 		return p.unexpected()
 	}
 	p.next()
+	var option format.WriterOption
+	switch char {
+	case "space":
+		size, err := strconv.Atoi(count)
+		if err != nil {
+			return err
+		}
+		option = format.WithSpace(size)
+	case "tab":
+		option = format.WithTabs()
+	default:
+		return p.invalid()
+	}
+	fb.options = append(fb.options, option)
 	return nil
 }
 
-func (p *Parser) parseValue() (string, error) {
-	p.next()
-	if !p.is(Set) {
-		return "", p.unexpected()
-	}
-	p.next()
-	if !p.is(Literal) {
-		return "", p.unexpected()
-	}
-	value := p.getCurrentLiteral()
-	p.next()
-	if !p.eol() {
-		return "", p.unexpected()
-	}
-	p.next()
-	return value, nil
+func (p *Parser) parseFormatCompact(fb *FormatBuilder) error {
+	return nil
+}
+
+func (p *Parser) parseFormatUpper(fb *FormatBuilder) error {
+	return nil
 }
 
 func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
@@ -253,7 +254,24 @@ func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
 	}
 	p.next()
 	return nil
+}
 
+func (p *Parser) parseValue() (string, error) {
+	p.next()
+	if !p.is(Set) {
+		return "", p.unexpected()
+	}
+	p.next()
+	if !p.is(Literal) {
+		return "", p.unexpected()
+	}
+	value := p.getCurrentLiteral()
+	p.next()
+	if !p.eol() {
+		return "", p.unexpected()
+	}
+	p.next()
+	return value, nil
 }
 
 func (p *Parser) parseFormatNewline(fb *FormatBuilder) error {
@@ -269,7 +287,7 @@ func (p *Parser) parseFormatNewline(fb *FormatBuilder) error {
 	switch p.getCurrentLiteral() {
 	case "crlf":
 		option = format.WithCrlf()
-	case "nl", "":
+	case "nl", "lf", "":
 		option = format.WithNL()
 	default:
 		return p.invalid()
