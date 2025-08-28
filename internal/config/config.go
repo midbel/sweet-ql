@@ -20,25 +20,12 @@ const (
 	DialectAnsi = "ansi"
 )
 
-type CommaPos int8
-
-const (
-	CommaBefore CommaPos = 1 << iota
-	CommaAfter
-)
-
 type FormatBuilder struct {
 	options []format.WriterOption
 }
 
 func (b *FormatBuilder) Build(w io.Writer) (Formatter, error) {
-	ws := format.NewWriter(w)
-	for i := range b.options {
-		if err := b.options[i](ws); err != nil {
-			return nil, err
-		}
-	}
-	return ws, nil
+	return format.New(w, b.options)
 }
 
 type Builder struct {
@@ -87,8 +74,11 @@ func (p *Parser) Parse() (*Builder, error) {
 }
 
 func (p *Parser) parse(b *Builder) error {
-	for !p.done() {
+	for {
 		p.skipComments()
+		if p.done() {
+			break
+		}
 		if !p.is(Literal) {
 			return p.unexpected()
 		}
@@ -111,19 +101,11 @@ func (p *Parser) parse(b *Builder) error {
 }
 
 func (p *Parser) parseDialect(b *Builder) error {
-	if !p.is(Set) {
-		return p.unexpected()
+	value, err := p.parseValue()
+	if err != nil {
+		return err
 	}
-	p.next()
-	if !p.is(Literal) {
-		return p.unexpected()
-	}
-	b.Dialect = p.getCurrentLiteral()
-	p.next()
-	if !p.eol() {
-		return p.unexpected()
-	}
-	p.next()
+	b.Dialect = value
 	return nil
 }
 
@@ -134,8 +116,11 @@ func (p *Parser) parseFormat() (*FormatBuilder, error) {
 	}
 	p.next()
 	var fb FormatBuilder
-	for !p.done() && !p.is(End) {
+	for {
 		p.skipComments()
+		if p.is(End) || p.done() {
+			break
+		}
 		if !p.is(Literal) {
 			return nil, p.unexpected()
 		}
@@ -171,6 +156,7 @@ func (p *Parser) parseFormatQuote(fb *FormatBuilder) error {
 	if !p.is(Set) {
 		return p.unexpected()
 	}
+	p.next()
 	if !p.is(Literal) {
 		return p.unexpected()
 	}
@@ -196,7 +182,7 @@ func (p *Parser) parseFormatIndentFull(fb *FormatBuilder) error {
 	p.next()
 	var (
 		char  string
-		count int
+		count string
 	)
 	for !p.done() && !p.is(End) {
 		p.skipComments()
@@ -206,21 +192,40 @@ func (p *Parser) parseFormatIndentFull(fb *FormatBuilder) error {
 		var err error
 		switch p.getCurrentLiteral() {
 		case optionFmtIndentSize:
-			count = 0
+			count, err = p.parseValue()
 		case optionFmtIndentChar:
-			char = p.getCurrentLiteral()
+			char, err = p.parseValue()
 		default:
 			err = p.unsupported()
 		}
 		if err != nil {
 			return err
 		}
+		fmt.Println(">>>>", char, count)
 	}
 	if !p.is(End) {
 		return p.unexpected()
 	}
 	p.next()
 	return nil
+}
+
+func (p *Parser) parseValue() (string, error) {
+	p.next()
+	if !p.is(Set) {
+		return "", p.unexpected()
+	}
+	p.next()
+	if !p.is(Literal) {
+		return "", p.unexpected()
+	}
+	value := p.getCurrentLiteral()
+	p.next()
+	if !p.eol() {
+		return "", p.unexpected()
+	}
+	p.next()
+	return value, nil
 }
 
 func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
@@ -243,7 +248,7 @@ func (p *Parser) parseFormatIndent(fb *FormatBuilder) error {
 	}
 	fb.options = append(fb.options, option)
 	p.next()
-	if !p.eof() {
+	if !p.eol() {
 		return p.unexpected()
 	}
 	p.next()
@@ -256,6 +261,7 @@ func (p *Parser) parseFormatNewline(fb *FormatBuilder) error {
 	if !p.is(Set) {
 		return p.unexpected()
 	}
+	p.next()
 	if !p.is(Literal) {
 		return p.unexpected()
 	}
@@ -282,6 +288,7 @@ func (p *Parser) parseFormatComma(fb *FormatBuilder) error {
 	if !p.is(Set) {
 		return p.unexpected()
 	}
+	p.next()
 	if !p.is(Literal) {
 		return p.unexpected()
 	}

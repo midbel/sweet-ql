@@ -100,7 +100,18 @@ type Writer struct {
 	lang.Formatter
 }
 
-func NewWriter(w io.Writer) *Writer {
+func New(w io.Writer, options ...WriterOption) (*Writer, error) {
+	ws := Default(w)
+	for i := range options {
+		err := options[i](ws)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ws, nil
+}
+
+func Default(w io.Writer) *Writer {
 	ws := Writer{
 		Visitor:   ast.Noop(),
 		inner:     bufio.NewWriter(w),
@@ -117,7 +128,7 @@ func NewWriter(w io.Writer) *Writer {
 }
 
 func Compact(w io.Writer) *Writer {
-	ws := NewWriter(w)
+	ws := Default(w)
 	ws.Compact = GetCompactMode("")
 	return ws
 }

@@ -11,7 +11,7 @@ import (
 func runFormat(args []string) error {
 	var (
 		set    = flag.NewFlagSet("format", flag.ExitOnError)
-		writer = format.NewWriter(os.Stdout)
+		writer = format.Default(os.Stdout)
 	)
 	set.BoolVar(&writer.UseQuote, "use-quote", writer.UseQuote, "quote all identifier")
 	set.IntVar(&writer.UseIndent, "use-indent", writer.UseIndent, "number of space to use to indent SQL")
