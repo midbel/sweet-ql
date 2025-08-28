@@ -32,6 +32,20 @@ func WithQuote() WriterOption {
 	}
 }
 
+func SetUpperMode(mode string) WriterOption {
+	return func(w *Writer) error {
+		w.Upperize |= GetUpperizeMode(mode)
+		return nil
+	}
+}
+
+func SetCompactMode(mode string) WriterOption {
+	return func(w *Writer) error {
+		w.Compact |= GetCompactMode(mode)
+		return nil
+	}
+}
+
 func WithCrlf() WriterOption {
 	return func(w *Writer) error {
 		w.UseCrlf = true

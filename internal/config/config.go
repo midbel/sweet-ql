@@ -222,10 +222,54 @@ func (p *Parser) parseFormatIndentFull(fb *FormatBuilder) error {
 }
 
 func (p *Parser) parseFormatCompact(fb *FormatBuilder) error {
+	p.next()
+	if !p.is(Set) {
+		return p.unexpected()
+	}
+	p.next()
+	for !p.done() && !p.eol() {
+		var option format.WriterOption
+		switch {
+		case p.is(All):
+			option = format.SetCompactMode("all")
+		case p.is(Literal):
+			option = format.SetCompactMode(p.getCurrentLiteral())
+		default:
+			return p.unexpected()
+		}
+		p.next()
+		fb.options = append(fb.options, option)
+	}
+	if !p.eol() {
+		return p.unexpected()
+	}
+	p.next()
 	return nil
 }
 
 func (p *Parser) parseFormatUpper(fb *FormatBuilder) error {
+	p.next()
+	if !p.is(Set) {
+		return p.unexpected()
+	}
+	p.next()
+	for !p.done() && !p.eol() {
+		var option format.WriterOption
+		switch {
+		case p.is(All):
+			option = format.SetUpperMode("all")
+		case p.is(Literal):
+			option = format.SetUpperMode(p.getCurrentLiteral())
+		default:
+			return p.unexpected()
+		}
+		p.next()
+		fb.options = append(fb.options, option)
+	}
+	if !p.eol() {
+		return p.unexpected()
+	}
+	p.next()
 	return nil
 }
 
