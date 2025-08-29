@@ -438,6 +438,8 @@ const (
 	End
 	Set
 	All
+	Add
+	Sub
 )
 
 var booleans = []string{
@@ -477,6 +479,10 @@ func (t Token) String() string {
 		return "<set>"
 	case All:
 		return "<all>"
+	case Add:
+		return "<add>"
+	case Sub:
+		return "<sub>"
 	}
 	return fmt.Sprintf("%s(%s)", prefix, t.Literal)
 }
@@ -534,6 +540,16 @@ func (s *Scanner) scanDelimiter(tok *Token) {
 		tok.Type = Set
 	case star:
 		tok.Type = All
+	case plus:
+		tok.Type = Add
+		if !isLetter(s.peek()) {
+			tok.Type = Invalid
+		}
+	case minus:
+		tok.Type = Sub
+		if !isLetter(s.peek()) {
+			tok.Type = Invalid
+		}
 	default:
 	}
 	s.read()
@@ -637,6 +653,7 @@ const (
 	colon      = ':'
 	underscore = '_'
 	minus      = '-'
+	plus       = '+'
 	star       = '*'
 	quote      = '\''
 	dquote     = '"'
@@ -648,7 +665,8 @@ func isComment(r rune) bool {
 }
 
 func isDelimiter(r rune) bool {
-	return r == lbrace || r == rbrace || r == equal || r == colon || r == star
+	return r == lbrace || r == rbrace || r == equal ||
+		r == colon || r == star || r == plus || r == minus
 }
 
 func isQuote(r rune) bool {
