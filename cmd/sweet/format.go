@@ -47,6 +47,9 @@ func runFormat(args []string) error {
 		}
 		return err
 	}
+	if writer == nil {
+
+	}
 	process := func(file string) error {
 		r, err := os.Open(file)
 		if err != nil {
