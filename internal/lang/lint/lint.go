@@ -63,6 +63,8 @@ func RuleByName(name string, level Severity) (Rule, error) {
 	return fn(level), nil
 }
 
+type RuleOption func(Rule) error
+
 type Severity int8
 
 const (
