@@ -18,6 +18,10 @@ const (
 	DialectAnsi = "ansi"
 )
 
+type LintBuilder struct {
+	rules []lint.Rule
+}
+
 type FormatBuilder struct {
 	options []format.WriterOption
 }
@@ -31,6 +35,7 @@ type Builder struct {
 	Path    []string
 	Dialect string
 	*FormatBuilder
+	*LintBuilder
 	Sub []*Builder
 }
 
@@ -88,7 +93,7 @@ func (p *Parser) parse(b *Builder) error {
 		case optionFormat:
 			b.FormatBuilder, err = p.parseFormat()
 		case optionLint:
-			err = p.parseLint()
+			b.LintBuilder, err = p.parseLint()
 		default:
 			err = p.unsupported()
 		}
@@ -374,27 +379,30 @@ func (p *Parser) parseFormatComma(fb *FormatBuilder) error {
 	return nil
 }
 
-func (p *Parser) parseLint() error {
+func (p *Parser) parseLint() (*LintBuilder, error) {
 	p.next()
 	if !p.is(Beg) {
-		return p.unexpected()
+		return nil, p.unexpected()
 	}
 	p.next()
+
+	var lb LintBuilder
 	for {
 		p.skipComments()
 		if p.is(End) || p.done() {
 			break
 		}
-		_, err := p.parseRule()
+		rule, err := p.parseRule()
 		if err != nil {
-			return err
+			return nil, err
 		}
+		lb.rules = append(lb.rules, rule)
 	}
 	if !p.is(End) {
-		return p.unexpected()
+		return nil, p.unexpected()
 	}
 	p.next()
-	return nil
+	return &lb, nil
 }
 
 func (p *Parser) parseRule() (lint.Rule, error) {
@@ -440,8 +448,7 @@ func (p *Parser) parseRule() (lint.Rule, error) {
 		return nil, p.unexpected()
 	}
 	p.next()
-	fmt.Println(name, options)
-	return nil, nil
+	return lint.RuleByName(name, lint.None)
 }
 
 func (p *Parser) skipComments() {
