@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/midbel/sweet/internal/lang/format"
+	"github.com/midbel/sweet/internal/lang/lint"
 )
 
 const (
@@ -36,7 +37,6 @@ type Builder struct {
 const (
 	optionDialect       = "dialect"
 	optionFormat        = "format"
-	optionLint          = "lint"
 	optionFmtCompact    = "compact"
 	optionFmtUpper      = "upperize"
 	optionFmtQuote      = "quote"
@@ -46,6 +46,8 @@ const (
 	optionFmtNewline    = "newline"
 	optionFmtComma      = "comma"
 	optionFmtSemicolon  = "semicolon"
+	optionLint          = "lint"
+	optionLintLevel     = "level"
 )
 
 type Parser struct {
@@ -378,14 +380,68 @@ func (p *Parser) parseLint() error {
 		return p.unexpected()
 	}
 	p.next()
-	for !p.done() && !p.is(End) {
-
+	for {
+		p.skipComments()
+		if p.is(End) || p.done() {
+			break
+		}
+		_, err := p.parseRule()
+		if err != nil {
+			return err
+		}
 	}
 	if !p.is(End) {
 		return p.unexpected()
 	}
 	p.next()
 	return nil
+}
+
+func (p *Parser) parseRule() (lint.Rule, error) {
+	if !p.is(Literal) {
+		return nil, p.unexpected()
+	}
+	name := p.getCurrentLiteral()
+	p.next()
+	if !p.is(Beg) {
+		return nil, p.unexpected()
+	}
+	p.next()
+	var options []lint.RuleOption
+	for {
+		p.skipComments()
+		if p.is(End) || p.done() {
+			break
+		}
+		if !p.is(Literal) {
+			return nil, p.unexpected()
+		}
+		var (
+			err    error
+			option lint.RuleOption
+		)
+		switch p.getCurrentLiteral() {
+		case optionLintLevel:
+			level, err1 := p.parseValue()
+			if err1 != nil {
+				err = err1
+				break
+			}
+			option = lint.WithSeverity(level)
+		default:
+			err = p.unsupported()
+		}
+		if err != nil {
+			return nil, err
+		}
+		options = append(options, option)
+	}
+	if !p.is(End) {
+		return nil, p.unexpected()
+	}
+	p.next()
+	fmt.Println(name, options)
+	return nil, nil
 }
 
 func (p *Parser) skipComments() {

@@ -65,6 +65,24 @@ func RuleByName(name string, level Severity) (Rule, error) {
 
 type RuleOption func(Rule) error
 
+func WithSeverity(level string) RuleOption {
+	return func(r Rule) error {
+		var sev Severity
+		switch level {
+		case "off", "none", "":
+			sev = None
+		case "warning", "warn":
+			sev = Warning
+		case "error":
+			sev = Error
+		default:
+			return fmt.Errorf("%s: unknown severity level", level)
+		}
+		_ = sev
+		return nil
+	}
+}
+
 type Severity int8
 
 const (
