@@ -40,11 +40,6 @@ func TestStdOperator(t *testing.T) {
 	runTests(t, tests, StdOperator(Warning))
 }
 
-// func TestOrderWithFetch(t *testing.T) {
-// 	tests := []TestCase{}
-// 	runTests(t, tests, OrderWithFetch(Warning))
-// }
-
 func TestEnforceFetch(t *testing.T) {
 	tests := []TestCase{
 		{
@@ -233,6 +228,32 @@ func TestDuplicatedName(t *testing.T) {
 		},
 	}
 	runTests(t, tests, DuplicatedName(Warning))
+}
+
+func TestOnlyName(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "select id, foo from foobar",
+			Issues: 0,
+		},
+		{
+			Query:  "select id ident, foo as f from foobar",
+			Issues: 0,
+		},
+		{
+			Query:  "select id from foobar",
+			Issues: 1,
+		},
+		{
+			Query:  "select id, (select x from abc) b from foobar",
+			Issues: 1,
+		},
+		{
+			Query:  "select id, case x when 'X' then 1 else 0 end, (select x from abc) b from foobar",
+			Issues: 2,
+		},
+	}
+	runTests(t, tests, OnlyName(Warning))
 }
 
 func TestNoStar(t *testing.T) {

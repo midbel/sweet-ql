@@ -78,7 +78,9 @@ func WithSeverity(level string) RuleOption {
 		default:
 			return fmt.Errorf("%s: unknown severity level", level)
 		}
-		_ = sev
+		if s, ok := r.(interface{ setLevel(Severity) }); ok {
+			s.setLevel(sev)
+		}
 		return nil
 	}
 }

@@ -235,6 +235,7 @@ func (p *Parser) ParseFrom() ([]ast.Node, error) {
 		case p.Is(token.Comment):
 		case p.Is(token.Keyword):
 		case p.Is(token.EOL):
+		case p.Is(token.EOF):
 		case p.Is(token.Rparen) && p.Nested():
 		default:
 			return nil, p.Unexpected("FROM", defaultReason)

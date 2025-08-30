@@ -332,6 +332,16 @@ func (v walkVisitor) VisitSelect(node *SelectStatement) error {
 			return err
 		}
 	}
+	for _, o := range node.Orders {
+		if err := o.Accept(v); err != nil {
+			return err
+		}
+	}
+	if node.Limit != nil {
+		if err := node.Limit.Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -525,10 +535,15 @@ func (v walkVisitor) VisitLimit(limit *Limit) error {
 		}
 		return err
 	}
-	if err := limit.Count.Accept(v); err != nil {
-		return err
+	if limit.Count != nil {
+		if err := limit.Count.Accept(v); err != nil {
+			return err
+		}
 	}
-	return limit.Offset.Accept(v)
+	if limit.Offset != nil {
+		return limit.Offset.Accept(v)
+	}
+	return nil
 }
 
 func (v walkVisitor) VisitOffset(offset *Offset) error {
@@ -538,10 +553,15 @@ func (v walkVisitor) VisitOffset(offset *Offset) error {
 		}
 		return err
 	}
-	if err := offset.Count.Accept(v); err != nil {
-		return err
+	if offset.Count != nil {
+		if err := offset.Count.Accept(v); err != nil {
+			return err
+		}
 	}
-	return offset.Offset.Accept(v)
+	if offset.Offset != nil {
+		return offset.Offset.Accept(v)
+	}
+	return nil
 }
 
 func (v walkVisitor) VisitBinary(binary *Binary) error {
