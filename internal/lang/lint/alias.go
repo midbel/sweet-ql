@@ -174,7 +174,7 @@ func (r *missingAlias) VisitSelect(stmt *ast.SelectStatement) error {
 				Position: c.Pos(),
 				Severity: r.severity,
 				Rule:     r.Name(),
-				Reason:   "prefer using alias to improve your query",
+				Reason:   "prefer using alias to improve readability of your query",
 			}
 			r.issues = append(r.issues, i)
 		}

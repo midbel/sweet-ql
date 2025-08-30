@@ -56,7 +56,7 @@ type onlyName struct {
 }
 
 func OnlyName(level Severity) Rule {
-	return &duplicatedName{
+	return &onlyName{
 		Visitor:  ast.Noop(),
 		severity: level,
 	}
