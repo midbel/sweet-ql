@@ -1,14 +1,8 @@
 package lint
 
 import (
-	"strings"
 	"testing"
 )
-
-type TestCase struct {
-	Query  string
-	Issues int
-}
 
 func TestStdOperator(t *testing.T) {
 	tests := []TestCase{
@@ -241,7 +235,7 @@ func TestOnlyName(t *testing.T) {
 			Issues: 0,
 		},
 		{
-			Query:  "select id from foobar",
+			Query:  "select id, upper(foo) from foobar",
 			Issues: 1,
 		},
 		{
@@ -292,17 +286,4 @@ func TestNoStar(t *testing.T) {
 		},
 	}
 	runTests(t, tests, NoStar(Warning))
-}
-
-func runTests(t *testing.T, tests []TestCase, rule Rule) {
-	t.Helper()
-	for _, c := range tests {
-		issues, err := Lint(strings.NewReader(c.Query), []Rule{rule})
-		if err != nil {
-			continue
-		}
-		if len(issues) != c.Issues {
-			t.Errorf("[%s]: want %d issues! got %d", rule.Name(), c.Issues, len(issues))
-		}
-	}
 }
