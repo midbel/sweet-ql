@@ -48,7 +48,7 @@ func (r *selfAlias) VisitAlias(alias *ast.Alias) error {
 			Position: alias.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "do not use an alias identical to the column's name",
+			Reason:   "do not use an alias identical to the name being aliased",
 		}
 		r.issues = append(r.issues, i)
 	}
