@@ -126,6 +126,32 @@ func (r *groupbyDistinct) VisitSelect(stmt *ast.SelectStatement) error {
 	return nil
 }
 
+type noPositionGroupby struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func NoPositionGroupby(level Severity) Rule {
+	return &noPositionGroupby{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *noPositionGroupby) Name() string {
+	return "no-position-groupby"
+}
+
+func (r *noPositionGroupby) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
 type noLiteralGroupby struct {
 	ast.Visitor
 	severity Severity
