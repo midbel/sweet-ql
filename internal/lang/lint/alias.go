@@ -231,6 +231,7 @@ type invalidAlias struct {
 	aliases [][]ast.Identifier
 }
 
+// Create a Rule that checks if alias defined in the SELECT clause are not used in where/having/group by clauses
 func InvalidAlias(level Severity) Rule {
 	return &invalidAlias{
 		Visitor:  ast.Noop(),
@@ -308,7 +309,7 @@ func (r *invalidAlias) pop() {
 
 func (r *invalidAlias) exists(name *ast.Name) bool {
 	n := len(r.aliases)
-	if n == 0 || len(name.Parts) != 1 {
+	if n == 0 || len(name.Parts) == 1 {
 		return false
 	}
 	for i := n - 1; i >= 0; i-- {
@@ -330,6 +331,7 @@ type undefinedAlias struct {
 	aliases [][]ast.Identifier
 }
 
+// Creates a rule that checks whether the qualified fields in the SELECT clause use the table aliases defined in the query.
 func UndefinedAlias(level Severity) Rule {
 	return &undefinedAlias{
 		Visitor:  ast.Noop(),
