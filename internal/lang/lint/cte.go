@@ -129,6 +129,76 @@ func (r *cteUnused) update(name string) {
 	}
 }
 
+type cteSelectVisitor struct {
+	ast.Visitor
+	check func(*ast.SelectStatement) error
+}
+
+func visitCteSelect(check func(*ast.SelectStatement) error) ast.Visitor {
+	return &cteSelectVisitor{
+		Visitor: ast.Noop(),
+		check:   check,
+	}
+}
+
+func (i *cteSelectVisitor) VisitSelect(stmt *ast.SelectStatement) error {
+	return i.check(stmt)
+}
+
+type cteShadow struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func CteShadow(level Severity) Rule {
+	return &cteShadow{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *cteShadow) Name() string {
+	return "cte-shadow"
+}
+
+func (r *cteShadow) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *cteShadow) VisitCte(cte *ast.CteStatement) error {
+	check := func(stmt *ast.SelectStatement) error {
+		for _, n := range stmt.Tables {
+			if a, ok := n.(*ast.Alias); ok {
+				n = a.Node
+			}
+			if n, ok := n.(*ast.Name); ok {
+				if n.Parts[len(n.Parts)-1].Name == cte.Ident {
+					i := Issue{
+						Position: cte.Node.Pos(),
+						Severity: r.severity,
+						Rule:     r.Name(),
+						Reason:   "cte name will shadow the table name",
+					}
+					r.issues = append(r.issues, i)
+				}
+			}
+		}
+		return nil
+	}
+	var (
+		visit = visitCteSelect(check)
+		walk  = ast.Walk(visit)
+	)
+	return cte.Node.Accept(walk)
+}
+
 // check that fields qualified by cte are exposed by it
 type cteNames struct {
 	ast.Visitor
