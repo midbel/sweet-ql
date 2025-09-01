@@ -55,13 +55,14 @@ func (r *selfAlias) VisitAlias(alias *ast.Alias) error {
 	return nil
 }
 
-// check that alias is not the same identifier as the function aliased
 type ambiguousAlias struct {
 	ast.Visitor
 	severity Severity
 	issues   []Issue
 }
 
+// Creates a Rule that checks if alias given to a function call is not
+// the same as the function identifier
 func AmbiguousAlias(level Severity) Rule {
 	return &ambiguousAlias{
 		Visitor:  ast.Noop(),
