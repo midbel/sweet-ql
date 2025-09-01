@@ -14,6 +14,8 @@ type selfAlias struct {
 	issues   []Issue
 }
 
+// Creates a rule that verifies whether the alias assigned to a field
+// is identical to the field's original name.
 func SelfAlias(level Severity) Rule {
 	return &selfAlias{
 		Visitor:  ast.Noop(),
@@ -147,6 +149,7 @@ type missingAlias struct {
 	issues   []Issue
 }
 
+// Creates a Rule that ensures all fields and tables are assigned an alias.
 func MissingAlias(level Severity) Rule {
 	return &missingAlias{
 		Visitor:  ast.Noop(),
@@ -188,6 +191,7 @@ type noAlias struct {
 	issues   []Issue
 }
 
+// Creates a Rule that ensures no fields or tables are assigned an alias.
 func NoAlias(level Severity) Rule {
 	return &noAlias{
 		Visitor:  ast.Noop(),
@@ -231,7 +235,8 @@ type invalidAlias struct {
 	aliases [][]ast.Identifier
 }
 
-// Create a Rule that checks if alias defined in the SELECT clause are not used in where/having/group by clauses
+// Creates a Rule that checks if alias defined in the SELECT clause are
+// not used in where/having/group by clauses
 func InvalidAlias(level Severity) Rule {
 	return &invalidAlias{
 		Visitor:  ast.Noop(),
@@ -331,7 +336,8 @@ type undefinedAlias struct {
 	aliases [][]ast.Identifier
 }
 
-// Creates a rule that checks whether the qualified fields in the SELECT clause use the table aliases defined in the query.
+// Creates a rule that checks whether the qualified fields in the
+// SELECT clause use the table aliases defined in the query.
 func UndefinedAlias(level Severity) Rule {
 	return &undefinedAlias{
 		Visitor:  ast.Noop(),
