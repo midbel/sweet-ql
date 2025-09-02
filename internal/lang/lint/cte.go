@@ -351,9 +351,10 @@ func (r *cteNames) getTableNames(nodes []ast.Node) []ast.Identifier {
 			continue
 		}
 		id := n.Parts[len(n.Parts)-1]
-		if _, ok := r.names[id.Name]; ok {
+		if cs, ok := r.names[id.Name]; ok {
 			if alias != nil {
 				id = alias.Identifier
+				r.names[id.Name] = cs
 			}
 			tables = append(tables, id)
 		}
