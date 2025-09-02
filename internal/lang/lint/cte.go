@@ -255,11 +255,14 @@ func (r *cteNames) VisitCte(cte *ast.CteStatement) error {
 		visit = visitCteSelect(collect)
 		walk  = ast.Walk(visit)
 	)
-	return cte.Node.Accept(walk)
+	if err := cte.Node.Accept(walk); err != nil {
+		return err
+	}
+	return ast.ErrVisit
 }
 
 func (r *cteNames) VisitSelect(stmt *ast.SelectStatement) error {
-	tables := r.getTableNames(stmt.Tables)
+	tables := r.getFieldsFromTables(stmt.Tables)
 	for _, c := range stmt.Columns {
 		if a, ok := c.(*ast.Alias); ok {
 			c = a.Node
@@ -281,16 +284,11 @@ func (r *cteNames) VisitSelect(stmt *ast.SelectStatement) error {
 	return nil
 }
 
-func (r *cteNames) checkFromNames(n *ast.Name, tables []ast.Identifier) {
+func (r *cteNames) checkFromNames(n *ast.Name, tables map[string][]ast.Identifier) {
 	id := n.Parts[0]
-	ix := slices.IndexFunc(tables, func(n ast.Identifier) bool {
-		return n == id
-	})
-	if ix < 0 {
-		return
-	}
-	columns, ok := r.names[id.Name]
+	columns, ok := tables[id.Name]
 	if !ok {
+		r.checkFromAll(n)
 		return
 	}
 	ok = slices.ContainsFunc(columns, func(id ast.Identifier) bool {
@@ -335,8 +333,8 @@ func (r *cteNames) checkFromAll(n *ast.Name) {
 	}
 }
 
-func (r *cteNames) getTableNames(nodes []ast.Node) []ast.Identifier {
-	var tables []ast.Identifier
+func (r *cteNames) getFieldsFromTables(nodes []ast.Node) map[string][]ast.Identifier {
+	tables := make(map[string][]ast.Identifier)
 	for _, t := range nodes {
 		if j, ok := t.(*ast.Join); ok {
 			t = j.Table
@@ -354,9 +352,8 @@ func (r *cteNames) getTableNames(nodes []ast.Node) []ast.Identifier {
 		if cs, ok := r.names[id.Name]; ok {
 			if alias != nil {
 				id = alias.Identifier
-				r.names[id.Name] = cs
 			}
-			tables = append(tables, id)
+			tables[id.Name] = cs
 		}
 	}
 	return tables
