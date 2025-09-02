@@ -152,6 +152,21 @@ func (r *noPositionGroupby) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
+func (r *noPositionGroupby) VisitSelect(stmt *ast.SelectStatement) error {
+	for _, g := range stmt.Groups {
+		if v, ok := g.(*ast.Value); ok && v.Number() {
+			i := Issue{
+				Position: g.Pos(),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "prefer using field names in group by instead of position",
+			}
+			r.issues = append(r.issues, i)
+		}
+	}
+	return nil
+}
+
 type noLiteralGroupby struct {
 	ast.Visitor
 	severity Severity
