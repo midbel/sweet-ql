@@ -3,6 +3,7 @@ package lint
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/token"
@@ -258,7 +259,106 @@ func (r *cteNames) VisitCte(cte *ast.CteStatement) error {
 }
 
 func (r *cteNames) VisitSelect(stmt *ast.SelectStatement) error {
+	tables := r.getTableNames(stmt.Tables)
+	for _, c := range stmt.Columns {
+		if a, ok := c.(*ast.Alias); ok {
+			c = a.Node
+		}
+		n, ok := c.(*ast.Name)
+		if !ok {
+			continue
+		}
+		if n.All() {
+			continue
+		}
+		if len(n.Parts) <= 1 {
+			r.checkFromAll(n)
+		} else {
+			r.checkFromNames(n, tables)
+		}
+
+	}
 	return nil
+}
+
+func (r *cteNames) checkFromNames(n *ast.Name, tables []ast.Identifier) {
+	id := n.Parts[0]
+	ix := slices.IndexFunc(tables, func(n ast.Identifier) bool {
+		return n == id
+	})
+	if ix < 0 {
+		return
+	}
+	columns, ok := r.names[id.Name]
+	if !ok {
+		return
+	}
+	ok = slices.ContainsFunc(columns, func(id ast.Identifier) bool {
+		return id.Star()
+	})
+	if ok {
+		return
+	}
+	id = n.Parts[len(n.Parts)-1]
+	ok = slices.ContainsFunc(columns, func(c ast.Identifier) bool {
+		return c == id
+	})
+	if !ok {
+		i := Issue{
+			Position: n.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "name not exposed by cte",
+		}
+		r.issues = append(r.issues, i)
+	}
+}
+
+func (r *cteNames) checkFromAll(n *ast.Name) {
+	var found bool
+	for _, columns := range r.names {
+		found = slices.ContainsFunc(columns, func(c ast.Identifier) bool {
+			return c == n.Parts[len(n.Parts)-1]
+		})
+		if found {
+			return
+		}
+	}
+	if !found {
+		i := Issue{
+			Position: n.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "name not exposed by cte",
+		}
+		r.issues = append(r.issues, i)
+	}
+}
+
+func (r *cteNames) getTableNames(nodes []ast.Node) []ast.Identifier {
+	var tables []ast.Identifier
+	for _, t := range nodes {
+		if j, ok := t.(*ast.Join); ok {
+			t = j.Table
+		}
+		var alias *ast.Alias
+		if a, ok := t.(*ast.Alias); ok {
+			t = a.Node
+			alias = a
+		}
+		n, ok := t.(*ast.Name)
+		if !ok {
+			continue
+		}
+		id := n.Parts[len(n.Parts)-1]
+		if _, ok := r.names[id.Name]; ok {
+			if alias != nil {
+				id = alias.Identifier
+			}
+			tables = append(tables, id)
+		}
+	}
+	return tables
 }
 
 type cteSelectVisitor struct {

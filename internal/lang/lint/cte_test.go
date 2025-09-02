@@ -76,6 +76,10 @@ func TestCteNames(t *testing.T) {
 			Query:  "with foo as (select id, name from foobar) select id, name, active from foo",
 			Issues: 1,
 		},
+		{
+			Query:  "with foo as (select id, name from foobar) select f.id, f.name, f.active from foo f",
+			Issues: 1,
+		},
 	}
 	runTests(t, tests, CteNames(Warning))
 }
