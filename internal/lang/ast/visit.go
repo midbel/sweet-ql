@@ -183,6 +183,38 @@ type Visitor interface {
 	DefinitionVisitor
 }
 
+type nameVisitor struct {
+	Visitor
+	do func(*Name) error
+}
+
+func VisitName(do func(*Name) error) Visitor {
+	return nameVisitor{
+		Visitor: Noop(),
+		do:      do,
+	}
+}
+
+func (n nameVisitor) VisitName(name *Name) error {
+	return n.do(name)
+}
+
+type selectVisitor struct {
+	Visitor
+	do func(*SelectStatement) error
+}
+
+func VisitSelect(do func(*SelectStatement) error) Visitor {
+	return &selectVisitor{
+		Visitor: Noop(),
+		do:      do,
+	}
+}
+
+func (i *selectVisitor) VisitSelect(stmt *SelectStatement) error {
+	return i.do(stmt)
+}
+
 type noopVisitor struct{}
 
 func Noop() Visitor {

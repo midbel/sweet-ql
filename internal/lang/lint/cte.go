@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
+	"github.com/midbel/sweet/internal/slx"
 	"github.com/midbel/sweet/internal/token"
 )
 
@@ -184,7 +185,7 @@ func (r *cteShadow) VisitCte(cte *ast.CteStatement) error {
 		return nil
 	}
 	var (
-		visit = visitCteSelect(check)
+		visit = ast.VisitSelect(check)
 		walk  = ast.Walk(visit)
 	)
 	return cte.Node.Accept(walk)
@@ -234,13 +235,16 @@ func (r *cteNames) VisitCte(cte *ast.CteStatement) error {
 			all = append(all, id)
 		}
 		r.names[cte.Ident] = all
-		return nil
+		return ast.ErrVisit
 	}
 	collect := func(stmt *ast.SelectStatement) error {
 		for _, c := range stmt.Columns {
 			var id ast.Identifier
 			switch c := c.(type) {
 			case *ast.Name:
+				if c.All() {
+					continue
+				}
 				id = c.Parts[len(c.Parts)-1]
 			case *ast.Alias:
 				id = c.Identifier
@@ -252,7 +256,7 @@ func (r *cteNames) VisitCte(cte *ast.CteStatement) error {
 		return nil
 	}
 	var (
-		visit = visitCteSelect(collect)
+		visit = ast.VisitSelect(collect)
 		walk  = ast.Walk(visit)
 	)
 	if err := cte.Node.Accept(walk); err != nil {
@@ -262,7 +266,17 @@ func (r *cteNames) VisitCte(cte *ast.CteStatement) error {
 }
 
 func (r *cteNames) VisitSelect(stmt *ast.SelectStatement) error {
-	tables := r.getFieldsFromTables(stmt.Tables)
+	var (
+		tables = r.getFieldsFromTables(stmt.Tables)
+		check  = func(n *ast.Name) error {
+			if len(n.Parts) <= 1 {
+				r.checkFromAll(n)
+			} else {
+				r.checkFromNames(n, tables)
+			}
+			return nil
+		}
+	)
 	for _, c := range stmt.Columns {
 		if a, ok := c.(*ast.Alias); ok {
 			c = a.Node
@@ -274,63 +288,80 @@ func (r *cteNames) VisitSelect(stmt *ast.SelectStatement) error {
 		if n.All() {
 			continue
 		}
-		if len(n.Parts) <= 1 {
-			r.checkFromAll(n)
-		} else {
-			r.checkFromNames(n, tables)
+		if err := check(n); err != nil {
+			return err
 		}
-
+	}
+	var (
+		where  = slx.One(stmt.Where)
+		having = slx.One(stmt.Having)
+		parts  = slices.Concat(stmt.Groups, where, having)
+		visit  = ast.VisitName(check)
+		sub    = ast.Walk(visit)
+	)
+	for _, t := range stmt.Tables {
+		j, ok := t.(*ast.Join)
+		if ok && j.Where != nil {
+			if err := j.Where.Accept(sub); err != nil {
+				return err
+			}
+		}
+	}
+	for _, q := range parts {
+		if q == nil {
+			continue
+		}
+		if err := q.Accept(sub); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (r *cteNames) checkFromNames(n *ast.Name, tables map[string][]ast.Identifier) {
-	id := n.Parts[0]
-	columns, ok := tables[id.Name]
-	if !ok {
-		r.checkFromAll(n)
+	if n.All() {
 		return
 	}
-	ok = slices.ContainsFunc(columns, func(id ast.Identifier) bool {
-		return id.Star()
-	})
-	if ok {
+	columns, ok := tables[n.Schema()]
+	if !ok || len(columns) == 0 {
 		return
 	}
-	id = n.Parts[len(n.Parts)-1]
 	ok = slices.ContainsFunc(columns, func(c ast.Identifier) bool {
-		return c == id
+		return !c.Star() && c.Name == n.Name()
 	})
 	if !ok {
 		i := Issue{
 			Position: n.Pos(),
 			Severity: r.severity,
 			Rule:     r.Name(),
-			Reason:   "name not exposed by cte",
+			Reason:   "field name not exposed by any cte",
 		}
 		r.issues = append(r.issues, i)
 	}
 }
 
 func (r *cteNames) checkFromAll(n *ast.Name) {
-	var found bool
+	if len(r.names) == 0 {
+		return
+	}
 	for _, columns := range r.names {
-		found = slices.ContainsFunc(columns, func(c ast.Identifier) bool {
-			return c == n.Parts[len(n.Parts)-1]
+		if len(columns) == 0 && len(r.names) == 1 {
+			return
+		}
+		ok := slices.ContainsFunc(columns, func(c ast.Identifier) bool {
+			return !c.Star() && c.Name == n.Name()
 		})
-		if found {
+		if ok {
 			return
 		}
 	}
-	if !found {
-		i := Issue{
-			Position: n.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "name not exposed by cte",
-		}
-		r.issues = append(r.issues, i)
+	i := Issue{
+		Position: n.Pos(),
+		Severity: r.severity,
+		Rule:     r.Name(),
+		Reason:   "field name not exposed by any cte",
 	}
+	r.issues = append(r.issues, i)
 }
 
 func (r *cteNames) getFieldsFromTables(nodes []ast.Node) map[string][]ast.Identifier {
@@ -359,18 +390,78 @@ func (r *cteNames) getFieldsFromTables(nodes []ast.Node) map[string][]ast.Identi
 	return tables
 }
 
-type cteSelectVisitor struct {
+type cteExposedNames struct {
 	ast.Visitor
-	do func(*ast.SelectStatement) error
+	severity Severity
+	issues   []Issue
 }
 
-func visitCteSelect(do func(*ast.SelectStatement) error) ast.Visitor {
-	return &cteSelectVisitor{
-		Visitor: ast.Noop(),
-		do:      do,
+func CteExposedNames(level Severity) Rule {
+	return &cteExposedNames{
+		Visitor:  ast.Noop(),
+		severity: level,
 	}
 }
 
-func (i *cteSelectVisitor) VisitSelect(stmt *ast.SelectStatement) error {
-	return i.do(stmt)
+func (_ *cteExposedNames) Name() string {
+	return "cte-exposed-name"
+}
+
+func (r *cteExposedNames) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *cteExposedNames) VisitCte(stmt *ast.CteStatement) error {
+	if len(stmt.Columns) == 0 {
+		return nil
+	}
+	q, ok := stmt.Node.(*ast.SelectStatement)
+	if !ok {
+		return fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	var matched int
+	for _, c := range q.Columns {
+		var id ast.Identifier
+		switch c := c.(type) {
+		case *ast.Name:
+			if c.All() {
+				return nil
+			}
+			id = c.Parts[len(c.Parts)-1]
+		case *ast.Alias:
+			id = c.Identifier
+		case *ast.Call:
+			id = ast.Identifier{
+				Name: c.GetIdent(),
+			}
+		default:
+			continue
+		}
+		ok := slices.ContainsFunc(stmt.Columns, func(c ast.Node) bool {
+			n, ok := c.(*ast.Name)
+			if !ok {
+				return ok
+			}
+			return n.Parts[0] == id
+		})
+		if ok {
+			matched++
+		}
+	}
+	if matched == len(stmt.Columns) {
+		i := Issue{
+			Position: stmt.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "declared names of cte identical to names in select clause",
+		}
+		r.issues = append(r.issues, i)
+	}
+	return nil
 }

@@ -19,6 +19,7 @@ var supportedRules = map[string]func(Severity) Rule{
 	"no-cte":                   NoCte,
 	"cte-unused":               CteUnused,
 	"cte-name":                 CteNames,
+	"cte-exposed-name":         CteExposedNames,
 	"std-operator":             StdOperator,
 	"self-compare":             SelfCompare,
 	"missing-where":            MissingWhere,

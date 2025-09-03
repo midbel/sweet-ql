@@ -73,6 +73,10 @@ func TestCteNames(t *testing.T) {
 			Issues: 0,
 		},
 		{
+			Query:  "with foo(id, name) as (select tid, tlabel from tests) select id, name from foo",
+			Issues: 0,
+		},
+		{
 			Query:  "with foo as (select id, name from foobar) select id, name, active from foo",
 			Issues: 1,
 		},
@@ -80,6 +84,40 @@ func TestCteNames(t *testing.T) {
 			Query:  "with foo as (select id, name from foobar) select f.id, f.name, f.active from foo f",
 			Issues: 1,
 		},
+		{
+			Query:  "with foo as (select id, name from foobar) select f.id, f.name from foo f where f.active is not true",
+			Issues: 1,
+		},
+		{
+			Query:  "with foo as (select id, name from foobar) select f.id, f.name, f.active from bar b join foo f on b.id=f.id",
+			Issues: 1,
+		},
+		{
+			Query:  "with foo as (select id, name from foobar) select f.id, f.name from bar b join foo f on b.id=f.bar",
+			Issues: 1,
+		},
+		{
+			Query:  "with foo(id, name) as (select tid, tlabel from tests) select id, name, active from foo",
+			Issues: 1,
+		},
 	}
 	runTests(t, tests, CteNames(Warning))
+}
+
+func TestCteExposedNames(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "with foo as (select id, name from foobar) select * from foo",
+			Issues: 0,
+		},
+		{
+			Query:  "with foo(id, name) as (select tid, tname from tests) select * from foo",
+			Issues: 0,
+		},
+		{
+			Query:  "with foo(id, name) as (select id, label as name from foobar) select * from foo",
+			Issues: 1,
+		},
+	}
+	runTests(t, tests, CteExposedNames(Warning))
 }
