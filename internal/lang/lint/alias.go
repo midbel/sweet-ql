@@ -428,3 +428,29 @@ func (r *undefinedAlias) exists(name *ast.Name) bool {
 	}
 	return false
 }
+
+type unusedAlias struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func UnusedAlias(level Severity) Rule {
+	return &unusedAlias{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *unusedAlias) Name() string {
+	return "unused-alias"
+}
+
+func (r *unusedAlias) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}

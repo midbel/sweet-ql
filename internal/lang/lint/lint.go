@@ -41,6 +41,7 @@ var supportedRules = map[string]func(Severity) Rule{
 	"ambiguous-alias":          AmbiguousAlias,
 	"invalid-alias":            InvalidAlias,
 	"undefined-alias":          UndefinedAlias,
+	"unused-alias":             UnusedAlias,
 	"identifier-without-quote": MissingIdentQuoted,
 	"identifier-with-quote":    NoIdentQuoted,
 	"recommand-use-quote":      RecommandedQuoted,
