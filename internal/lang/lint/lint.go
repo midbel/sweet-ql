@@ -54,17 +54,6 @@ var supportedRules = map[string]func(Severity) Rule{
 	"having-aggr-func":         HavingAggrFunc,
 }
 
-func RuleByName(name string, level Severity) (Rule, error) {
-	fn, ok := supportedRules[name]
-	if !ok {
-		return nil, fmt.Errorf("%s: unknown/unsupported lint rule", name)
-	}
-	if fn == nil {
-		return nil, fmt.Errorf("%s: rule not yet implemented", name)
-	}
-	return fn(level), nil
-}
-
 type RuleOption func(Rule) error
 
 func WithSeverity(level string) RuleOption {
@@ -121,6 +110,30 @@ type Issue struct {
 type Rule interface {
 	Verify(ast.Node) ([]Issue, error)
 	Name() string
+}
+
+func RuleByName(name string, level Severity) (Rule, error) {
+	fn, ok := supportedRules[name]
+	if !ok {
+		return nil, fmt.Errorf("%s: unknown/unsupported lint rule", name)
+	}
+	if fn == nil {
+		return nil, fmt.Errorf("%s: rule not yet implemented", name)
+	}
+	return fn(level), nil
+}
+
+func RuleWith(name string, options ...RuleOption) (Rule, error) {
+	r, err := RuleByName(name, Error)
+	if err != nil {
+		return nil, err
+	}
+	for _, o := range options {
+		if err := o(r); err != nil {
+			return nil, err
+		}
+	}
+	return r, nil
 }
 
 type Linter struct {
