@@ -141,3 +141,29 @@ func TestUndefinedAlias(t *testing.T) {
 	}
 	runTests(t, tests, UndefinedAlias(Warning))
 }
+
+func TestUnusedAlias(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "select id, name from foobar",
+			Issues: 0,
+		},
+		{
+			Query:  "select foo.id, foo.name from foobar foo",
+			Issues: 0,
+		},
+		{
+			Query:  "select id, name from foobar foo where foo.active is true",
+			Issues: 0,
+		},
+		{
+			Query:  "select id, name from foo f join bar b on f.id=b.id",
+			Issues: 0,
+		},
+		{
+			Query:  "select id, name from foobar foo",
+			Issues: 1,
+		},
+	}
+	runTests(t, tests, UnusedAlias(Warning))
+}

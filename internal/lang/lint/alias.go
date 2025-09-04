@@ -6,6 +6,7 @@ import (
 
 	"github.com/midbel/sweet/internal/lang/ast"
 	"github.com/midbel/sweet/internal/slx"
+	"github.com/midbel/sweet/internal/token"
 )
 
 type selfAlias struct {
@@ -453,4 +454,60 @@ func (r *unusedAlias) Verify(stmt ast.Node) ([]Issue, error) {
 		err = nil
 	}
 	return r.issues, err
+}
+
+func (r *unusedAlias) VisitSelect(stmt *ast.SelectStatement) error {
+	var (
+		alias     = make(map[ast.Identifier]int)
+		positions = make(map[ast.Identifier]token.Position)
+		join      []ast.Node
+	)
+	for _, n := range stmt.Tables {
+		if j, ok := n.(*ast.Join); ok {
+			n = j.Table
+			join = append(join, j.Where)
+		}
+		if a, ok := n.(*ast.Alias); ok {
+			alias[a.Identifier] = 0
+			positions[a.Identifier] = a.Pos()
+		}
+	}
+	if len(alias) == 0 {
+		return nil
+	}
+	var (
+		check = func(name *ast.Name) error {
+			if len(name.Parts) == 1 {
+				return nil
+			}
+			id := name.Parts[0]
+			alias[id]++
+			return nil
+		}
+		where  = slx.One(stmt.Where)
+		having = slx.One(stmt.Having)
+		parts  = slices.Concat(stmt.Columns, stmt.Groups, where, having, join)
+		visit  = ast.VisitName(check)
+		sub    = ast.Walk(visit)
+	)
+	for _, q := range parts {
+		if q == nil {
+			continue
+		}
+		if err := q.Accept(sub); err != nil {
+			return err
+		}
+	}
+	for alias, count := range alias {
+		if count == 0 {
+			i := Issue{
+				Position: positions[alias],
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "alias declared and not used",
+			}
+			r.issues = append(r.issues, i)
+		}
+	}
+	return nil
 }
