@@ -15,7 +15,7 @@ var supportedRules = map[string]func(Severity) Rule{
 	"no-star":                  NoStar,
 	"only-name":                OnlyName,
 	"duplicated-name":          DuplicatedName,
-	"ambiguous-name":           AmbiguousName,
+	"unqualified-name":         UnqualifiedName,
 	"no-cte":                   NoCte,
 	"cte-unused":               CteUnused,
 	"cte-name":                 CteNames,

@@ -686,24 +686,24 @@ func (r *missingIdentQuoted) VisitAlias(alias *ast.Alias) error {
 	return nil
 }
 
-type ambiguousName struct {
+type unqualifiedName struct {
 	ast.Visitor
 	severity Severity
 	issues   []Issue
 }
 
-func AmbiguousName(level Severity) Rule {
-	return &ambiguousName{
+func UnqualifiedName(level Severity) Rule {
+	return &unqualifiedName{
 		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ *ambiguousName) Name() string {
-	return "ambiguous-name"
+func (_ *unqualifiedName) Name() string {
+	return "unqualified-name"
 }
 
-func (r *ambiguousName) Verify(stmt ast.Node) ([]Issue, error) {
+func (r *unqualifiedName) Verify(stmt ast.Node) ([]Issue, error) {
 	r.issues = r.issues[:0]
 
 	err := stmt.Accept(ast.Walk(r))
@@ -713,7 +713,7 @@ func (r *ambiguousName) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
-func (r *ambiguousName) VisitName(name *ast.Name) error {
+func (r *unqualifiedName) VisitName(name *ast.Name) error {
 	if len(name.Parts) == 1 {
 		i := Issue{
 			Position: name.Pos(),
@@ -724,22 +724,6 @@ func (r *ambiguousName) VisitName(name *ast.Name) error {
 		r.issues = append(r.issues, i)
 	}
 	return nil
-}
-
-type literalVisitor struct {
-	ast.Visitor
-	check func(*ast.Value) error
-}
-
-func visitLiteral(check func(*ast.Value) error) ast.Visitor {
-	return &literalVisitor{
-		Visitor: ast.Noop(),
-		check:   check,
-	}
-}
-
-func (i *literalVisitor) VisitValue(value *ast.Value) error {
-	return i.check(value)
 }
 
 // avoid using literal value in join predicate
@@ -772,7 +756,7 @@ func (r *noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
 
 func (r *noLiteralJoin) VisitJoin(join *ast.Join) error {
 	var (
-		visit = visitLiteral(r.visitValue)
+		visit = ast.VisitLiteral(r.visitValue)
 		walk  = ast.Walk(visit)
 	)
 	return join.Where.Accept(walk)

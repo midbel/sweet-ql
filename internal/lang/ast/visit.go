@@ -215,6 +215,22 @@ func (i *selectVisitor) VisitSelect(stmt *SelectStatement) error {
 	return i.do(stmt)
 }
 
+type literalVisitor struct {
+	Visitor
+	check func(*Value) error
+}
+
+func VisitLiteral(check func(*Value) error) Visitor {
+	return &literalVisitor{
+		Visitor: Noop(),
+		check:   check,
+	}
+}
+
+func (i *literalVisitor) VisitValue(value *Value) error {
+	return i.check(value)
+}
+
 type noopVisitor struct{}
 
 func Noop() Visitor {
