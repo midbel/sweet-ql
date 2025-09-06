@@ -51,6 +51,7 @@ var supportedRules = map[string]func(Severity) Rule{
 	"groupby-distinct":         GroupbyDistinct,
 	"grouby-aggr-func":         GroupbyAggrFunc,
 	"having-aggr-func":         HavingAggrFunc,
+	"no-returning":             NoReturning,
 }
 
 type RuleOption func(Rule) error

@@ -6,6 +6,33 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
+type noReturning struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+}
+
+func NoReturning(level Severity) Rule {
+	return &noReturning{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *noReturning) Name() string {
+	return "no-returning"
+}
+
+func (r *noReturning) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
 // check that no "default" is provided in insert statement
 type noDefaultValue struct {
 	ast.Visitor
