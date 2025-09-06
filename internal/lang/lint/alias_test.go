@@ -22,12 +22,6 @@ func TestSelfAlias(t *testing.T) {
 			Query:  "select id as id, foo foo from foobar",
 			Issues: 2,
 		},
-	}
-	runTests(t, tests, SelfAlias(Warning))
-}
-
-func TestAmbiguousAlias(t *testing.T) {
-	tests := []TestCase{
 		{
 			Query:  "select upper(foo) as name from foobar",
 			Issues: 0,
@@ -37,7 +31,7 @@ func TestAmbiguousAlias(t *testing.T) {
 			Issues: 1,
 		},
 	}
-	runTests(t, tests, AmbiguousAlias(Warning))
+	runTests(t, tests, SelfAlias(Warning))
 }
 
 func TestRecommandedAlias(t *testing.T) {

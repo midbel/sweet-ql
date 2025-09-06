@@ -38,7 +38,6 @@ var supportedRules = map[string]func(Severity) Rule{
 	"missing-alias":            MissingAlias,
 	"no-alias":                 NoAlias,
 	"self-alias":               SelfAlias,
-	"ambiguous-alias":          AmbiguousAlias,
 	"invalid-alias":            InvalidAlias,
 	"undefined-alias":          UndefinedAlias,
 	"unused-alias":             UnusedAlias,

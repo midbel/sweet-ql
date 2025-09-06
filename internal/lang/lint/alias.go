@@ -39,65 +39,28 @@ func (r *selfAlias) Verify(stmt ast.Node) ([]Issue, error) {
 }
 
 func (r *selfAlias) VisitAlias(alias *ast.Alias) error {
-	n, ok := alias.Node.(*ast.Name)
-	if !ok {
-		return nil
-	}
-	x := len(n.Parts) - 1
-	if n.Parts[x] == alias.Identifier {
-		i := Issue{
-			Position: alias.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "do not use an alias identical to the name being aliased",
+	switch n := alias.Node.(type) {
+	case *ast.Name:
+		if n.Name() == alias.Name {
+			i := Issue{
+				Position: alias.Pos(),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "do not use an alias identical to the name being aliased",
+			}
+			r.issues = append(r.issues, i)
 		}
-		r.issues = append(r.issues, i)
-	}
-	return nil
-}
-
-type ambiguousAlias struct {
-	ast.Visitor
-	severity Severity
-	issues   []Issue
-}
-
-// Creates a Rule that checks if alias given to a function call is not
-// the same as the function identifier
-func AmbiguousAlias(level Severity) Rule {
-	return &ambiguousAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
-	}
-}
-
-func (_ *ambiguousAlias) Name() string {
-	return "ambiguous-alias"
-}
-
-func (r *ambiguousAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
-}
-
-func (r *ambiguousAlias) VisitAlias(alias *ast.Alias) error {
-	c, ok := alias.Node.(*ast.Call)
-	if !ok {
-		return nil
-	}
-	if c.GetIdent() == alias.Identifier.Name {
-		i := Issue{
-			Position: c.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use a different identifier of the function as alias to avoid ambiguouity",
+	case *ast.Call:
+		if n.GetIdent() == alias.Name {
+			i := Issue{
+				Position: n.Pos(),
+				Severity: r.severity,
+				Rule:     r.Name(),
+				Reason:   "use a different identifier of the function as alias to avoid ambiguouity",
+			}
+			r.issues = append(r.issues, i)
 		}
-		r.issues = append(r.issues, i)
+	default:
 	}
 	return nil
 }
