@@ -10,6 +10,54 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+type cteSelectOnly struct {
+	ast.Visitor
+	issues   []Issue
+	severity Severity
+}
+
+func CteOnlySelect(level Severity) Rule {
+	return &cteSelectOnly{
+		Visitor:  ast.Noop(),
+		severity: level,
+	}
+}
+
+func (_ *cteSelectOnly) Name() string {
+	return "cte-select-only"
+}
+
+func (r *cteSelectOnly) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
+
+func (r *cteSelectOnly) VisitWith(stmt *ast.WithStatement) error {
+	r.check(stmt.Node)
+	return nil
+}
+
+func (r *cteSelectOnly) VisitCte(stmt *ast.CteStatement) error {
+	r.check(stmt.Node)
+	return nil
+}
+
+func (r *cteSelectOnly) check(stmt ast.Node) {
+	if _, ok := stmt.(*ast.SelectStatement); !ok {
+		i := Issue{
+			Position: stmt.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "queries inside with statements should be select query",
+		}
+		r.issues = append(r.issues, i)
+	}
+}
+
 type noCte struct {
 	ast.Visitor
 	issues   []Issue
