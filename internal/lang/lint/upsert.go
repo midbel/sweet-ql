@@ -33,6 +33,33 @@ func (r *noReturning) Verify(stmt ast.Node) ([]Issue, error) {
 	return r.issues, err
 }
 
+func (r *noReturning) VisitDelete(stmt *ast.DeleteStatement) error {
+	r.check(stmt.Returning)
+	return nil
+}
+
+func (r *noReturning) VisitUpdate(stmt *ast.UpdateStatement) error {
+	r.check(stmt.Returning)
+	return nil
+}
+
+func (r *noReturning) VisitInsert(stmt *ast.InsertStatement) error {
+	r.check(stmt.Returning)
+	return nil
+}
+
+func (r *noReturning) check(stmt ast.Node) {
+	if stmt != nil {
+		i := Issue{
+			Position: stmt.Pos(),
+			Severity: r.severity,
+			Rule:     r.Name(),
+			Reason:   "using returning is not ansi compliant",
+		}
+		r.issues = append(r.issues, i)
+	}
+}
+
 // check that no "default" is provided in insert statement
 type noDefaultValue struct {
 	ast.Visitor
