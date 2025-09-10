@@ -40,7 +40,7 @@ func (r *groupbyColumns) VisitSelect(stmt *ast.SelectStatement) error {
 	}
 	for _, c := range stmt.Columns {
 		if a, ok := c.(*ast.Alias); ok {
-			c = a
+			c = a.Node
 		}
 		var ok bool
 		switch c := c.(type) {
