@@ -49,3 +49,21 @@ func TestGroupbyAggr(t *testing.T) {
 	tests := []TestCase{}
 	runTests(t, tests, GroupbyAggrFunc(Warning))
 }
+
+func TestHavingAggrFunc(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "select name, count(*) from foobar group by name having sum(year) > 10;",
+			Issues: 0,
+		},
+		{
+			Query:  "select name from foobar having sum(year) > 10;",
+			Issues: 1,
+		},
+		{
+			Query:  "select name from foobar group by name having upper(name) <> name;",
+			Issues: 1,
+		},
+	}
+	runTests(t, tests, HavingAggrFunc(Warning))
+}

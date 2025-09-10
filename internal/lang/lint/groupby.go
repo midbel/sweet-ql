@@ -305,7 +305,7 @@ func (r *havingAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
 	if stmt.Having == nil {
 		return nil
 	}
-	if len(stmt.Groups) == 0 {
+	if len(stmt.Groups) == 0 && stmt.Having != nil {
 		i := Issue{
 			Position: stmt.Having.Pos(),
 			Severity: r.severity,
