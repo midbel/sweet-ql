@@ -4,9 +4,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
+	"github.com/midbel/sweet/internal/config"
 	"github.com/midbel/sweet/internal/lang/lint"
 )
 
@@ -21,6 +23,31 @@ func createLinterFromArgs(args []string) (*lint.Linter, []string, error) {
 }
 
 func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
+	var (
+		set    = flag.NewFlagSet("lint", flag.ContinueOnError)
+		errret error
+	)
+	set.SetOutput(io.Discard)
+	set.Func("config", "", func(file string) error {
+		r, err := os.Open(file)
+		if err != nil {
+			return fmt.Errorf("%w: %s", errConfig, err)
+		}
+		defer r.Close()
+
+		_, err = config.Parse(r).Parse()
+		if err != nil {
+			errret = fmt.Errorf("%w: %s", errConfig, err)
+			return err
+		}
+		return err
+	})
+	if err := set.Parse(args); err != nil {
+		if errret != nil {
+			err = errret
+		}
+		return nil, nil, err
+	}
 	return nil, nil, errConfig
 }
 
@@ -32,6 +59,7 @@ func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {
 		// level lint.Severity
 		rules []lint.Rule
 	)
+	set.SetOutput(io.Discard)
 	set.Func("r", "enable rule", func(value string) error {
 		rule, severity, ok := strings.Cut(value, ":")
 
