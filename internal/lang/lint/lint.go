@@ -141,29 +141,14 @@ type Linter struct {
 }
 
 func Lint(r io.Reader, rules []Rule) ([]Issue, error) {
-	p, err := parser.NewParser(r)
-	if err != nil {
-		return nil, err
-	}
 	var (
 		lint = NewLinter(rules)
 		all  []Issue
 	)
 	for {
-		stmt, err := p.Parse()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-		issues, err := lint.Lint(stmt)
+		issues, err := lint.Lint(r)
 		if err != nil {
 			return nil, err
-		}
-		query := p.Query()
-		for i := range issues {
-			issues[i].Query = query
 		}
 		all = slices.Concat(all, issues)
 	}
@@ -171,29 +156,14 @@ func Lint(r io.Reader, rules []Rule) ([]Issue, error) {
 }
 
 func LintDefault(r io.Reader) ([]Issue, error) {
-	p, err := parser.NewParser(r)
-	if err != nil {
-		return nil, err
-	}
 	var (
 		lint = DefaultLinter()
 		all  []Issue
 	)
 	for {
-		stmt, err := p.Parse()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-		issues, err := lint.Lint(stmt)
+		issues, err := lint.Lint(r)
 		if err != nil {
 			return nil, err
-		}
-		query := p.Query()
-		for i := range issues {
-			issues[i].Query = query
 		}
 		all = slices.Concat(all, issues)
 	}
@@ -211,13 +181,43 @@ func DefaultLinter() *Linter {
 }
 
 func NewLinter(rules []Rule) *Linter {
+	if len(rules) == 0 {
+		return DefaultLinter()
+	}
 	i := Linter{
 		rules: rules,
 	}
 	return &i
 }
 
-func (i *Linter) Lint(stmt ast.Node) ([]Issue, error) {
+func (i *Linter) Lint(r io.Reader) ([]Issue, error) {
+	p, err := parser.NewParser(r)
+	if err != nil {
+		return nil, err
+	}
+	var list []Issue
+	for {
+		stmt, err := p.Parse()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		issues, err := i.lint(stmt)
+		if err != nil {
+			return nil, err
+		}
+		query := p.Query()
+		for i := range issues {
+			issues[i].Query = query
+		}
+		list = slices.Concat(list, issues)
+	}
+	return list, nil
+}
+
+func (i *Linter) lint(stmt ast.Node) ([]Issue, error) {
 	var list []Issue
 	for _, r := range i.rules {
 		issues, err := r.Verify(stmt)

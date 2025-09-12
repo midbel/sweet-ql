@@ -1,35 +1,37 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	"github.com/midbel/sweet/internal/lang/lint"
 )
 
-func runLint(args []string) error {
+func createLinterFromArgs(args []string) (*lint.Linter, []string, error) {
+	linter, files, err := createLinterFromConfig(args)
+	if err != nil {
+		if !errors.Is(err, errConfig) {
+			linter, files, err = createLinterFromOptions(args)
+		}
+	}
+	return linter, files, err
+}
+
+func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
+	return nil, nil, errConfig
+}
+
+func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {
 	var (
-		set   = flag.NewFlagSet("lint", flag.ExitOnError)
-		count = set.Int("c", 0, "print n first issue(s)")
-		fix   = set.Bool("fix", false, "fix all errors/warning when possible")
-		level lint.Severity
+		set = flag.NewFlagSet("lint", flag.ContinueOnError)
+		// count = set.Int("c", 0, "print n first issue(s)")
+		// fix   = set.Bool("fix", false, "fix all errors/warning when possible")
+		// level lint.Severity
 		rules []lint.Rule
 	)
-	set.Func("l", "level", func(value string) error {
-		switch value {
-		case "all", "":
-			level = lint.None | lint.Warning | lint.Error
-		case "warning":
-			level = lint.Warning
-		case "error":
-			level = lint.Error
-		default:
-		}
-		return nil
-	})
 	set.Func("r", "enable rule", func(value string) error {
 		rule, severity, ok := strings.Cut(value, ":")
 
@@ -48,42 +50,38 @@ func runLint(args []string) error {
 		return err
 	})
 	if err := set.Parse(args); err != nil {
-		return err
+		return nil, nil, err
 	}
-	_ = *fix
+	return lint.NewLinter(rules), set.Args(), nil
+}
 
-	var r io.Reader
-	if f, err := os.Open(set.Arg(0)); err == nil {
-		defer f.Close()
-		r = f
-	} else {
-		r = strings.NewReader(set.Arg(0))
-	}
-	var (
-		issues []lint.Issue
-		err    error
-	)
-	if len(rules) == 0 {
-		issues, err = lint.LintDefault(r)
-	} else {
-		issues, err = lint.Lint(r, rules)
-	}
+func runLint(args []string) error {
+	linter, files, err := createLinterFromArgs(args)
 	if err != nil {
 		return err
 	}
-	var curr int
-	for _, i := range issues {
-		if level != 0 && level < i.Severity {
-			continue
+	var found int
+	for _, f := range files {
+		issues, err := lintFile(linter, f)
+		if err != nil {
+			return err
 		}
-		curr++
-		if *count != 0 && curr >= *count {
-			break
+		for _, i := range issues {
+			ReportIssue(i)
 		}
-		ReportIssue(i)
+		found += len(issues)
 	}
-	if len(issues) > 0 {
-		return fmt.Errorf("%d issue(s) found in query", len(issues))
+	if found > 0 {
+		return fmt.Errorf("%d issue(s) found in query", found)
 	}
 	return nil
+}
+
+func lintFile(linter *lint.Linter, file string) ([]lint.Issue, error) {
+	r, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	return linter.Lint(r)
 }

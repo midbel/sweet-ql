@@ -11,6 +11,8 @@ import (
 	"github.com/midbel/sweet/internal/lang/parser"
 )
 
+var errConfig = errors.New("invalid configuration file given")
+
 func main() {
 	flag.Parse()
 

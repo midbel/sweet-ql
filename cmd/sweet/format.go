@@ -11,8 +11,6 @@ import (
 	"github.com/midbel/sweet/internal/lang/format"
 )
 
-var errConfig = errors.New("invalid configuration file given")
-
 func createWriterFromArgs(args []string) (*format.Writer, []string, error) {
 	writer, files, err := createWriterFromConfig(args)
 	if err != nil {
