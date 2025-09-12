@@ -51,8 +51,9 @@ const (
 	optionFmtNewline    = "newline"
 	optionFmtComma      = "comma"
 	optionFmtSemicolon  = "semicolon"
-	optionLint          = "lint"
-	optionLintLevel     = "level"
+
+	optionLint      = "lint"
+	optionLintLevel = "level"
 )
 
 type Parser struct {
@@ -405,6 +406,21 @@ func (p *Parser) parseLint() (*LintBuilder, error) {
 	return &lb, nil
 }
 
+func (p *Parser) parseRuleCompact(name string) (lint.Rule, error) {
+	if !p.is(Set) {
+		return nil, p.unexpected()
+	}
+	p.next()
+	if !p.is(Literal) {
+		return nil, p.unexpected()
+	}
+	level, err := p.parseValue()
+	if err != nil {
+		return nil, err
+	}
+	return lint.RuleWith(name, lint.WithSeverity(level))
+}
+
 func (p *Parser) parseRule() (lint.Rule, error) {
 	if !p.is(Literal) {
 		return nil, p.unexpected()
@@ -412,7 +428,7 @@ func (p *Parser) parseRule() (lint.Rule, error) {
 	name := p.getCurrentLiteral()
 	p.next()
 	if !p.is(Beg) {
-		return nil, p.unexpected()
+		return p.parseRuleCompact(name)
 	}
 	p.next()
 	var options []lint.RuleOption
@@ -448,7 +464,7 @@ func (p *Parser) parseRule() (lint.Rule, error) {
 		return nil, p.unexpected()
 	}
 	p.next()
-	return lint.RuleByName(name, lint.None)
+	return lint.RuleWith(name, options...)
 }
 
 func (p *Parser) skipComments() {
