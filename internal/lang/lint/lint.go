@@ -56,6 +56,30 @@ var supportedRules = map[string]func(Severity) Rule{
 
 type RuleOption func(Rule) error
 
+func WithCount(count int) RuleOption {
+	return func(r Rule) error {
+		return nil
+	}
+}
+
+func WithClause(clause string) RuleOption {
+	return func(r Rule) error {
+		return nil
+	}
+}
+
+func WithMinLength(n int) RuleOption {
+	return func(r Rule) error {
+		return nil
+	}
+}
+
+func WithMaxLength(n int) RuleOption {
+	return func(r Rule) error {
+		return nil
+	}
+}
+
 func WithSeverity(level string) RuleOption {
 	return func(r Rule) error {
 		var sev Severity

@@ -40,7 +40,8 @@ type Builder struct {
 }
 
 const (
-	optionDialect       = "dialect"
+	optionDialect = "dialect"
+
 	optionFormat        = "format"
 	optionFmtCompact    = "compact"
 	optionFmtUpper      = "upperize"
@@ -52,8 +53,12 @@ const (
 	optionFmtComma      = "comma"
 	optionFmtSemicolon  = "semicolon"
 
-	optionLint      = "lint"
-	optionLintLevel = "level"
+	optionLint       = "lint"
+	optionLintLevel  = "severity"
+	optionLintCount  = "count"
+	optionLintClause = "clause"
+	optionLintMinLen = "min-length"
+	optionLintMaxLen = "max-length"
 )
 
 type Parser struct {
@@ -447,6 +452,10 @@ func (p *Parser) parseRule() (lint.Rule, error) {
 			option lint.RuleOption
 		)
 		switch p.getCurrentLiteral() {
+		case optionLintMinLength:
+		case optionLintMaxLength:
+		case optionLintCount:
+		case optionLintClause:
 		case optionLintLevel:
 			level, err1 := p.parseValue()
 			if err1 != nil {
