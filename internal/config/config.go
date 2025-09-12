@@ -414,10 +414,12 @@ func (p *Parser) parseRuleCompact(name string) (lint.Rule, error) {
 	if !p.is(Literal) {
 		return nil, p.unexpected()
 	}
-	level, err := p.parseValue()
-	if err != nil {
-		return nil, err
+	level := p.getCurrentLiteral()
+	p.next()
+	if !p.eol() {
+		return nil, p.unexpected()
 	}
+	p.next()
 	return lint.RuleWith(name, lint.WithSeverity(level))
 }
 
