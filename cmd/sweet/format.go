@@ -40,7 +40,7 @@ func createWriterFromConfig(args []string) (*format.Writer, []string, error) {
 			errret = fmt.Errorf("%w: %s", errConfig, err)
 			return err
 		}
-		w, err := b.Build(os.Stdout)
+		w, err := b.GetWriter(os.Stdout)
 		if err != nil {
 			errret = fmt.Errorf("%w: %s", errConfig, err)
 		} else {

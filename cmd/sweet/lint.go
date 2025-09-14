@@ -26,6 +26,7 @@ func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 	var (
 		set    = flag.NewFlagSet("lint", flag.ContinueOnError)
 		errret error
+		linter *lint.Linter
 	)
 	set.SetOutput(io.Discard)
 	set.Func("config", "", func(file string) error {
@@ -40,6 +41,12 @@ func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 			errret = fmt.Errorf("%w: %s", errConfig, err)
 			return err
 		}
+		i, err := b.GetLinter(os.Stdout)
+		if err != nil {
+			errret = fmt.Errorf("%w: %s", errConfig, err)
+		} else {
+			linter = i
+		}
 		return err
 	})
 	if err := set.Parse(args); err != nil {
@@ -48,7 +55,7 @@ func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 		}
 		return nil, nil, err
 	}
-	return nil, nil, errConfig
+	return linter, set.Args(), nil
 }
 
 func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {

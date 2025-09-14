@@ -22,11 +22,15 @@ type LintBuilder struct {
 	rules []lint.Rule
 }
 
+func (b *LintBuilder) GetLinter() *lint.Linter {
+	return lint.NewLinter(b.rules)
+}
+
 type FormatBuilder struct {
 	options []format.WriterOption
 }
 
-func (b *FormatBuilder) Build(w io.Writer) (*format.Writer, error) {
+func (b *FormatBuilder) GetWriter(w io.Writer) (*format.Writer, error) {
 	return format.New(w, b.options...)
 }
 
@@ -452,8 +456,8 @@ func (p *Parser) parseRule() (lint.Rule, error) {
 			option lint.RuleOption
 		)
 		switch p.getCurrentLiteral() {
-		case optionLintMinLength:
-		case optionLintMaxLength:
+		case optionLintMinLen:
+		case optionLintMaxLen:
 		case optionLintCount:
 		case optionLintClause:
 		case optionLintLevel:

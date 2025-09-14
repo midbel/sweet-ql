@@ -252,3 +252,39 @@ func (i *Linter) lint(stmt ast.Node) ([]Issue, error) {
 	}
 	return list, nil
 }
+
+type rule struct {
+	ast.Visitor
+	severity Severity
+	issues   []Issue
+	count    int
+}
+
+func stdRule(level Severity, visit ast.Visitor) Rule {
+	return &rule{
+		Visitor:  visit,
+		severity: level,
+	}
+}
+
+func (r *rule) setSeverity(level Severity) {
+	r.severity = level
+}
+
+func (r *rule) setCount(max int) {
+	r.count = max
+}
+
+func (r *rule) Name() string {
+	return "sql-lint-rule"
+}
+
+func (r *rule) Verify(stmt ast.Node) ([]Issue, error) {
+	r.issues = r.issues[:0]
+
+	err := stmt.Accept(ast.Walk(r))
+	if errors.Is(err, ast.ErrStop) {
+		err = nil
+	}
+	return r.issues, err
+}
