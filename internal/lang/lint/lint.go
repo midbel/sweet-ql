@@ -255,15 +255,17 @@ func (i *Linter) lint(stmt ast.Node) ([]Issue, error) {
 
 type rule struct {
 	ast.Visitor
+	name     string
 	severity Severity
 	issues   []Issue
 	count    int
 }
 
-func stdRule(level Severity, visit ast.Visitor) Rule {
+func stdRule(name string, visit ast.Visitor) Rule {
 	return &rule{
 		Visitor:  visit,
-		severity: level,
+		name:     name,
+		severity: Warning,
 	}
 }
 
@@ -276,7 +278,7 @@ func (r *rule) setCount(max int) {
 }
 
 func (r *rule) Name() string {
-	return "sql-lint-rule"
+	return r.name
 }
 
 func (r *rule) Verify(stmt ast.Node) ([]Issue, error) {
