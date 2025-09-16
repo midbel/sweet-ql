@@ -58,6 +58,12 @@ type RuleOption func(Rule) error
 
 func WithCount(count int) RuleOption {
 	return func(r Rule) error {
+		if count < 0 {
+			return fmt.Errorf("negative limit not allowed")
+		}
+		if s, ok := r.(interface{ setLimit(int) }); ok {
+			s.setLimit(count)
+		}
 		return nil
 	}
 }
@@ -93,8 +99,8 @@ func WithSeverity(level string) RuleOption {
 		default:
 			return fmt.Errorf("%s: unknown severity level", level)
 		}
-		if s, ok := r.(interface{ setLevel(Severity) }); ok {
-			s.setLevel(sev)
+		if s, ok := r.(interface{ setSeverity(Severity) }); ok {
+			s.setSeverity(sev)
 		}
 		return nil
 	}
@@ -256,13 +262,13 @@ func (r *rule) Name() string {
 }
 
 func (r *rule) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
+	defer r.reset()
 
 	err := stmt.Accept(ast.Walk(r))
 	if errors.Is(err, ast.ErrStop) {
 		err = nil
 	}
-	return r.issues, err
+	return slices.Clone(r.issues), err
 }
 
 func (r *rule) Report(stmt ast.Node, reason string) error {
@@ -289,4 +295,8 @@ func (r *rule) setSeverity(level Severity) {
 
 func (r *rule) setLimit(count int) {
 	r.count = count
+}
+
+func (r *rule) reset() {
+	r.issues = r.issues[:0]
 }
