@@ -165,33 +165,13 @@ type Linter struct {
 }
 
 func Lint(r io.Reader, rules []Rule) ([]Issue, error) {
-	var (
-		lint = NewLinter(rules)
-		all  []Issue
-	)
-	for {
-		issues, err := lint.Lint(r)
-		if err != nil {
-			return nil, err
-		}
-		all = slices.Concat(all, issues)
-	}
-	return all, nil
+	lint := NewLinter(rules)
+	return lint.Lint(r)
 }
 
 func LintDefault(r io.Reader) ([]Issue, error) {
-	var (
-		lint = DefaultLinter()
-		all  []Issue
-	)
-	for {
-		issues, err := lint.Lint(r)
-		if err != nil {
-			return nil, err
-		}
-		all = slices.Concat(all, issues)
-	}
-	return all, nil
+	lint := DefaultLinter()
+	return lint.Lint(r)
 }
 
 func DefaultLinter() *Linter {
@@ -253,6 +233,8 @@ func (i *Linter) lint(stmt ast.Node) ([]Issue, error) {
 	return list, nil
 }
 
+var ErrIssuesLimit = errors.New("too many issues detected")
+
 type rule struct {
 	ast.Visitor
 	name     string
@@ -261,20 +243,12 @@ type rule struct {
 	count    int
 }
 
-func stdRule(name string, visit ast.Visitor) Rule {
+func stdRule(visit ast.Visitor, name string, level Severity) *rule {
 	return &rule{
 		Visitor:  visit,
+		severity: level,
 		name:     name,
-		severity: Warning,
 	}
-}
-
-func (r *rule) setSeverity(level Severity) {
-	r.severity = level
-}
-
-func (r *rule) setCount(max int) {
-	r.count = max
 }
 
 func (r *rule) Name() string {
@@ -289,4 +263,30 @@ func (r *rule) Verify(stmt ast.Node) ([]Issue, error) {
 		err = nil
 	}
 	return r.issues, err
+}
+
+func (r *rule) Report(stmt ast.Node, reason string) error {
+	iss := Issue{
+		Position: stmt.Pos(),
+		Severity: r.severity,
+		Rule:     r.Name(),
+		Reason:   reason,
+	}
+	return r.Add(iss)
+}
+
+func (r *rule) Add(iss Issue) error {
+	if r.count > 0 && len(r.issues) >= r.count {
+		return ErrIssuesLimit
+	}
+	r.issues = append(r.issues, iss)
+	return nil
+}
+
+func (r *rule) setSeverity(level Severity) {
+	r.severity = level
+}
+
+func (r *rule) setLimit(count int) {
+	r.count = count
 }

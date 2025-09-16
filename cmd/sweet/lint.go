@@ -36,18 +36,12 @@ func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 		}
 		defer r.Close()
 
-		_, err = config.Parse(r).Parse()
+		b, err := config.Parse(r).Parse()
 		if err != nil {
-			errret = fmt.Errorf("%w: %s", errConfig, err)
 			return err
 		}
-		i, err := b.GetLinter(os.Stdout)
-		if err != nil {
-			errret = fmt.Errorf("%w: %s", errConfig, err)
-		} else {
-			linter = i
-		}
-		return err
+		linter = b.GetLinter()
+		return nil
 	})
 	if err := set.Parse(args); err != nil {
 		if errret != nil {

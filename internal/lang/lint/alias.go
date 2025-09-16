@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"errors"
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
@@ -11,140 +10,84 @@ import (
 
 type selfAlias struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 // Creates a rule that verifies whether the alias assigned to a field
 // is identical to the field's original name.
 func SelfAlias(level Severity) Rule {
-	return &selfAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &selfAlias{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *selfAlias) Name() string {
-	return "self-alias"
-}
-
-func (r *selfAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "self-alias", level)
+	return a
 }
 
 func (r *selfAlias) VisitAlias(alias *ast.Alias) error {
+	var err error
 	switch n := alias.Node.(type) {
 	case *ast.Name:
 		if n.Name() == alias.Name {
-			i := Issue{
-				Position: alias.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "do not use an alias identical to the name being aliased",
-			}
-			r.issues = append(r.issues, i)
+			err = r.Report(n, "do not use an alias identical to the name being aliased")
 		}
 	case *ast.Call:
 		if n.GetIdent() == alias.Name {
-			i := Issue{
-				Position: n.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "use a different identifier of the function as alias to avoid ambiguouity",
-			}
-			r.issues = append(r.issues, i)
+			err = r.Report(n, "use a different identifier of the function as alias to avoid ambiguouity")
 		}
 	default:
 	}
-	return nil
+	return err
 }
 
 type recommandedAlias struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func RecommandedAlias(level Severity) Rule {
-	return &recommandedAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &recommandedAlias{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (r *recommandedAlias) Name() string {
-	return "recommanded-alias"
-}
-
-func (r *recommandedAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "recommanded-alias", level)
+	return a
 }
 
 func (r *recommandedAlias) VisitSelect(stmt *ast.SelectStatement) error {
+	var err error
 	for _, q := range stmt.Columns {
 		switch q.(type) {
 		case *ast.Call, *ast.Group, *ast.Binary, *ast.Unary:
-			i := Issue{
-				Position: q.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "alias is recommanded for function call, subquery, binary and/or unary expression",
-			}
-			r.issues = append(r.issues, i)
+			err = r.Report(q, "alias is recommanded for function call, subquery, binary and/or unary expression")
 		default:
 		}
+		if err != nil {
+			break
+		}
 	}
-	return nil
+	return err
 }
 
 type missingAlias struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 // Creates a Rule that ensures all fields and tables are assigned an alias.
 func MissingAlias(level Severity) Rule {
-	return &missingAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &missingAlias{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ missingAlias) Name() string {
-	return "missing-alias"
-}
-
-func (r *missingAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "missing-alias", level)
+	return a
 }
 
 func (r *missingAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
 		if _, ok := c.(*ast.Alias); !ok {
-			i := Issue{
-				Position: c.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "prefer using alias to improve readability of your query",
+			err := r.Report(c, "prefer using alias to improve readability of your query")
+			if err != nil {
+				return err
 			}
-			r.issues = append(r.issues, i)
 		}
 	}
 	return nil
@@ -152,41 +95,25 @@ func (r *missingAlias) VisitSelect(stmt *ast.SelectStatement) error {
 
 type noAlias struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 // Creates a Rule that ensures no fields or tables are assigned an alias.
 func NoAlias(level Severity) Rule {
-	return &noAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noAlias{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noAlias) Name() string {
-	return "no-alias"
-}
-
-func (r *noAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "no-alias", level)
+	return a
 }
 
 func (r *noAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
 		if a, ok := c.(*ast.Alias); ok {
-			i := Issue{
-				Position: a.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "aliases are not recommended unless needed",
+			err := r.Report(a, "aliases are not recommended unless needed")
+			if err != nil {
+				return err
 			}
-			r.issues = append(r.issues, i)
 		}
 	}
 	return nil
@@ -194,8 +121,7 @@ func (r *noAlias) VisitSelect(stmt *ast.SelectStatement) error {
 
 type invalidAlias struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 
 	aliases [][]ast.Identifier
 }
@@ -203,23 +129,11 @@ type invalidAlias struct {
 // Creates a Rule that checks if alias defined in the SELECT clause are
 // not used in where/having/group by clauses
 func InvalidAlias(level Severity) Rule {
-	return &invalidAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &invalidAlias{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *invalidAlias) Name() string {
-	return "invalid-alias"
-}
-
-func (r *invalidAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "invalid-alias", level)
+	return a
 }
 
 func (r *invalidAlias) VisitSelect(stmt *ast.SelectStatement) error {
@@ -236,16 +150,11 @@ func (r *invalidAlias) VisitSelect(stmt *ast.SelectStatement) error {
 }
 
 func (r *invalidAlias) VisitName(name *ast.Name) error {
+	var err error
 	if r.exists(name) {
-		i := Issue{
-			Position: name.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "alias is not expected in group by/where/having clause of query",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(name, "alias is not expected in group by/where/having clause of query")
 	}
-	return nil
+	return err
 }
 
 func (r *invalidAlias) visit(stmt *ast.SelectStatement) error {
@@ -295,8 +204,7 @@ func (r *invalidAlias) exists(name *ast.Name) bool {
 
 type undefinedAlias struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 
 	aliases [][]ast.Identifier
 }
@@ -304,23 +212,11 @@ type undefinedAlias struct {
 // Creates a rule that checks whether the qualified fields in the
 // SELECT clause use the table aliases defined in the query.
 func UndefinedAlias(level Severity) Rule {
-	return &undefinedAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &undefinedAlias{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *undefinedAlias) Name() string {
-	return "undefined-alias"
-}
-
-func (r *undefinedAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "undefined-alias", level)
+	return a
 }
 
 func (r *undefinedAlias) VisitSelect(stmt *ast.SelectStatement) error {
@@ -336,16 +232,11 @@ func (r *undefinedAlias) VisitSelect(stmt *ast.SelectStatement) error {
 }
 
 func (r *undefinedAlias) VisitName(name *ast.Name) error {
+	var err error
 	if !r.exists(name) {
-		i := Issue{
-			Position: name.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "alias is not defined in from clause of query",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(name, "alias is not defined in from clause of query")
 	}
-	return nil
+	return err
 }
 
 func (r *undefinedAlias) visit(stmt *ast.SelectStatement) error {
@@ -395,28 +286,15 @@ func (r *undefinedAlias) exists(name *ast.Name) bool {
 
 type unusedAlias struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func UnusedAlias(level Severity) Rule {
-	return &unusedAlias{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &unusedAlias{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *unusedAlias) Name() string {
-	return "unused-alias"
-}
-
-func (r *unusedAlias) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "unused-alias", level)
+	return a
 }
 
 func (r *unusedAlias) VisitSelect(stmt *ast.SelectStatement) error {
@@ -461,15 +339,12 @@ func (r *unusedAlias) VisitSelect(stmt *ast.SelectStatement) error {
 			return err
 		}
 	}
-	for alias, count := range alias {
+	for _, count := range alias {
 		if count == 0 {
-			i := Issue{
-				Position: positions[alias],
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "alias declared and not used",
+			err := r.Report(stmt, "alias declared and not used")
+			if err != nil {
+				return err
 			}
-			r.issues = append(r.issues, i)
 		}
 	}
 	return nil
