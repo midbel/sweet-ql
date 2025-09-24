@@ -477,6 +477,9 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	if p.Is(token.Comma) {
+		return p.ParseRowWith(stmt, pos)
+	}
 	if !p.Is(token.Rparen) {
 		return nil, p.Unexpected("group", missingCloseParen)
 	}

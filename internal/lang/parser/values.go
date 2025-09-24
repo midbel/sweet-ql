@@ -254,6 +254,30 @@ func (p *Parser) ParseType() (ast.Type, error) {
 	return t, nil
 }
 
+func (p *Parser) ParseRowWith(first ast.Node, pos token.Position) (ast.Node, error) {
+	row := ast.Row{
+		Position: pos,
+		Values:   slx.One(first),
+	}
+
+	p.Next()
+	for !p.Done() && !p.Is(token.Rparen) {
+		n, err := p.StartExpression()
+		if err != nil {
+			return nil, err
+		}
+		if err := p.EnsureEnd("row", token.Comma, token.Rparen); err != nil {
+			return nil, err
+		}
+		row.Values = append(row.Values, n)
+	}
+	if !p.Is(token.Rparen) {
+		return nil, p.Unexpected("row", missingCloseParen)
+	}
+	p.Next()
+	return &row, nil
+}
+
 func (p *Parser) ParseRow() (ast.Node, error) {
 	var row ast.Row
 	row.Position = p.GetCurrPosition()
