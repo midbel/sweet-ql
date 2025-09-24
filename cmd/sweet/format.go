@@ -54,6 +54,9 @@ func createWriterFromConfig(args []string) (*format.Writer, []string, error) {
 		}
 		return nil, nil, err
 	}
+	if set.NFlag() == 0 {
+		return nil, nil, fmt.Errorf("no config given")
+	}
 	return writer, set.Args(), nil
 }
 
