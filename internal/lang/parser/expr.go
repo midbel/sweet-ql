@@ -473,12 +473,12 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 		}
 		return p.ParseAlias(g)
 	}
-	stmt, err := p.StartExpression()
+	expr, err := p.StartExpression()
 	if err != nil {
 		return nil, err
 	}
 	if p.Is(token.Comma) {
-		return p.ParseRowWith(stmt, pos)
+		return p.ParseRowWith(expr, pos)
 	}
 	if !p.Is(token.Rparen) {
 		return nil, p.Unexpected("group", missingCloseParen)
@@ -486,7 +486,7 @@ func (p *Parser) parseGroupExpr() (ast.Node, error) {
 	p.Next()
 	g := &ast.Group{
 		Position: pos,
-		Node:     stmt,
+		Node:     expr,
 	}
 	return g, nil
 }

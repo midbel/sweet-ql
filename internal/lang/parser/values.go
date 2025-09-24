@@ -254,10 +254,10 @@ func (p *Parser) ParseType() (ast.Type, error) {
 	return t, nil
 }
 
-func (p *Parser) ParseRowWith(first ast.Node, pos token.Position) (ast.Node, error) {
+func (p *Parser) ParseRowWith(expr ast.Node, pos token.Position) (ast.Node, error) {
 	row := ast.Row{
 		Position: pos,
-		Values:   slx.One(first),
+		Values:   slx.One(expr),
 	}
 
 	p.Next()
