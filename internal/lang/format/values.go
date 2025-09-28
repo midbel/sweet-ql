@@ -16,14 +16,7 @@ func (w *Writer) VisitGroup(group *ast.Group) error {
 		}()
 	}
 	w.WriteString("(")
-	if !w.Compact.All() {
-		w.WriteNL()
-	}
 	group.Node.Accept(w)
-	if !w.Compact.All() {
-		w.WriteNL()
-	}
-	w.WritePrefix()
 	w.WriteString(")")
 	return nil
 }

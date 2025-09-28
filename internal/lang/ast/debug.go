@@ -63,6 +63,9 @@ func (v *debugVisitor) VisitSelect(stmt *SelectStatement) error {
 	v.writeOpening("select", stmt)
 	v.enter()
 	for i := range stmt.Columns {
+		if i > 0 {
+			fmt.Fprintln(v.writer)
+		}
 		stmt.Columns[i].Accept(v)
 	}
 	v.leave()
@@ -145,11 +148,35 @@ func (v *debugVisitor) VisitTruncate(stmt *TruncateStatement) error {
 	return nil
 }
 
-func (v *debugVisitor) VisitWith(*WithStatement) error {
+func (v *debugVisitor) VisitWith(stmt *WithStatement) error {
+	v.writeOpening("with", stmt)
+	for i, n := range stmt.Queries {
+		if i > 0 {
+			fmt.Fprintln(v.writer)
+		}
+		if err := n.Accept(v); err != nil {
+			return err
+		}
+	}
+	fmt.Fprint(v.writer, v.prefix())
+	stmt.Node.Accept(v)
+	v.writeEnd()
 	return nil
 }
 
-func (v *debugVisitor) VisitCte(*CteStatement) error {
+func (v *debugVisitor) VisitCte(stmt *CteStatement) error {
+	v.enter()
+	defer v.leave()
+	v.writeOpening("cte", stmt)
+	v.enter()
+	fmt.Fprint(v.writer, v.prefix())
+	fmt.Fprint(v.writer, "name: ")
+	fmt.Fprint(v.writer, stmt.Ident)
+	fmt.Fprintln(v.writer)
+	stmt.Node.Accept(v)
+	v.leave()
+	fmt.Fprintln(v.writer)
+	v.writeEnd()
 	return nil
 }
 
@@ -294,6 +321,7 @@ func (v *debugVisitor) VisitAlias(alias *Alias) error {
 	fmt.Fprint(v.writer, alias.Name)
 	fmt.Fprintln(v.writer, ",")
 	alias.Node.Accept(v)
+	fmt.Fprintln(v.writer)
 	v.leave()
 	v.writeEnd()
 	return nil
@@ -310,9 +338,9 @@ func (v *debugVisitor) VisitName(name *Name) error {
 	fmt.Fprint(v.writer, name.Pos())
 	fmt.Fprint(v.writer, "] (")
 	fmt.Fprint(v.writer, strings.Join(parts, "."))
-	fmt.Fprint(v.writer, ",")
+	fmt.Fprint(v.writer, ", ")
 	fmt.Fprint(v.writer, "type=?")
-	fmt.Fprintln(v.writer, ")")
+	fmt.Fprint(v.writer, ")")
 
 	return nil
 }
