@@ -134,7 +134,6 @@ type Issue struct {
 	Severity
 	Rule   string
 	Reason string
-	Cause  string
 }
 
 type Rule interface {
