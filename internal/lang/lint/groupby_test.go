@@ -31,17 +31,44 @@ func TestGroupbyColumns(t *testing.T) {
 }
 
 func TestGroupbyDistinct(t *testing.T) {
-	tests := []TestCase{}
+	tests := []TestCase{
+		{
+			Query:  "select distinct id, name from foo group by id, name",
+			Issues: 0,
+		},
+		{
+			Query:  "select id, name from foo group by id, name",
+			Issues: 1,
+		},
+	}
 	runTests(t, tests, GroupbyDistinct(Warning))
 }
 
 func TestGroupByNoPosition(t *testing.T) {
-	tests := []TestCase{}
+	tests := []TestCase{
+		{
+			Query:  "select id, name from foo group by id, name",
+			Issues: 0,
+		},
+		{
+			Query:  "select id, name from foo group by 1, name",
+			Issues: 1,
+		},
+	}
 	runTests(t, tests, NoPositionGroupby(Warning))
 }
 
 func TestGroupByNoLiteral(t *testing.T) {
-	tests := []TestCase{}
+	tests := []TestCase{
+		{
+			Query:  "select id, name from foo group by id, name",
+			Issues: 0,
+		},
+		{
+			Query:  "select id, name from foo group by id, 'name'",
+			Issues: 1,
+		},
+	}
 	runTests(t, tests, NoLiteralGroupby(Warning))
 }
 
