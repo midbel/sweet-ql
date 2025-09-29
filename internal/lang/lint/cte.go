@@ -12,87 +12,53 @@ import (
 
 type cteSelectOnly struct {
 	ast.Visitor
-	issues   []Issue
-	severity Severity
+	*rule
 }
 
+// Creates a rule that verifies that queries in CTE and WITH statement are only SELECT
+// queries.
 func CteOnlySelect(level Severity) Rule {
-	return &cteSelectOnly{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &cteSelectOnly{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *cteSelectOnly) Name() string {
-	return "cte-select-only"
-}
-
-func (r *cteSelectOnly) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "cte-select-only", level)
+	return a
 }
 
 func (r *cteSelectOnly) VisitWith(stmt *ast.WithStatement) error {
-	r.check(stmt.Node)
-	return nil
+	return r.check(stmt.Node)
 }
 
 func (r *cteSelectOnly) VisitCte(stmt *ast.CteStatement) error {
-	r.check(stmt.Node)
-	return nil
+	return r.check(stmt.Node)
 }
 
-func (r *cteSelectOnly) check(stmt ast.Node) {
+func (r *cteSelectOnly) check(stmt ast.Node) error {
 	if _, ok := stmt.(*ast.SelectStatement); !ok {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "queries inside with statements should be select query",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(stmt, "queries inside with statements should be select query")
 	}
+	return nil
 }
 
 type noCte struct {
 	ast.Visitor
-	issues   []Issue
-	severity Severity
+	*rule
 }
 
 // Creates a Rule that checks that no WITH statement are used
 func NoCte(level Severity) Rule {
-	return &noCte{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noCte{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noCte) Name() string {
-	return "no-cte"
-}
-
-func (r *noCte) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "no-cte", level)
+	return a
 }
 
 func (r *noCte) VisitWith(with *ast.WithStatement) error {
-	i := Issue{
-		Position: with.Pos(),
-		Severity: r.severity,
-		Rule:     r.Name(),
-		Reason:   "prefer using subqueries over common table expression",
+	err := r.Report(with, "prefer using subqueries over common table expression")
+	if err != nil {
+		return err
 	}
-	r.issues = append(r.issues, i)
 	return ast.ErrStop
 }
 
@@ -185,31 +151,21 @@ func (r *cteUnused) update(name string) {
 
 type cteShadow struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 // Creates a Rule that will check that name given to a cte will not
 // shadow the name of a table used in the cte
 func CteShadow(level Severity) Rule {
-	return &cteShadow{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &cteShadow{
+		Visitor: ast.Noop(),
 	}
+	a.rule = stdRule(a, "cte-shadow", level)
+	return a
 }
 
 func (_ *cteShadow) Name() string {
 	return "cte-shadow"
-}
-
-func (r *cteShadow) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
 }
 
 func (r *cteShadow) VisitCte(cte *ast.CteStatement) error {
@@ -220,13 +176,10 @@ func (r *cteShadow) VisitCte(cte *ast.CteStatement) error {
 			}
 			if n, ok := n.(*ast.Name); ok {
 				if n.Parts[len(n.Parts)-1].Name == cte.Ident {
-					i := Issue{
-						Position: cte.Node.Pos(),
-						Severity: r.severity,
-						Rule:     r.Name(),
-						Reason:   "cte name will shadow the table name",
+					err := r.Report(n, "cte name will shadow the table name")
+					if err != nil {
+						return err
 					}
-					r.issues = append(r.issues, i)
 				}
 			}
 		}
@@ -440,29 +393,15 @@ func (r *cteNames) getFieldsFromTables(nodes []ast.Node) map[string][]ast.Identi
 
 type cteExposedNames struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func CteExposedNames(level Severity) Rule {
-	return &cteExposedNames{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &cteExposedNames{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *cteExposedNames) Name() string {
-	return "cte-exposed-name"
-}
-
-func (r *cteExposedNames) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "cte-exposed-name", level)
+	return a
 }
 
 func (r *cteExposedNames) VisitCte(stmt *ast.CteStatement) error {
@@ -503,13 +442,7 @@ func (r *cteExposedNames) VisitCte(stmt *ast.CteStatement) error {
 		}
 	}
 	if matched == len(stmt.Columns) {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "declared names of cte identical to names in select clause",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(stmt, "declared names of cte identical to names in select clause")
 	}
 	return nil
 }

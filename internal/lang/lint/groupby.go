@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"errors"
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang"
@@ -10,28 +9,15 @@ import (
 
 type groupbyColumns struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func GroupbyColumns(level Severity) Rule {
-	return &groupbyColumns{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &groupbyColumns{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *groupbyColumns) Name() string {
-	return "groupby-columns"
-}
-
-func (r *groupbyColumns) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "groupby-columns", level)
+	return a
 }
 
 func (r *groupbyColumns) VisitSelect(stmt *ast.SelectStatement) error {
@@ -53,13 +39,10 @@ func (r *groupbyColumns) VisitSelect(stmt *ast.SelectStatement) error {
 		default:
 		}
 		if !ok {
-			i := Issue{
-				Position: c.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "column must be used in group by clause if not used in aggregate function",
+			err := r.Report(c, "column must be used in group by clause if not used in aggregate function")
+			if err != nil {
+				return err
 			}
-			r.issues = append(r.issues, i)
 		}
 	}
 	return nil
@@ -77,28 +60,15 @@ func (r *groupbyColumns) exists(name *ast.Name, stmt *ast.SelectStatement) bool 
 // check that when group by clause is used and no aggregate functions are used in select clause, prefer select distinct
 type groupbyDistinct struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func GroupbyDistinct(level Severity) Rule {
-	return &groupbyDistinct{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &groupbyDistinct{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *groupbyDistinct) Name() string {
-	return "groupby-distinct"
-}
-
-func (r *groupbyDistinct) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "groupby-distinct", level)
+	return a
 }
 
 func (r *groupbyDistinct) VisitSelect(stmt *ast.SelectStatement) error {
@@ -115,53 +85,34 @@ func (r *groupbyDistinct) VisitSelect(stmt *ast.SelectStatement) error {
 		return false
 	})
 	if !ok && !stmt.Distinct {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use distinct in select clause if no aggregate functions are used",
+		err := r.Report(stmt, "use distinct in select clause if no aggregate functions are used")
+		if err != nil {
+			return err
 		}
-		r.issues = append(r.issues, i)
 	}
 	return nil
 }
 
 type noPositionGroupby struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoPositionGroupby(level Severity) Rule {
-	return &noPositionGroupby{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noPositionGroupby{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noPositionGroupby) Name() string {
-	return "no-position-groupby"
-}
-
-func (r *noPositionGroupby) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "groupby-no-position", level)
+	return a
 }
 
 func (r *noPositionGroupby) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, g := range stmt.Groups {
 		if v, ok := g.(*ast.Value); ok && v.Number() {
-			i := Issue{
-				Position: g.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "prefer using field names in group by instead of position",
+			err := r.Report(g, "prefer using field names in group by instead of position")
+			if err != nil {
+				return err
 			}
-			r.issues = append(r.issues, i)
 		}
 	}
 	return nil
@@ -169,40 +120,24 @@ func (r *noPositionGroupby) VisitSelect(stmt *ast.SelectStatement) error {
 
 type noLiteralGroupby struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoLiteralGroupby(level Severity) Rule {
-	return &noLiteralGroupby{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noLiteralGroupby{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noLiteralGroupby) Name() string {
-	return "no-literal-groupby"
-}
-
-func (r *noLiteralGroupby) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "groupby-no-literal", level)
+	return a
 }
 
 func (r *noLiteralGroupby) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, g := range stmt.Groups {
 		if v, ok := g.(*ast.Value); ok && !v.Number() {
-			i := Issue{
-				Position: v.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "use explicit columns name or expression from select clause in group by",
+			err := r.Report(g, "use explicit columns name or expression from select clause in group by")
+			if err != nil {
+				return err
 			}
-			r.issues = append(r.issues, i)
 		}
 	}
 	return nil
@@ -211,28 +146,15 @@ func (r *noLiteralGroupby) VisitSelect(stmt *ast.SelectStatement) error {
 // check that when aggregate functions are used in select clause, group by list is not empty
 type groupbyAggrFunc struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func GroupbyAggrFunc(level Severity) Rule {
-	return &groupbyAggrFunc{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &groupbyAggrFunc{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *groupbyAggrFunc) Name() string {
-	return "groupby-aggr-function"
-}
-
-func (r *groupbyAggrFunc) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "groupby-aggr-function", level)
+	return a
 }
 
 func (r *groupbyAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
@@ -245,13 +167,10 @@ func (r *groupbyAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
 		}
 		if c, ok := c.(*ast.Call); ok && lang.IsAggregateFunc(c.GetIdent()) {
 			if len(stmt.Groups) == 0 {
-				i := Issue{
-					Position: c.Pos(),
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "aggregate function used but group by clause is empty",
+				err := r.Report(c, "aggregate function used but group by clause is empty")
+				if err != nil {
+					return err
 				}
-				r.issues = append(r.issues, i)
 			}
 		}
 	}
@@ -277,28 +196,15 @@ func (v *callFuncVisitor) VisitCallFunc(call *ast.Call) error {
 // check that only aggregate function are used in having clause
 type havingAggrFunc struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func HavingAggrFunc(level Severity) Rule {
-	return &havingAggrFunc{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &havingAggrFunc{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *havingAggrFunc) Name() string {
-	return "having-aggr-function"
-}
-
-func (r *havingAggrFunc) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "groupby-having-aggr-function", level)
+	return a
 }
 
 func (r *havingAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
@@ -306,14 +212,7 @@ func (r *havingAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
 		return nil
 	}
 	if len(stmt.Groups) == 0 && stmt.Having != nil {
-		i := Issue{
-			Position: stmt.Having.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use of having clause without group by",
-		}
-		r.issues = append(r.issues, i)
-		return nil
+		return r.Report(stmt, "use of having clause without group by")
 	}
 	sub := ast.Walk(visitCallFunc(r.visitCall))
 	return stmt.Having.Accept(sub)
@@ -321,13 +220,7 @@ func (r *havingAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
 
 func (r *havingAggrFunc) visitCall(call *ast.Call) error {
 	if !lang.IsAggregateFunc(call.GetIdent()) {
-		i := Issue{
-			Position: call.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use only aggregate function in having clause",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(call, "use only aggregate function in having clause")
 	}
 	return nil
 }
