@@ -177,22 +177,6 @@ func (r *groupbyAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
 	return nil
 }
 
-type callFuncVisitor struct {
-	ast.Visitor
-	check func(*ast.Call) error
-}
-
-func visitCallFunc(check func(*ast.Call) error) ast.Visitor {
-	return &callFuncVisitor{
-		Visitor: ast.Noop(),
-		check:   check,
-	}
-}
-
-func (v *callFuncVisitor) VisitCallFunc(call *ast.Call) error {
-	return v.check(call)
-}
-
 // check that only aggregate function are used in having clause
 type havingAggrFunc struct {
 	ast.Visitor
@@ -214,7 +198,7 @@ func (r *havingAggrFunc) VisitSelect(stmt *ast.SelectStatement) error {
 	if len(stmt.Groups) == 0 && stmt.Having != nil {
 		return r.Report(stmt, "use of having clause without group by")
 	}
-	sub := ast.Walk(visitCallFunc(r.visitCall))
+	sub := ast.Walk(ast.VisitCallFunc(r.visitCall))
 	return stmt.Having.Accept(sub)
 }
 

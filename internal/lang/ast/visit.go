@@ -231,6 +231,22 @@ func (i *literalVisitor) VisitValue(value *Value) error {
 	return i.check(value)
 }
 
+type callFuncVisitor struct {
+	Visitor
+	check func(*Call) error
+}
+
+func VisitCallFunc(check func(*Call) error) Visitor {
+	return &callFuncVisitor{
+		Visitor: Noop(),
+		check:   check,
+	}
+}
+
+func (v *callFuncVisitor) VisitCallFunc(call *Call) error {
+	return v.check(call)
+}
+
 type noopVisitor struct{}
 
 func Noop() Visitor {
