@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"github.com/midbel/sweet/internal/config"
 	"github.com/midbel/sweet/internal/lang/format"
 )
+
+const formatHelp = ``
 
 func createWriterFromArgs(args []string) (*format.Writer, []string, error) {
 	writer, files, err := createWriterFromConfig(args)
@@ -23,7 +24,7 @@ func createWriterFromArgs(args []string) (*format.Writer, []string, error) {
 
 func createWriterFromConfig(args []string) (*format.Writer, []string, error) {
 	var (
-		set    = flag.NewFlagSet("format", flag.ContinueOnError)
+		set    = createFlag("format", formatHelp)
 		errret error
 		writer *format.Writer
 	)
@@ -62,7 +63,7 @@ func createWriterFromConfig(args []string) (*format.Writer, []string, error) {
 
 func createWriterFromOptions(args []string) (*format.Writer, []string, error) {
 	var (
-		set    = flag.NewFlagSet("format", flag.ContinueOnError)
+		set    = createFlag("format", formatHelp)
 		writer = format.Default(os.Stdout)
 	)
 	set.SetOutput(io.Discard)

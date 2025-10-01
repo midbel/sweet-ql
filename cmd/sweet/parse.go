@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -14,8 +13,10 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+const parseHelp = ``
+
 func runParse(args []string) error {
-	set := flag.NewFlagSet("parse", flag.ExitOnError)
+	set := createFlag("parse", parseHelp)
 	if err := set.Parse(args); err != nil {
 		return err
 	}
@@ -43,8 +44,10 @@ func runParse(args []string) error {
 	return nil
 }
 
+const scanHelp = ``
+
 func runScan(args []string) error {
-	set := flag.NewFlagSet("scan", flag.ExitOnError)
+	set := createFlag("scan", scanHelp)
 	if err := set.Parse(args); err != nil {
 		return err
 	}

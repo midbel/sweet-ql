@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"github.com/midbel/sweet/internal/config"
 	"github.com/midbel/sweet/internal/lang/lint"
 )
+
+const lintHelp = ``
 
 func createLinterFromArgs(args []string) (*lint.Linter, []string, error) {
 	linter, files, err := createLinterFromConfig(args)
@@ -24,7 +25,7 @@ func createLinterFromArgs(args []string) (*lint.Linter, []string, error) {
 
 func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 	var (
-		set    = flag.NewFlagSet("lint", flag.ContinueOnError)
+		set    = createFlag("lint", lintHelp)
 		errret error
 		linter *lint.Linter
 	)
@@ -54,7 +55,7 @@ func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 
 func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {
 	var (
-		set = flag.NewFlagSet("lint", flag.ContinueOnError)
+		set = createFlag("lint", lintHelp)
 		// count = set.Int("c", 0, "print n first issue(s)")
 		// fix   = set.Bool("fix", false, "fix all errors/warning when possible")
 		// level lint.Severity

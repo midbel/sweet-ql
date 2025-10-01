@@ -46,8 +46,14 @@ func main() {
 	}
 }
 
-func runDebug(files []string) error {
-	for _, f := range files {
+const debugHelp = ``
+
+func runDebug(args []string) error {
+	set := createFlag("debug", debugHelp)
+	if err := set.Parse(args); err != nil {
+		return err
+	}
+	for _, f := range set.Args() {
 		if err := printTree(f); err != nil {
 			return err
 		}
