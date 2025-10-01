@@ -11,114 +11,65 @@ import (
 
 type noStar struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoStar(level Severity) Rule {
-	return &noStar{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noStar{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noStar) Name() string {
-	return "no-star"
-}
-
-func (r *noStar) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "no-star", level)
+	return a
 }
 
 func (r *noStar) VisitName(name *ast.Name) error {
+	var err error
 	if name.All() {
-		i := Issue{
-			Position: name.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid using * in select statement; prefer specifying columns name",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(name, "avoid using * in select statement; prefer specifying columns name")
 	}
-	return nil
+	return err
 }
 
 type onlyName struct {
 	ast.Visitor
-	issues   []Issue
-	severity Severity
+	*rule
 }
 
 func OnlyName(level Severity) Rule {
-	return &onlyName{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &onlyName{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *onlyName) Name() string {
-	return "only-name"
-}
-
-func (r *onlyName) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "only-name", level)
+	return a
 }
 
 func (r *onlyName) VisitSelect(stmt *ast.SelectStatement) error {
+	var err error
 	for _, c := range stmt.Columns {
 		if a, ok := c.(*ast.Alias); ok {
 			c = a.Node
 		}
 		if _, ok := c.(*ast.Name); !ok {
-			i := Issue{
-				Position: c.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "only name expected in select clause",
-			}
-			r.issues = append(r.issues, i)
+			err = r.Report(c, "only name expected in select clause")
+		}
+		if err != nil {
+			break
 		}
 	}
-	return nil
+	return err
 }
 
 type duplicatedName struct {
 	ast.Visitor
-	issues   []Issue
-	severity Severity
+	*rule
 }
 
 func DuplicatedName(level Severity) Rule {
-	return &duplicatedName{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &duplicatedName{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *duplicatedName) Name() string {
-	return "duplicated-name"
-}
-
-func (r *duplicatedName) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "duplicated-name", level)
+	return a
 }
 
 func (r *duplicatedName) VisitCreateTable(stmt *ast.CreateTableStatement) error {
@@ -131,43 +82,43 @@ func (r *duplicatedName) VisitCreateView(stmt *ast.CreateViewStatement) error {
 }
 
 func (r *duplicatedName) VisitInsert(stmt *ast.InsertStatement) error {
-	r.checkColumns(stmt.Columns)
-	return nil
+	return r.checkColumns(stmt.Columns)
 }
 
 func (r *duplicatedName) VisitWith(stmt *ast.WithStatement) error {
-	names := make(map[string]struct{})
+	var (
+		names = make(map[string]struct{})
+		err   error
+	)
 	for _, q := range stmt.Queries {
 		q, ok := q.(*ast.CteStatement)
 		if !ok {
 			return fmt.Errorf("%s: unexpected query type", r.Name())
 		}
 		if _, ok := names[q.Ident]; ok {
-			i := Issue{
-				Position: q.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "duplicated name",
-			}
-			r.issues = append(r.issues, i)
+			err = r.Report(q, "duplicated name")
+		}
+		if err != nil {
+			break
 		}
 		names[q.Ident] = struct{}{}
 	}
-	return nil
+	return err
 }
 
 func (r *duplicatedName) VisitCte(stmt *ast.CteStatement) error {
-	r.checkColumns(stmt.Columns)
-	return nil
+	return r.checkColumns(stmt.Columns)
 }
 
 func (r *duplicatedName) VisitSelect(stmt *ast.SelectStatement) error {
-	r.checkColumns(stmt.Columns)
-	return nil
+	return r.checkColumns(stmt.Columns)
 }
 
-func (r *duplicatedName) checkColumns(columns []ast.Node) {
-	var names [][]ast.Identifier
+func (r *duplicatedName) checkColumns(columns []ast.Node) error {
+	var (
+		names [][]ast.Identifier
+		err   error
+	)
 	for _, q := range columns {
 		var id []ast.Identifier
 		switch q := q.(type) {
@@ -177,31 +128,26 @@ func (r *duplicatedName) checkColumns(columns []ast.Node) {
 			id = append(id, q.Identifier)
 		case *ast.Name:
 			if q.All() && len(columns) > 1 {
-				i := Issue{
-					Position: q.Pos(),
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "implicit duplicated name because of *",
-				}
-				r.issues = append(r.issues, i)
+				err = r.Report(q, "implicit duplicated name because of *")
 			}
 			id = q.Parts
+		}
+		if err != nil {
+			break
 		}
 		ok := slices.ContainsFunc(names, func(n []ast.Identifier) bool {
 			return slices.Equal(id, n)
 		})
 		if ok {
-			i := Issue{
-				Position: q.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "duplicated name",
-			}
-			r.issues = append(r.issues, i)
+			err = r.Report(q, "duplicated name")
 		} else {
 			names = append(names, id)
 		}
+		if err != nil {
+			break
+		}
 	}
+	return err
 }
 
 type columnsNames struct {
