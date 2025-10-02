@@ -19,7 +19,7 @@ func SelfAlias(level Severity) Rule {
 	a := &selfAlias{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "self-alias", level)
+	a.rule = stdRule(a, aliasSelf, level)
 	return a
 }
 
@@ -48,7 +48,7 @@ func RecommandedAlias(level Severity) Rule {
 	a := &recommandedAlias{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "recommanded-alias", level)
+	a.rule = stdRule(a, aliasRecommanded, level)
 	return a
 }
 
@@ -77,7 +77,7 @@ func MissingAlias(level Severity) Rule {
 	a := &missingAlias{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "missing-alias", level)
+	a.rule = stdRule(a, aliasMissing, level)
 	return a
 }
 
@@ -103,14 +103,14 @@ func NoAlias(level Severity) Rule {
 	a := &noAlias{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "no-alias", level)
+	a.rule = stdRule(a, aliasNoAlias, level)
 	return a
 }
 
 func (r *noAlias) VisitSelect(stmt *ast.SelectStatement) error {
 	for _, c := range slices.Concat(stmt.Columns, stmt.Tables) {
 		if a, ok := c.(*ast.Alias); ok {
-			err := r.Report(a, "aliases are not recommended unless needed")
+			err := r.Report(a, "alias are not recommended unless needed")
 			if err != nil {
 				return err
 			}
@@ -132,7 +132,7 @@ func InvalidAlias(level Severity) Rule {
 	a := &invalidAlias{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "invalid-alias", level)
+	a.rule = stdRule(a, aliasInvalid, level)
 	return a
 }
 
@@ -215,7 +215,7 @@ func UndefinedAlias(level Severity) Rule {
 	a := &undefinedAlias{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "undefined-alias", level)
+	a.rule = stdRule(a, aliasUndefined, level)
 	return a
 }
 
@@ -293,7 +293,7 @@ func UnusedAlias(level Severity) Rule {
 	a := &unusedAlias{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "unused-alias", level)
+	a.rule = stdRule(a, aliasUnused, level)
 	return a
 }
 

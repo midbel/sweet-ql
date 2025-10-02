@@ -12,9 +12,16 @@ import (
 )
 
 const (
-	identifierNoStar      = "identifier.nostar"
-	identifierNoDuplicate = "identifier.noduplicate"
-	identifierOnlyName    = "identifier.onlyname"
+	identifierNoStar      = "identifier.star"
+	identifierNoDuplicate = "identifier.duplicate"
+	identifierOnlyName    = "identifier.name"
+	aliasNoAlias          = "aliasing.alias"
+	aliasSelf             = "aliasing.self"
+	aliasMissing          = "aliasing.missing"
+	aliasInvalid          = "aliasing.invalid"
+	aliasUndefined        = "aliasing.undefined"
+	aliasUnused           = "aliasing.unused"
+	aliasRecommanded      = "aliasing.recommanded"
 )
 
 var supportedRules = map[string]func(Severity) Rule{
@@ -40,13 +47,13 @@ var supportedRules = map[string]func(Severity) Rule{
 	"no-subquery":              NoSubquery,
 	"subquery-columns-count":   SubqueryColumnsCount,
 	"subquery-names":           SubqueryNames,
-	"recommand-use-alias":      RecommandedAlias,
-	"missing-alias":            MissingAlias,
-	"no-alias":                 NoAlias,
-	"self-alias":               SelfAlias,
-	"invalid-alias":            InvalidAlias,
-	"undefined-alias":          UndefinedAlias,
-	"unused-alias":             UnusedAlias,
+	aliasRecommanded:           RecommandedAlias,
+	aliasMissing:               MissingAlias,
+	aliasNoAlias:               NoAlias,
+	aliasSelf:                  SelfAlias,
+	aliasInvalid:               InvalidAlias,
+	aliasUndefined:             UndefinedAlias,
+	aliasUnused:                UnusedAlias,
 	"identifier-without-quote": MissingIdentQuoted,
 	"identifier-with-quote":    NoIdentQuoted,
 	"recommand-use-quote":      RecommandedQuoted,

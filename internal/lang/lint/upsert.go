@@ -8,56 +8,34 @@ import (
 
 type noReturning struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoReturning(level Severity) Rule {
-	return &noReturning{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noReturning{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noReturning) Name() string {
-	return "no-returning"
-}
-
-func (r *noReturning) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "no-returning", level)
+	return a
 }
 
 func (r *noReturning) VisitDelete(stmt *ast.DeleteStatement) error {
-	r.check(stmt.Returning)
-	return nil
+	return r.check(stmt.Returning)
 }
 
 func (r *noReturning) VisitUpdate(stmt *ast.UpdateStatement) error {
-	r.check(stmt.Returning)
-	return nil
+	return r.check(stmt.Returning)
 }
 
 func (r *noReturning) VisitInsert(stmt *ast.InsertStatement) error {
-	r.check(stmt.Returning)
-	return nil
+	return r.check(stmt.Returning)
 }
 
-func (r *noReturning) check(stmt ast.Node) {
+func (r *noReturning) check(stmt ast.Node) error {
 	if stmt != nil {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "using returning is not ansi compliant",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(stmt, "using returning is not ansi compliant")
 	}
+	return nil
 }
 
 // check that no "default" is provided in insert statement
