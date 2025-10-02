@@ -132,7 +132,7 @@ func TestMissingIdentQuoted(t *testing.T) {
 		},
 		{
 			Query:  "select id, name as \"uuid\" from foobar",
-			Issues: 2,
+			Issues: 3,
 		},
 		{
 			Query:  "select id, name from \"foobar\"",
@@ -198,7 +198,7 @@ func TestColumnsCount(t *testing.T) {
 		},
 		{
 			Query:  "select * from foo intersect select id, name from bar",
-			Issues: 1,
+			Issues: 2,
 		},
 		{
 			Query:  "select id, name from foo except select id from bar",
@@ -206,7 +206,7 @@ func TestColumnsCount(t *testing.T) {
 		},
 		{
 			Query:  "select id, name from foo intersect select * from bar",
-			Issues: 1,
+			Issues: 2,
 		},
 		{
 			Query:  "select id, name from foo union select id from bar",
