@@ -4,6 +4,66 @@ import (
 	"testing"
 )
 
+func TestValueCompare(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "select * from foobar where foo = 1",
+			Issues: 0,
+		},
+		{
+			Query:  "select * from foobar where foo <> bar",
+			Issues: 0,
+		},
+		{
+			Query:  "select * from foobar where foo is true",
+			Issues: 0,
+		},
+		{
+			Query:  "select * from foobar where foo between 1 and 10",
+			Issues: 0,
+		},
+		{
+			Query:  "select * from foobar where foo in (1, 2, 3)",
+			Issues: 0,
+		},
+		{
+			Query:  "select * from foobar where 1 = 1",
+			Issues: 1,
+		},
+		{
+			Query:  "select * from foobar where true is true",
+			Issues: 1,
+		},
+		{
+			Query:  "select * from foobar where 10 in (1, 2, 3)",
+			Issues: 1,
+		},
+		{
+			Query:  "select * from foobar where 5 between 1 and 10",
+			Issues: 1,
+		},
+	}
+	runTests(t, tests, ValueCompare(Warning))
+}
+
+func TestSelfCompare(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "select * from foobar where foo = 1",
+			Issues: 0,
+		},
+		{
+			Query:  "select * from foobar where foo = bar",
+			Issues: 0,
+		},
+		{
+			Query:  "select * from foobar where foo = foo",
+			Issues: 1,
+		},
+	}
+	runTests(t, tests, SelfCompare(Warning))
+}
+
 func TestStdOperator(t *testing.T) {
 	tests := []TestCase{
 		{

@@ -77,8 +77,7 @@ func (r *duplicatedName) VisitCreateTable(stmt *ast.CreateTableStatement) error 
 }
 
 func (r *duplicatedName) VisitCreateView(stmt *ast.CreateViewStatement) error {
-	r.checkColumns(stmt.Columns)
-	return nil
+	return r.checkColumns(stmt.Columns)
 }
 
 func (r *duplicatedName) VisitInsert(stmt *ast.InsertStatement) error {
@@ -152,78 +151,44 @@ func (r *duplicatedName) checkColumns(columns []ast.Node) error {
 
 type columnsNames struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func ColumnsNames(level Severity) Rule {
-	return &columnsNames{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &columnsNames{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *columnsNames) Name() string {
-	return "columns-name"
-}
-
-func (r *columnsNames) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "columns-name", level)
+	return a
 }
 
 func (r *columnsNames) VisitCreateView(stmt *ast.CreateViewStatement) error {
-	r.checkColumnsCount(stmt.Columns, stmt)
-	return nil
+	return r.checkColumnsCount(stmt, stmt.Columns)
 }
 
 func (r *columnsNames) VisitCte(stmt *ast.CteStatement) error {
-	r.checkColumnsCount(stmt.Columns, stmt)
-	return nil
+	return r.checkColumnsCount(stmt, stmt.Columns)
 }
 
-func (r *columnsNames) checkColumnsCount(columns []ast.Node, stmt ast.Node) {
+func (r *columnsNames) checkColumnsCount(stmt ast.Node, columns []ast.Node) error {
+	var err error
 	if len(columns) == 0 {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "define explicitly column names returned by query",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(stmt, "define explicitly column names returned by query")
 	}
+	return err
 }
 
 type columnsCount struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func ColumnsCount(level Severity) Rule {
-	return &columnsCount{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &columnsCount{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *columnsCount) Name() string {
-	return "columns-count"
-}
-
-func (r *columnsCount) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "columns-count", level)
+	return a
 }
 
 func (r *columnsCount) VisitCreateView(stmt *ast.CreateViewStatement) error {
@@ -235,33 +200,22 @@ func (r *columnsCount) VisitCreateView(stmt *ast.CreateViewStatement) error {
 		return err
 	}
 	if len(stmt.Columns) != count {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "number of columns mismatched",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(stmt, "number of columns mismatched")
 	}
-	return nil
+	return err
 }
 
 func (r *columnsCount) VisitInsert(stmt *ast.InsertStatement) error {
-	count := len(stmt.Columns)
+	var (
+		count = len(stmt.Columns)
+		err   error
+	)
 	if count == 0 {
 		return nil
 	}
 	switch q := stmt.Values.(type) {
 	case *ast.SelectStatement:
-		if len(q.Columns) != count {
-			i := Issue{
-				Position: stmt.Pos(),
-				Severity: r.severity,
-				Rule:     r.Name(),
-				Reason:   "number of columns mismatched",
-			}
-			r.issues = append(r.issues, i)
-		}
+		err = r.Report(q, "number of columns mismatched")
 	case *ast.ValuesStatement:
 		for _, n := range q.List {
 			i, ok := n.(*ast.List)
@@ -269,19 +223,13 @@ func (r *columnsCount) VisitInsert(stmt *ast.InsertStatement) error {
 				return fmt.Errorf("%s: unexpected query type", r.Name())
 			}
 			if count != len(i.Values) {
-				i := Issue{
-					Position: n.Pos(),
-					Severity: r.severity,
-					Rule:     r.Name(),
-					Reason:   "number of columns mismatched",
-				}
-				r.issues = append(r.issues, i)
+				err = r.Report(q, "number of columns mismatched")
 			}
 		}
 	default:
-		return fmt.Errorf("%s: unexpected query type", r.Name())
+		err = fmt.Errorf("%s: unexpected query type", r.Name())
 	}
-	return nil
+	return err
 }
 
 func (r *columnsCount) VisitCte(stmt *ast.CteStatement) error {
@@ -293,13 +241,7 @@ func (r *columnsCount) VisitCte(stmt *ast.CteStatement) error {
 		return err
 	}
 	if len(stmt.Columns) != count {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "number of columns mismatched",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(stmt, "number of columns mismatched")
 	}
 	return nil
 }
@@ -341,14 +283,9 @@ func (r *columnsCount) checkSet(left, right ast.Node) error {
 		return ok && n.All()
 	})
 	if ok {
-		i := Issue{
-			Position: q1.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid using * in select statement",
+		if err := r.Report(left, "avoid using * in select statement"); err != nil {
+			return err
 		}
-		r.issues = append(r.issues, i)
-		return nil
 	}
 
 	q2, ok := right.(*ast.SelectStatement)
@@ -360,51 +297,27 @@ func (r *columnsCount) checkSet(left, right ast.Node) error {
 		return ok && n.All()
 	})
 	if ok {
-		i := Issue{
-			Position: q2.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid using * in select statement",
+		if err := r.Report(right, "avoid using * in select statement"); err != nil {
+			return err
 		}
-		r.issues = append(r.issues, i)
 	}
 	if len(q1.Columns) != len(q2.Columns) {
-		i := Issue{
-			Position: q1.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "queries in compound statement should return the same number of columns",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(left, "queries in compound statement should return the same number of columns")
 	}
 	return nil
 }
 
 type missingWhere struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func MissingWhere(level Severity) Rule {
-	return &missingWhere{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &missingWhere{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *missingWhere) Name() string {
-	return "missing-where"
-}
-
-func (r *missingWhere) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "missing-where", level)
+	return a
 }
 
 func (r *missingWhere) VisitSelect(stmt *ast.SelectStatement) error {
@@ -421,74 +334,45 @@ func (r *missingWhere) VisitSelect(stmt *ast.SelectStatement) error {
 }
 
 func (r *missingWhere) VisitUpdate(stmt *ast.UpdateStatement) error {
+	var err error
 	if stmt.Where == nil {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "where is missing from update query",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(stmt, "where is missing from update query")
 	}
-	return nil
+	return err
 }
 
 func (r *missingWhere) VisitDelete(stmt *ast.DeleteStatement) error {
+	var err error
 	if stmt.Where == nil {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "where is missing from delete query",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(stmt, "where is missing from delete query")
 	}
-	return nil
+	return err
 }
 
 type enforceType struct {
-	severity Severity
+	ast.Visitor
+	*rule
 }
 
 func EnforceType(level Severity) Rule {
-	return enforceType{
-		severity: level,
+	a := enforceType{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ enforceType) Name() string {
-	return "enforce-type"
-}
-
-func (r enforceType) Verify(stmt ast.Node) ([]Issue, error) {
-	return nil, nil
+	a.rule = stdRule(a, "enforce-type", level)
+	return a
 }
 
 type recommandedQuoted struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func RecommandedQuoted(level Severity) Rule {
-	return &recommandedQuoted{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &recommandedQuoted{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *recommandedQuoted) Name() string {
-	return "recommanded-quote"
-}
-
-func (r *recommandedQuoted) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "recommanded-quote", level)
+	return a
 }
 
 func (r *recommandedQuoted) VisitName(name *ast.Name) error {
@@ -496,55 +380,29 @@ func (r *recommandedQuoted) VisitName(name *ast.Name) error {
 		return !i.Quoted && strings.ToLower(i.Name) != i.Name && strings.ToUpper(i.Name) != i.Name
 	})
 	if ok {
-		i := Issue{
-			Position: name.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use of double quotes is recommanded around identifier",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(name, "use of double quotes is recommanded around identifier")
 	}
 	return nil
 }
 
 func (r *recommandedQuoted) VisitAlias(alias *ast.Alias) error {
 	if !alias.Quoted && strings.ToLower(alias.Name) != alias.Name && strings.ToUpper(alias.Name) != alias.Name {
-		i := Issue{
-			Position: alias.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use of double quotes is recommanded around alias",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(alias, "use of double quotes is recommanded around alias")
 	}
 	return nil
 }
 
 type noIdentQuoted struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoIdentQuoted(level Severity) Rule {
-	return &noIdentQuoted{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noIdentQuoted{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noIdentQuoted) Name() string {
-	return "no-ident-quoted"
-}
-
-func (r *noIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "no-ident-quote", level)
+	return a
 }
 
 func (r *noIdentQuoted) VisitName(name *ast.Name) error {
@@ -552,55 +410,29 @@ func (r *noIdentQuoted) VisitName(name *ast.Name) error {
 		return i.Quoted
 	})
 	if ok {
-		i := Issue{
-			Position: name.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "invalid use of double quotes around identifier",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(name, "invalid use of double quotes around identifier")
 	}
 	return nil
 }
 
 func (r *noIdentQuoted) VisitAlias(alias *ast.Alias) error {
 	if alias.Quoted {
-		i := Issue{
-			Position: alias.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "invalid use of double quotes around alias",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(alias, "invalid use of double quotes around alias")
 	}
 	return nil
 }
 
 type missingIdentQuoted struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func MissingIdentQuoted(level Severity) Rule {
-	return &missingIdentQuoted{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &missingIdentQuoted{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *missingIdentQuoted) Name() string {
-	return "missing-ident-quoted"
-}
-
-func (r *missingIdentQuoted) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "missing-ident-quoted", level)
+	return a
 }
 
 func (r *missingIdentQuoted) VisitName(name *ast.Name) error {
@@ -608,66 +440,34 @@ func (r *missingIdentQuoted) VisitName(name *ast.Name) error {
 		return !i.Quoted
 	})
 	if ok {
-		i := Issue{
-			Position: name.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "missing double quotes around identifier",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(name, "missing double quotes around identifier")
 	}
 	return nil
 }
 
 func (r *missingIdentQuoted) VisitAlias(alias *ast.Alias) error {
 	if !alias.Quoted {
-		i := Issue{
-			Position: alias.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "missing double quotes around alias",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(alias, "missing double quotes around alias")
 	}
 	return nil
 }
 
 type unqualifiedName struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func UnqualifiedName(level Severity) Rule {
-	return &unqualifiedName{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &unqualifiedName{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *unqualifiedName) Name() string {
-	return "unqualified-name"
-}
-
-func (r *unqualifiedName) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "unqualified-name", level)
+	return a
 }
 
 func (r *unqualifiedName) VisitName(name *ast.Name) error {
 	if len(name.Parts) == 1 {
-		i := Issue{
-			Position: name.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "qualify an identifier with its table or alias to eliminate possible ambiguity",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(name, "qualify an identifier with its table or alias to eliminate possible ambiguity")
 	}
 	return nil
 }
@@ -675,29 +475,15 @@ func (r *unqualifiedName) VisitName(name *ast.Name) error {
 // avoid using literal value in join predicate
 type noLiteralJoin struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoLiteralJoin(level Severity) Rule {
-	return &noLiteralJoin{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noLiteralJoin{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noLiteralJoin) Name() string {
-	return "no-literal-join"
-}
-
-func (r *noLiteralJoin) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "no-literal-join", level)
+	return a
 }
 
 func (r *noLiteralJoin) VisitJoin(join *ast.Join) error {
@@ -709,14 +495,7 @@ func (r *noLiteralJoin) VisitJoin(join *ast.Join) error {
 }
 
 func (r *noLiteralJoin) visitValue(value *ast.Value) error {
-	i := Issue{
-		Position: value.Pos(),
-		Severity: r.severity,
-		Rule:     r.Name(),
-		Reason:   "avoid using literal values in join",
-	}
-	r.issues = append(r.issues, i)
-	return nil
+	return r.Report(value, "avoid using literal values in join")
 }
 
 // check that all join made in from clauses are used in other clauses of the query
@@ -757,66 +536,34 @@ func (r *unusedJoin) VisitSelect(stmt *ast.SelectStatement) error {
 // enforce query to have a fetch clause with some amount of rows to be returned
 type enforceFetch struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func EnforceFetch(level Severity) Rule {
-	return &enforceFetch{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &enforceFetch{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *enforceFetch) Name() string {
-	return "enforce-fetch"
-}
-
-func (r *enforceFetch) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "enforce-fetch", level)
+	return a
 }
 
 func (r *enforceFetch) VisitSelect(stmt *ast.SelectStatement) error {
 	if stmt.Limit == nil {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use fetch clause to limit the number of results returned by the query",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(stmt, "use fetch clause to limit the number of results returned by the query")
 	}
 	return nil
 }
 
 func (r *enforceFetch) VisitLimit(limit *ast.Limit) error {
 	if limit.Count == nil {
-		i := Issue{
-			Position: limit.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use fetch clause to limit the number of results returned by the query",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(limit, "use fetch clause to limit the number of results returned by the query")
 	}
 	return nil
 }
 
 func (r *enforceFetch) VisitOffset(offset *ast.Offset) error {
 	if offset.Count == nil {
-		i := Issue{
-			Position: offset.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use fetch clause to limit the number of results returned by the query",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(offset, "use fetch clause to limit the number of results returned by the query")
 	}
 	return nil
 }
@@ -824,40 +571,20 @@ func (r *enforceFetch) VisitOffset(offset *ast.Offset) error {
 // when using order by clause, specify offset fetch clause
 type orderOffsetFetch struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func OrderWithOffset(level Severity) Rule {
-	return &orderOffsetFetch{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &orderOffsetFetch{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *orderOffsetFetch) Name() string {
-	return "order-with-offset"
-}
-
-func (r *orderOffsetFetch) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "order-with-offset", level)
+	return a
 }
 
 func (r *orderOffsetFetch) VisitSelect(stmt *ast.SelectStatement) error {
 	if stmt.Limit != nil && len(stmt.Orders) == 0 {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use order by clause when using the offset clause un select statement",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(stmt.Limit, "use order by clause when using the offset clause un select statement")
 	}
 	return nil
 }
@@ -865,29 +592,15 @@ func (r *orderOffsetFetch) VisitSelect(stmt *ast.SelectStatement) error {
 // check that only the second select in union/except/intersect has the order by clause
 type setOrderLast struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func SetOrderLast(level Severity) Rule {
-	return &setOrderLast{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &setOrderLast{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *setOrderLast) Name() string {
-	return "set-order-last"
-}
-
-func (r *setOrderLast) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "set-order-last", level)
+	return a
 }
 
 func (r *setOrderLast) VisitUnion(stmt *ast.UnionStatement) error {
@@ -908,13 +621,7 @@ func (r *setOrderLast) checkStatement(left, right ast.Node) error {
 		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
 	if len(stmt.Orders) > 0 {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "order by clause is only allowed in the final select of union/intersect/except query",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(stmt.Orders[0], "order by clause is only allowed in the final select of union/intersect/except query")
 	}
 	return nil
 }
@@ -922,29 +629,15 @@ func (r *setOrderLast) checkStatement(left, right ast.Node) error {
 // check that only the second select in union/except/intersect has the offset/fetch clause
 type setOffsetFetchLast struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func SetOffsetFetchLast(level Severity) Rule {
-	return &setOffsetFetchLast{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &setOffsetFetchLast{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *setOffsetFetchLast) Name() string {
-	return "set-offset-fetch-last"
-}
-
-func (r *setOffsetFetchLast) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "set-offset-fetch-last", level)
+	return a
 }
 
 func (r *setOffsetFetchLast) VisitUnion(stmt *ast.UnionStatement) error {
@@ -965,13 +658,7 @@ func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
 		return fmt.Errorf("%s: unexpected query type", r.Name())
 	}
 	if stmt.Limit != nil {
-		i := Issue{
-			Position: stmt.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "offset/fetch clause is only allowed in the final select of union/intersect/except query",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(stmt, "offset/fetch clause is only allowed in the final select of union/intersect/except query")
 	}
 	return nil
 }
@@ -979,42 +666,22 @@ func (r *setOffsetFetchLast) checkStatement(left, right ast.Node) error {
 // check that there are no comparison between literal values only such as 1=1
 type valueCompare struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func ValueCompare(level Severity) Rule {
-	return &valueCompare{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &valueCompare{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *valueCompare) Name() string {
-	return "value-compare"
-}
-
-func (r *valueCompare) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "value-compare", level)
+	return a
 }
 
 func (r *valueCompare) VisitBinary(binary *ast.Binary) error {
 	_, ok1 := binary.Left.(*ast.Value)
 	_, ok2 := binary.Right.(*ast.Value)
 	if ok1 && ok2 {
-		i := Issue{
-			Position: binary.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid comparing literal values together",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(binary, "avoid comparing literal values together")
 	}
 	return nil
 }
@@ -1024,13 +691,7 @@ func (r *valueCompare) VisitBetween(between *ast.Between) error {
 	_, ok2 := between.Lower.(*ast.Value)
 	_, ok3 := between.Upper.(*ast.Value)
 	if ok1 && ok2 && ok3 {
-		i := Issue{
-			Position: between.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid comparing literal values together",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(between, "avoid comparing literal values together")
 	}
 	return nil
 }
@@ -1040,13 +701,7 @@ func (r *valueCompare) VisitIs(is *ast.Is) error {
 		return nil
 	}
 	if _, ok := is.Value.(*ast.Value); ok {
-		i := Issue{
-			Position: is.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid comparing literal values together",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(is, "avoid comparing literal values together")
 	}
 	return nil
 }
@@ -1057,13 +712,7 @@ func (r *valueCompare) VisitIn(in *ast.In) error {
 	}
 	switch val := in.Value.(type) {
 	case *ast.Value:
-		i := Issue{
-			Position: in.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid comparing literal values together",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(in, "avoid comparing literal values together")
 	case *ast.List:
 		var found bool
 		for i := range val.Values {
@@ -1076,13 +725,7 @@ func (r *valueCompare) VisitIn(in *ast.In) error {
 		if !found {
 			break
 		}
-		i := Issue{
-			Position: in.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "avoid comparing literal values together",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(in, "avoid comparing literal values together")
 	default:
 	}
 	return nil
@@ -1090,29 +733,15 @@ func (r *valueCompare) VisitIn(in *ast.In) error {
 
 type selfCompare struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func SelfCompare(level Severity) Rule {
-	return &selfCompare{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &selfCompare{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *selfCompare) Name() string {
-	return "self-compare"
-}
-
-func (r *selfCompare) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "self-compare", level)
+	return a
 }
 
 func (r *selfCompare) VisitBinary(binary *ast.Binary) error {
@@ -1127,43 +756,24 @@ func (r *selfCompare) VisitBinary(binary *ast.Binary) error {
 	if !ok {
 		return nil
 	}
+	var err error
 	if slices.Equal(n1.Parts, n2.Parts) {
-		i := Issue{
-			Position: binary.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "comparing value with itself",
-		}
-		r.issues = append(r.issues, i)
+		err = r.Report(binary, "comparing value with itself")
 	}
-	return nil
+	return err
 }
 
 type stdOperator struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func StdOperator(level Severity) Rule {
-	return &stdOperator{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &stdOperator{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *stdOperator) Name() string {
-	return "std-operator"
-}
-
-func (r *stdOperator) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "std-operator", level)
+	return a
 }
 
 func (r *stdOperator) VisitBinary(binary *ast.Binary) error {
@@ -1171,22 +781,14 @@ func (r *stdOperator) VisitBinary(binary *ast.Binary) error {
 		return nil
 	}
 	if binary.Op == "!=" {
-		i := Issue{
-			Position: binary.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use <> as not equal operator",
+		if err := r.Report(binary, "use <> as not equal operator"); err != nil {
+			return err
 		}
-		r.issues = append(r.issues, i)
 	}
 	if n, ok := binary.Right.(*ast.Value); ok && n.Constant() && binary.IsEquality() {
-		i := Issue{
-			Position: binary.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "use is operator to compare with null/true/false",
+		if err := r.Report(binary, "use is operator to compare with null/true/false"); err != nil {
+			return err
 		}
-		r.issues = append(r.issues, i)
 	}
 	return nil
 }

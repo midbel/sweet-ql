@@ -215,40 +215,20 @@ func (s *subqueryJoinNames) VisitAlias(alias *ast.Alias) error {
 
 type noSubquery struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoSubquery(level Severity) Rule {
-	return &noSubquery{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noSubquery{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *noSubquery) Name() string {
-	return "no-subquery"
-}
-
-func (r *noSubquery) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, "no-subquery", level)
+	return a
 }
 
 func (r *noSubquery) VisitGroup(group *ast.Group) error {
 	if _, ok := group.Node.(*ast.SelectStatement); ok {
-		i := Issue{
-			Position: group.Pos(),
-			Severity: r.severity,
-			Rule:     r.Name(),
-			Reason:   "consider rewriting subqueries with join and/or cte",
-		}
-		r.issues = append(r.issues, i)
+		return r.Report(group, "consider rewriting subqueries with join and/or cte")
 	}
 	return nil
 }
