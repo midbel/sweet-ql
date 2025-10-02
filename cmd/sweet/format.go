@@ -10,7 +10,9 @@ import (
 	"github.com/midbel/sweet/internal/lang/format"
 )
 
-const formatHelp = ``
+const formatHelp = `format rewrites sql query
+
+usage: format [-config <config file>] [-compact] [-rewrite] [-upper] [-use-quote] [-use-indent] [-use-space] [-use-space] [-use-color] <sql>`
 
 func createWriterFromArgs(args []string) (*format.Writer, []string, error) {
 	writer, files, err := createWriterFromConfig(args)

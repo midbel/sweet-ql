@@ -11,7 +11,9 @@ import (
 	"github.com/midbel/sweet/internal/lang/lint"
 )
 
-const lintHelp = ``
+const lintHelp = `lint checks for common mistakes found in sql query
+
+usage: lint [-config <file>] [-r <rule name>] <sql>`
 
 func createLinterFromArgs(args []string) (*lint.Linter, []string, error) {
 	linter, files, err := createLinterFromConfig(args)
