@@ -13,7 +13,23 @@ import (
 
 var errConfig = errors.New("invalid configuration file given")
 
+const sweetHelp = `sweet manipulates sql query
+
+sub commands:
+
+* format
+* lint
+* parse
+* scan
+* debug
+
+usage: sweet <command> <args>`
+
 func main() {
+	flag.Usage = func() {
+		fmt.Println(sweetHelp)
+		os.Exit(2)
+	}
 	flag.Parse()
 
 	var (
