@@ -18,16 +18,21 @@ func NoStar(level Severity) Rule {
 	a := &noStar{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "no-star", level)
+	a.rule = stdRule(a, identifierNoStar, level)
 	return a
 }
 
-func (r *noStar) VisitName(name *ast.Name) error {
-	var err error
-	if name.All() {
-		err = r.Report(name, "avoid using * in select statement; prefer specifying columns name")
+func (r *noStar) VisitSelect(stmt *ast.SelectStatement) error {
+	for _, c := range stmt.Columns {
+		n, ok := c.(*ast.Name)
+		if ok && n.All() {
+			err := r.Report(n, "avoid using * in select statement; prefer specifying columns name")
+			if err != nil {
+				return err
+			}
+		}
 	}
-	return err
+	return nil
 }
 
 type onlyName struct {
@@ -39,24 +44,65 @@ func OnlyName(level Severity) Rule {
 	a := &onlyName{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "only-name", level)
+	a.rule = stdRule(a, identifierOnlyName, level)
 	return a
 }
 
 func (r *onlyName) VisitSelect(stmt *ast.SelectStatement) error {
-	var err error
+	return r.visitSelect(stmt)
+}
+
+func (r *onlyName) VisitInsert(stmt *ast.InsertStatement) error {
+	for _, c := range stmt.Columns {
+		if err := r.visitNode(c); err != nil {
+			return err
+		}
+	}
+	switch q := stmt.Values.(type) {
+	case *ast.SelectStatement:
+		return r.visitSelect(q)
+	case *ast.ValuesStatement:
+		for _, n := range q.List {
+			i, ok := n.(*ast.List)
+			if !ok {
+				return fmt.Errorf("%s: unexpected query type", r.Name())
+			}
+			if err := r.visitList(i); err != nil {
+				return err
+			}
+		}
+	default:
+		return fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	return nil
+}
+
+func (r *onlyName) visitSelect(stmt *ast.SelectStatement) error {
 	for _, c := range stmt.Columns {
 		if a, ok := c.(*ast.Alias); ok {
 			c = a.Node
 		}
-		if _, ok := c.(*ast.Name); !ok {
-			err = r.Report(c, "only name expected in select clause")
-		}
-		if err != nil {
+		if err := r.visitNode(c); err != nil {
 			break
 		}
 	}
-	return err
+	return nil
+}
+
+func (r *onlyName) visitList(list *ast.List) error {
+	for _, v := range list.Values {
+		if err := r.visitNode(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *onlyName) visitNode(node ast.Node) error {
+	if n, ok := node.(*ast.Name); !ok || n.All() {
+		return r.Report(node, "only name expected")
+	}
+	return nil
 }
 
 type duplicatedName struct {
@@ -68,7 +114,7 @@ func DuplicatedName(level Severity) Rule {
 	a := &duplicatedName{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "duplicated-name", level)
+	a.rule = stdRule(a, identifierNoDuplicate, level)
 	return a
 }
 

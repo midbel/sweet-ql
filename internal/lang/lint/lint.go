@@ -11,10 +11,16 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+const (
+	identifierNoStar      = "identifier.nostar"
+	identifierNoDuplicate = "identifier.noduplicate"
+	identifierOnlyName    = "identifier.onlyname"
+)
+
 var supportedRules = map[string]func(Severity) Rule{
-	"no-star":                  NoStar,
-	"only-name":                OnlyName,
-	"duplicated-name":          DuplicatedName,
+	identifierNoStar:           NoStar,
+	identifierOnlyName:         OnlyName,
+	identifierNoDuplicate:      DuplicatedName,
 	"unqualified-name":         UnqualifiedName,
 	"no-cte":                   NoCte,
 	"cte-unused":               CteUnused,
