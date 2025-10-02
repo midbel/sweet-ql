@@ -22,6 +22,10 @@ const (
 	aliasUndefined        = "aliasing.undefined"
 	aliasUnused           = "aliasing.unused"
 	aliasRecommanded      = "aliasing.recommanded"
+	cteSelect             = "cte.select"
+	cteNoCte              = "cte.nocte"
+	cteUnused             = "cte.unused"
+	cteShadow             = "cte.shadow"
 )
 
 var supportedRules = map[string]func(Severity) Rule{
@@ -29,8 +33,9 @@ var supportedRules = map[string]func(Severity) Rule{
 	identifierOnlyName:         OnlyName,
 	identifierNoDuplicate:      DuplicatedName,
 	"unqualified-name":         UnqualifiedName,
-	"no-cte":                   NoCte,
-	"cte-unused":               CteUnused,
+	cteSelect:                  CteOnlySelect,
+	cteNoCte:                   NoCte,
+	cteUnused:                  CteUnused,
 	"cte-name":                 CteNames,
 	"cte-exposed-name":         CteExposedNames,
 	"std-operator":             StdOperator,

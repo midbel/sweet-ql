@@ -4,6 +4,24 @@ import (
 	"testing"
 )
 
+func TestCteOnlySelect(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "with foo as (select id, name from foobar) select * from foo",
+			Issues: 0,
+		},
+		{
+			Query:  "with foo as (update foobar set foo=1) select * from foo",
+			Issues: 1,
+		},
+		{
+			Query:  "with foo as (select id, name from foobar) insert into foobar(id, name) select id, name from foo",
+			Issues: 1,
+		},
+	}
+	runTests(t, tests, CteOnlySelect(Warning))
+}
+
 func TestNoCte(t *testing.T) {
 	tests := []TestCase{
 		{

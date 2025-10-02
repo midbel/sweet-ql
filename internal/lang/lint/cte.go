@@ -21,7 +21,7 @@ func CteOnlySelect(level Severity) Rule {
 	a := &cteSelectOnly{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "cte-select-only", level)
+	a.rule = stdRule(a, cteSelect, level)
 	return a
 }
 
@@ -50,7 +50,7 @@ func NoCte(level Severity) Rule {
 	a := &noCte{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "no-cte", level)
+	a.rule = stdRule(a, cteNoCte, level)
 	return a
 }
 
@@ -62,7 +62,7 @@ func (r *noCte) VisitWith(with *ast.WithStatement) error {
 	return ast.ErrStop
 }
 
-type cteUnused struct {
+type unusedCte struct {
 	ast.Visitor
 	severity Severity
 
@@ -74,17 +74,17 @@ type cteUnused struct {
 // Creates a Rule that check that all cte declared are used in the main
 // SELECT of the query
 func CteUnused(level Severity) Rule {
-	return &cteUnused{
+	return &unusedCte{
 		Visitor:  ast.Noop(),
 		severity: level,
 	}
 }
 
-func (_ *cteUnused) Name() string {
-	return "cte-unused"
+func (_ *unusedCte) Name() string {
+	return cteUnused
 }
 
-func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
+func (r *unusedCte) Verify(stmt ast.Node) ([]Issue, error) {
 	r.names = make(map[string]int)
 	r.positions = make(map[string]token.Position)
 
@@ -110,13 +110,13 @@ func (r *cteUnused) Verify(stmt ast.Node) ([]Issue, error) {
 	return issues, err
 }
 
-func (r *cteUnused) VisitCte(stmt *ast.CteStatement) error {
+func (r *unusedCte) VisitCte(stmt *ast.CteStatement) error {
 	r.names[stmt.Ident] = 0
 	r.positions[stmt.Ident] = stmt.Pos()
 	return nil
 }
 
-func (r *cteUnused) VisitSelect(stmt *ast.SelectStatement) error {
+func (r *unusedCte) VisitSelect(stmt *ast.SelectStatement) error {
 	r.begin()
 	defer r.end()
 
@@ -127,20 +127,20 @@ func (r *cteUnused) VisitSelect(stmt *ast.SelectStatement) error {
 	return nil
 }
 
-func (r *cteUnused) VisitName(name *ast.Name) error {
+func (r *unusedCte) VisitName(name *ast.Name) error {
 	r.update(name.Name())
 	return nil
 }
 
-func (r *cteUnused) begin() {
+func (r *unusedCte) begin() {
 	r.collect = true
 }
 
-func (r *cteUnused) end() {
+func (r *unusedCte) end() {
 	r.collect = false
 }
 
-func (r *cteUnused) update(name string) {
+func (r *unusedCte) update(name string) {
 	if !r.collect {
 		return
 	}
@@ -149,7 +149,7 @@ func (r *cteUnused) update(name string) {
 	}
 }
 
-type cteShadow struct {
+type shadowCte struct {
 	ast.Visitor
 	*rule
 }
@@ -157,18 +157,14 @@ type cteShadow struct {
 // Creates a Rule that will check that name given to a cte will not
 // shadow the name of a table used in the cte
 func CteShadow(level Severity) Rule {
-	a := &cteShadow{
+	a := &shadowCte{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "cte-shadow", level)
+	a.rule = stdRule(a, cteShadow, level)
 	return a
 }
 
-func (_ *cteShadow) Name() string {
-	return "cte-shadow"
-}
-
-func (r *cteShadow) VisitCte(cte *ast.CteStatement) error {
+func (r *shadowCte) VisitCte(cte *ast.CteStatement) error {
 	check := func(stmt *ast.SelectStatement) error {
 		for _, n := range stmt.Tables {
 			if a, ok := n.(*ast.Alias); ok {
