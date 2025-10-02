@@ -70,6 +70,7 @@ var supportedRules = map[string]func(Severity) Rule{
 	"grouby-aggr-func":         GroupbyAggrFunc,
 	"having-aggr-func":         HavingAggrFunc,
 	"no-returning":             NoReturning,
+	"no-default":               NoDefaultValue,
 }
 
 type RuleOption func(Rule) error

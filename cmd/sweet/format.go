@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/midbel/sweet/internal/config"
@@ -30,7 +29,6 @@ func createWriterFromConfig(args []string) (*format.Writer, []string, error) {
 		errret error
 		writer *format.Writer
 	)
-	set.SetOutput(io.Discard)
 	set.Func("config", "", func(file string) error {
 		r, err := os.Open(file)
 		if err != nil {
@@ -68,7 +66,6 @@ func createWriterFromOptions(args []string) (*format.Writer, []string, error) {
 		set    = createFlag("format", formatHelp)
 		writer = format.Default(os.Stdout)
 	)
-	set.SetOutput(io.Discard)
 	set.BoolVar(&writer.UseQuote, "use-quote", writer.UseQuote, "quote all identifier")
 	set.IntVar(&writer.UseIndent, "use-indent", writer.UseIndent, "number of space to use to indent SQL")
 	set.BoolVar(&writer.UseSpace, "use-space", writer.UseSpace, "use tabs instead of space to indent SQL")

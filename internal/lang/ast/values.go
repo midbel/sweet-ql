@@ -377,6 +377,10 @@ func (v *Value) Constant() bool {
 	return v.Null() || v.True() || v.False()
 }
 
+func (v *Value) Default() bool {
+	return v.Literal == "DEFAULT"
+}
+
 func (v *Value) Bool() bool {
 	return v.True() || v.False()
 }

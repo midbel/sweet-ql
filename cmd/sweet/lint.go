@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -31,7 +30,6 @@ func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 		errret error
 		linter *lint.Linter
 	)
-	set.SetOutput(io.Discard)
 	set.Func("config", "", func(file string) error {
 		r, err := os.Open(file)
 		if err != nil {
@@ -63,7 +61,6 @@ func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {
 		// level lint.Severity
 		rules []lint.Rule
 	)
-	set.SetOutput(io.Discard)
 	set.Func("r", "enable rule", func(value string) error {
 		rule, severity, ok := strings.Cut(value, ":")
 
@@ -82,6 +79,7 @@ func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {
 		return err
 	})
 	if err := set.Parse(args); err != nil {
+		fmt.Println("oups option", args, err)
 		return nil, nil, err
 	}
 	return lint.NewLinter(rules), set.Args(), nil

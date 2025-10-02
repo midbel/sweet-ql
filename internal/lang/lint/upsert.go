@@ -41,29 +41,44 @@ func (r *noReturning) check(stmt ast.Node) error {
 // check that no "default" is provided in insert statement
 type noDefaultValue struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func NoDefaultValue(level Severity) Rule {
-	return &noDefaultValue{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &noDefaultValue{
+		Visitor: ast.Noop(),
 	}
+	a.rule = stdRule(a, "no-default", level)
+	return a
 }
 
-func (_ *noDefaultValue) Name() string {
-	return "no-default"
+func (r *noDefaultValue) VisitInsert(stmt *ast.InsertStatement) error {
+	q, ok := stmt.Values.(*ast.ValuesStatement)
+	if !ok {
+		return nil
+	}
+	for _, v := range q.List {
+		if err := r.visitList(v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (r *noDefaultValue) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
+func (r *noDefaultValue) visitList(list ast.Node) error {
+	i, ok := list.(*ast.List)
+	if !ok {
+		return nil
 	}
-	return r.issues, err
+	for _, i := range i.Values {
+		n, ok := i.(*ast.Value)
+		if ok && n.Default() {
+			if err := r.Report(i, "avoid using default in values"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // check that only one unconditional match in a merge statement is present
