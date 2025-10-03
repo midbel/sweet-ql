@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"slices"
 
 	"github.com/midbel/sweet/internal/lang/ast"
@@ -26,6 +27,8 @@ const (
 	cteNoCte              = "cte.nocte"
 	cteUnused             = "cte.unused"
 	cteShadow             = "cte.shadow"
+	joinLiteral           = "join.literal"
+	joinUnused            = "join.unused"
 )
 
 var supportedRules = map[string]func(Severity) Rule{
@@ -62,8 +65,8 @@ var supportedRules = map[string]func(Severity) Rule{
 	"identifier-without-quote": MissingIdentQuoted,
 	"identifier-with-quote":    NoIdentQuoted,
 	"recommand-use-quote":      RecommandedQuoted,
-	"no-literal-join":          NoLiteralJoin,
-	"unused-join":              JoinUnused,
+	joinLiteral:                NoLiteralJoin,
+	joinUnused:                 JoinUnused,
 	"groupby-columns":          GroupbyColumns,
 	"no-literal-groupby":       NoLiteralGroupby,
 	"groupby-distinct":         GroupbyDistinct,
@@ -71,6 +74,12 @@ var supportedRules = map[string]func(Severity) Rule{
 	"having-aggr-func":         HavingAggrFunc,
 	"no-returning":             NoReturning,
 	"no-default":               NoDefaultValue,
+}
+
+func GetSupportedRules() []string {
+	list := slices.Collect(maps.Keys(supportedRules))
+	slices.Sort(list)
+	return list
 }
 
 type RuleOption func(Rule) error

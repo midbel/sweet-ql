@@ -38,6 +38,7 @@ func main() {
 		"format":     runFormat,
 		"fmt":        runFormat,
 		"lint":       runLint,
+		"list-rules": runListRules,
 		"check":      runLint,
 		"verify":     runLint,
 		"debug":      runDebug,

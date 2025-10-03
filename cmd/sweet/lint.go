@@ -106,6 +106,17 @@ func runLint(args []string) error {
 	return nil
 }
 
+func runListRules(args []string) error {
+	set := createFlag("list-rules", "")
+	if err := set.Parse(args); err != nil {
+		return err
+	}
+	for _, n := range lint.GetSupportedRules() {
+		fmt.Println(n)
+	}
+	return nil
+}
+
 func lintFile(linter *lint.Linter, file string) ([]lint.Issue, error) {
 	r, err := os.Open(file)
 	if err != nil {

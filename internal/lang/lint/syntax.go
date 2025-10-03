@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -528,7 +527,7 @@ func NoLiteralJoin(level Severity) Rule {
 	a := &noLiteralJoin{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "no-literal-join", level)
+	a.rule = stdRule(a, joinLiteral, level)
 	return a
 }
 
@@ -547,29 +546,15 @@ func (r *noLiteralJoin) visitValue(value *ast.Value) error {
 // check that all join made in from clauses are used in other clauses of the query
 type unusedJoin struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func JoinUnused(level Severity) Rule {
-	return &unusedJoin{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &unusedJoin{
+		Visitor: ast.Noop(),
 	}
-}
-
-func (_ *unusedJoin) Name() string {
-	return "unused-join"
-}
-
-func (r *unusedJoin) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
-	}
-	return r.issues, err
+	a.rule = stdRule(a, joinUnused, level)
+	return a
 }
 
 func (r *unusedJoin) VisitSelect(stmt *ast.SelectStatement) error {
