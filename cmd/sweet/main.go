@@ -27,7 +27,7 @@ usage: sweet <command> <args>`
 
 func main() {
 	flag.Usage = func() {
-		fmt.Println(sweetHelp)
+		fmt.Fprintln(os.Stderr, sweetHelp)
 		os.Exit(2)
 	}
 	flag.Parse()
@@ -50,7 +50,8 @@ func main() {
 	if !ok {
 		fmt.Fprintf(os.Stderr, "unknown command %s", flag.Arg(0))
 		fmt.Fprintln(os.Stderr)
-		os.Exit(2)
+		fmt.Fprintln(os.Stderr)
+		flag.Usage()
 	}
 	args := flag.Args()
 	if err := cmd(args[1:]); err != nil {

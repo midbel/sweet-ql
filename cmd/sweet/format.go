@@ -20,6 +20,9 @@ func createWriterFromArgs(args []string) (*format.Writer, []string, error) {
 			writer, files, err = createWriterFromOptions(args)
 		}
 	}
+	if err != nil {
+		err = UsageError(lintHelp, err)
+	}
 	return writer, files, err
 }
 

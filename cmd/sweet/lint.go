@@ -21,6 +21,9 @@ func createLinterFromArgs(args []string) (*lint.Linter, []string, error) {
 			linter, files, err = createLinterFromOptions(args)
 		}
 	}
+	if err != nil {
+		err = UsageError(lintHelp, err)
+	}
 	return linter, files, err
 }
 
@@ -55,10 +58,7 @@ func createLinterFromConfig(args []string) (*lint.Linter, []string, error) {
 
 func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {
 	var (
-		set = createFlag("lint", lintHelp)
-		// count = set.Int("c", 0, "print n first issue(s)")
-		// fix   = set.Bool("fix", false, "fix all errors/warning when possible")
-		// level lint.Severity
+		set   = createFlag("lint", lintHelp)
 		rules []lint.Rule
 	)
 	set.Func("r", "enable rule", func(value string) error {
@@ -79,7 +79,6 @@ func createLinterFromOptions(args []string) (*lint.Linter, []string, error) {
 		return err
 	})
 	if err := set.Parse(args); err != nil {
-		fmt.Println("oups option", args, err)
 		return nil, nil, err
 	}
 	return lint.NewLinter(rules), set.Args(), nil
