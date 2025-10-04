@@ -413,6 +413,9 @@ func (v walkVisitor) VisitUpdate(node *UpdateStatement) error {
 	if node.Where != nil {
 		return node.Where.Accept(v)
 	}
+	if node.Returning != nil {
+		return node.Returning.Accept(v)
+	}
 	return nil
 }
 
@@ -425,6 +428,9 @@ func (v walkVisitor) VisitDelete(node *DeleteStatement) error {
 	}
 	if node.Where != nil {
 		return node.Where.Accept(v)
+	}
+	if node.Returning != nil {
+		return node.Returning.Accept(v)
 	}
 	return nil
 }
@@ -562,6 +568,10 @@ func (v walkVisitor) VisitOffset(offset *Offset) error {
 		return offset.Offset.Accept(v)
 	}
 	return nil
+}
+
+func (v walkVisitor) VisitReturning(ret *Returning) error {
+	return ret.Accept(v.inner)
 }
 
 func (v walkVisitor) VisitBinary(binary *Binary) error {

@@ -49,6 +49,8 @@ type StmtVisitor interface {
 	VisitOrder(*Order) error
 	VisitLimit(*Limit) error
 	VisitOffset(*Offset) error
+
+	VisitReturning(*Returning) error
 }
 
 type ExprVisitor interface {
@@ -359,6 +361,10 @@ func (noopVisitor) VisitLimit(*Limit) error {
 }
 
 func (noopVisitor) VisitOffset(*Offset) error {
+	return nil
+}
+
+func (v noopVisitor) VisitReturning(*Returning) error {
 	return nil
 }
 

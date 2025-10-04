@@ -317,6 +317,14 @@ func TestNoStar(t *testing.T) {
 			Issues: 0,
 		},
 		{
+			Query:  "insert into foobar(id, name) values(default, 'foo') returning id",
+			Issues: 0,
+		},
+		{
+			Query:  "insert into foobar(id, name) values(default, 'foo') returning *",
+			Issues: 1,
+		},
+		{
 			Query:  "select * from foobar",
 			Issues: 1,
 		},

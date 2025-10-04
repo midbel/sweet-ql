@@ -40,7 +40,7 @@ func (r *Returning) Pos() token.Position {
 }
 
 func (r *Returning) Accept(visit Visitor) error {
-	return nil
+	return visit.VisitReturning(r)
 }
 
 func (r *Returning) Transform(tr Transformer) (Node, error) {

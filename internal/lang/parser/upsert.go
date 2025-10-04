@@ -294,9 +294,6 @@ func (p *Parser) ParseReturning() (ast.Node, error) {
 		Position: p.GetCurrPosition(),
 	}
 	p.Next()
-	if p.Is(token.Star) {
-		p.Next()
-	}
 	var list ast.List
 	for !p.Done() && !p.QueryEnds() {
 		expr, err := p.StartExpression()
@@ -304,10 +301,13 @@ func (p *Parser) ParseReturning() (ast.Node, error) {
 			return nil, err
 		}
 		list.Values = append(list.Values, expr)
-		if !p.Is(token.Comma) {
+		switch {
+		case p.Is(token.Comma):
+			p.Next()
+		case p.QueryEnds():
+		default:
 			return nil, p.Unexpected("returning", defaultReason)
 		}
-		p.Next()
 	}
 	ret.Node = &list
 	return ret, nil

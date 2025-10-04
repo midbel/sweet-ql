@@ -80,7 +80,7 @@ func TestCteShadow(t *testing.T) {
 	runTests(t, tests, CteShadow(Warning))
 }
 
-func TestCteNames(t *testing.T) {
+func TestCteExposedNames(t *testing.T) {
 	tests := []TestCase{
 		{
 			Query:  "with foo as (select * from foobar) select id, name from foo",
@@ -119,10 +119,10 @@ func TestCteNames(t *testing.T) {
 			Issues: 1,
 		},
 	}
-	runTests(t, tests, CteNames(Warning))
+	runTests(t, tests, CteExposedNames(Warning))
 }
 
-func TestCteExposedNames(t *testing.T) {
+func TestCteSameNames(t *testing.T) {
 	tests := []TestCase{
 		{
 			Query:  "with foo as (select id, name from foobar) select * from foo",
@@ -137,5 +137,5 @@ func TestCteExposedNames(t *testing.T) {
 			Issues: 1,
 		},
 	}
-	runTests(t, tests, CteExposedNames(Warning))
+	runTests(t, tests, CteSameNames(Warning))
 }

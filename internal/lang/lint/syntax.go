@@ -22,7 +22,19 @@ func NoStar(level Severity) Rule {
 }
 
 func (r *noStar) VisitSelect(stmt *ast.SelectStatement) error {
-	for _, c := range stmt.Columns {
+	return r.check(stmt.Columns)
+}
+
+func (r *noStar) VisitReturning(ret *ast.Returning) error {
+	i, ok := ret.Node.(*ast.List)
+	if !ok {
+		return fmt.Errorf("%s: unexpected query type", r.Name())
+	}
+	return r.check(i.Values)
+}
+
+func (r *noStar) check(values []ast.Node) error {
+	for _, c := range values {
 		n, ok := c.(*ast.Name)
 		if ok && n.All() {
 			err := r.Report(n, "avoid using * in select statement; prefer specifying columns name")

@@ -181,6 +181,7 @@ var ansi = [][]string{
 	{"recursive"},
 	{"materialized"},
 	{"return"},
+	{"returning"},
 	{"is"},
 	{"isnull"},
 	{"notnull"},

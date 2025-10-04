@@ -254,6 +254,10 @@ func (v *debugVisitor) VisitOffset(*Offset) error {
 	return nil
 }
 
+func (v *debugVisitor) VisitReturning(*Returning) error {
+	return nil
+}
+
 func (v *debugVisitor) VisitBinary(*Binary) error {
 	return nil
 }
