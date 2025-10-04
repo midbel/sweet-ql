@@ -140,6 +140,7 @@ func (p *Parser) ParseBody(done func() bool) (ast.Node, error) {
 }
 
 func (p *Parser) parseReturn() (ast.Node, error) {
+	p.Next()
 	var ret ast.Return
 	for !p.Done() && !p.Is(token.EOL) {
 		stmt, err := p.StartExpression()
