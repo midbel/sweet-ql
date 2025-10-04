@@ -962,3 +962,16 @@ func (r *stdOperator) VisitBinary(binary *ast.Binary) error {
 	}
 	return nil
 }
+
+type nestedCase struct {
+	ast.Visitor
+	*rule
+}
+
+func NestedCase(level Severity) Rule {
+	a := &nestedCase{
+		Visitor: ast.Noop(),
+	}
+	a.rule = stdRule(a, "nest-case", level)
+	return a
+}

@@ -5,17 +5,6 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
-func (p *Parser) ParseBegin() (ast.Node, error) {
-	p.Next()
-	stmt, err := p.ParseBody(func() bool {
-		return p.Done() || p.IsKeyword("END")
-	})
-	if err == nil {
-		p.Next()
-	}
-	return stmt, err
-}
-
 func (p *Parser) parseSetTransaction() (ast.Node, error) {
 	p.Next()
 	var (
