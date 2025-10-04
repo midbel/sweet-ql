@@ -32,6 +32,7 @@ const (
 	cteShadow             = "cte.shadow"
 	joinLiteral           = "join.literal"
 	joinUnused            = "join.unused"
+	joinTables            = "join.tables"
 	selectGrpbyDistinct   = "select.groupby.distinct"
 	selectGrpbyColumns    = "select.groupby.columns"
 	selectGrpbyPosition   = "select.groupby.position"
@@ -56,9 +57,11 @@ var supportedRules = map[string]func(Severity) Rule{
 	"self-compare":             SelfCompare,
 	"missing-where":            MissingWhere,
 	"order-with-offset":        OrderWithOffset,
+	"order-no-position":        NoPositionOrder,
 	"enforce-type":             EnforceType,
 	"enforce-fetch":            EnforceFetch,
 	"enforce-limit":            EnforceFetch,
+	"enforce-dir":              EnforceDir,
 	"columns-count":            ColumnsCount,
 	"columns-names":            ColumnsNames,
 	"set-offset-last":          SetOffsetFetchLast,
@@ -78,6 +81,7 @@ var supportedRules = map[string]func(Severity) Rule{
 	"recommand-use-quote":      RecommandedQuoted,
 	joinLiteral:                NoLiteralJoin,
 	joinUnused:                 JoinUnused,
+	joinTables:                 JoinTables,
 	selectGrpbyColumns:         GroupbyColumns,
 	selectGrpbyLiteral:         NoLiteralGroupby,
 	selectGrpbyPosition:        NoPositionGroupby,

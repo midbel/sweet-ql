@@ -543,6 +543,35 @@ func (r *noLiteralJoin) visitValue(value *ast.Value) error {
 	return r.Report(value, "avoid using literal values in join")
 }
 
+type tablesJoin struct {
+	ast.Visitor
+	*rule
+}
+
+func JoinTables(level Severity) Rule {
+	a := &tablesJoin{
+		Visitor: ast.Noop(),
+	}
+	a.rule = stdRule(a, joinTables, level)
+	return a
+}
+
+func (r *tablesJoin) VisitSelect(stmt *ast.SelectStatement) error {
+	if len(stmt.Tables) == 1 {
+		return nil
+	}
+	for _, t := range stmt.Tables[1:] {
+		_, ok := t.(*ast.Join)
+		if !ok {
+			err := r.Report(t, "expected join with tables")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // check that all join made in from clauses are used in other clauses of the query
 type unusedJoin struct {
 	ast.Visitor
@@ -560,6 +589,52 @@ func JoinUnused(level Severity) Rule {
 func (r *unusedJoin) VisitSelect(stmt *ast.SelectStatement) error {
 	if len(stmt.Tables) == 1 {
 		return nil
+	}
+	for _, t := range stmt.Tables[1:] {
+		j, ok := t.(*ast.Join)
+		if !ok {
+			return fmt.Errorf("join expected")
+		}
+		var err error
+		switch n := j.Table.(type) {
+		case *ast.Alias:
+			err = r.check(stmt, n.Identifier)
+		case *ast.Name:
+			x := len(n.Parts)
+			err = r.check(stmt, n.Parts[x-1])
+		default:
+			return fmt.Errorf("%s: unexpected query type", r.Name())
+		}
+		if err != nil {
+			err = r.Report(j, "join not used")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *unusedJoin) check(stmt *ast.SelectStatement, ident ast.Identifier) error {
+	var unused int
+	for _, c := range stmt.Columns {
+		if a, ok := c.(*ast.Alias); ok {
+			c = a.Node
+		}
+		n, ok := c.(*ast.Name)
+		if !ok {
+			continue
+		}
+		ok = false
+		for i := len(n.Parts) - 2; i >= 0 && !ok; i-- {
+			ok = n.Parts[i] == ident
+		}
+		if !ok {
+			unused++
+		}
+	}
+	if unused > 0 {
+		return fmt.Errorf("unused join")
 	}
 	return nil
 }
@@ -597,6 +672,70 @@ func (r *enforceFetch) VisitOffset(offset *ast.Offset) error {
 		return r.Report(offset, "use fetch clause to limit the number of results returned by the query")
 	}
 	return nil
+}
+
+type noPositionOrder struct {
+	ast.Visitor
+	*rule
+}
+
+func NoPositionOrder(level Severity) Rule {
+	a := &noPositionOrder{
+		Visitor: ast.Noop(),
+	}
+	a.rule = stdRule(a, "order-no-position", level)
+	return a
+}
+
+func (r *noPositionOrder) VisitSelect(stmt *ast.SelectStatement) error {
+	for _, n := range stmt.Orders {
+		o, ok := n.(*ast.Order)
+		if !ok {
+			return fmt.Errorf("%s: unexepcted order type", r.Name())
+		}
+		if v, ok := o.Node.(*ast.Value); ok && v.Number() {
+			err := r.Report(n, "prefer using field names in order by instead of position")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type enforceDir struct {
+	ast.Visitor
+	*rule
+}
+
+func EnforceDir(level Severity) Rule {
+	a := &enforceDir{
+		Visitor: ast.Noop(),
+	}
+	a.rule = stdRule(a, "enforce-direction", level)
+	return a
+}
+
+func (r *enforceDir) VisitSelect(stmt *ast.SelectStatement) error {
+	var (
+		count int
+		err   error
+		last  ast.Node
+	)
+	for _, n := range stmt.Orders {
+		o, ok := n.(*ast.Order)
+		if !ok {
+			return fmt.Errorf("%s: unexpected order type", r.Name())
+		}
+		if o.Dir == 0 {
+			last = n
+			count++
+		}
+	}
+	if count != len(stmt.Orders) {
+		err = r.Report(last, "always use direction in order by clause")
+	}
+	return err
 }
 
 // when using order by clause, specify offset fetch clause
