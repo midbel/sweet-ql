@@ -15,7 +15,7 @@ func NoReturning(level Severity) Rule {
 	a := &noReturning{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "no-returning", level)
+	a.rule = stdRule(a, upsertReturn, level)
 	return a
 }
 
@@ -48,7 +48,7 @@ func NoDefaultValue(level Severity) Rule {
 	a := &noDefaultValue{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "no-default", level)
+	a.rule = stdRule(a, upsertDefault, level)
 	return a
 }
 

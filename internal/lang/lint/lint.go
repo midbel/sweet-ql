@@ -38,6 +38,8 @@ const (
 	selectGrpbyLiteral    = "select.groupby.literal"
 	selectGrpbyAggregate  = "select.groupby.aggregate"
 	selectHavingAggregate = "select.having.aggregate"
+	upsertDefault         = "upsert.default"
+	upsertReturn          = "upsert.returning"
 )
 
 var supportedRules = map[string]func(Severity) Rule{
@@ -82,8 +84,8 @@ var supportedRules = map[string]func(Severity) Rule{
 	selectGrpbyDistinct:        GroupbyDistinct,
 	selectGrpbyAggregate:       GroupbyAggrFunc,
 	selectHavingAggregate:      HavingAggrFunc,
-	"no-returning":             NoReturning,
-	"no-default":               NoDefaultValue,
+	upsertReturn:               NoReturning,
+	upsertDefault:              NoDefaultValue,
 }
 
 func GetSupportedRules() []string {
