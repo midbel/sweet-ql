@@ -497,20 +497,20 @@ func (r *missingIdentQuoted) VisitAlias(alias *ast.Alias) error {
 	return nil
 }
 
-type unqualifiedName struct {
+type qualifiedName struct {
 	ast.Visitor
 	*rule
 }
 
-func UnqualifiedName(level Severity) Rule {
-	a := &unqualifiedName{
+func QualifiedName(level Severity) Rule {
+	a := &qualifiedName{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "unqualified-name", level)
+	a.rule = stdRule(a, identifierQualified, level)
 	return a
 }
 
-func (r *unqualifiedName) VisitName(name *ast.Name) error {
+func (r *qualifiedName) VisitName(name *ast.Name) error {
 	if len(name.Parts) == 1 {
 		return r.Report(name, "qualify an identifier with its table or alias to eliminate possible ambiguity")
 	}

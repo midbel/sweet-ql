@@ -188,39 +188,38 @@ func (r *shadowCte) VisitCte(cte *ast.CteStatement) error {
 	return cte.Node.Accept(walk)
 }
 
-type cteNames struct {
+type exposedNamesCte struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 
 	names map[string][]ast.Identifier
 }
 
 // Creates a Rule that checks if fields used in a SELECT clause are
 // exposed by a cte
-func CteNames(level Severity) Rule {
-	return &cteNames{
-		Visitor:  ast.Noop(),
-		severity: level,
-		names:    make(map[string][]ast.Identifier),
+func CteExposedNames(level Severity) Rule {
+	a := &exposedNamesCte{
+		Visitor: ast.Noop(),
+		names:   make(map[string][]ast.Identifier),
 	}
+	a.rule = stdRule(a, cteNames, level)
+	return a
 }
 
-func (_ *cteNames) Name() string {
-	return "cte-name"
-}
-
-func (r *cteNames) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
+func (r *exposedNamesCte) Verify(stmt ast.Node) ([]Issue, error) {
+	walk := ast.Walk(r)
+	if err := stmt.Accept(walk); err != nil {
+		if !errors.Is(err, ast.ErrStop) {
+			return nil, err
+		}
 	}
-	return r.issues, err
+	if len(r.names) == 0 {
+		return nil, nil
+	}
+	return r.rule.Verify(stmt)
 }
 
-func (r *cteNames) VisitCte(cte *ast.CteStatement) error {
+func (r *exposedNamesCte) VisitCte(cte *ast.CteStatement) error {
 	if len(cte.Columns) > 0 {
 		var all []ast.Identifier
 		for _, n := range cte.Columns {
@@ -262,7 +261,7 @@ func (r *cteNames) VisitCte(cte *ast.CteStatement) error {
 	return ast.ErrVisit
 }
 
-func (r *cteNames) VisitSelect(stmt *ast.SelectStatement) error {
+func (r *exposedNamesCte) VisitSelect(stmt *ast.SelectStatement) error {
 	var (
 		tables = r.getFieldsFromTables(stmt.Tables)
 		check  = func(n *ast.Name) error {
@@ -315,7 +314,7 @@ func (r *cteNames) VisitSelect(stmt *ast.SelectStatement) error {
 	return nil
 }
 
-func (r *cteNames) checkFromNames(n *ast.Name, tables map[string][]ast.Identifier) {
+func (r *exposedNamesCte) checkFromNames(n *ast.Name, tables map[string][]ast.Identifier) {
 	if n.All() {
 		return
 	}
@@ -337,7 +336,7 @@ func (r *cteNames) checkFromNames(n *ast.Name, tables map[string][]ast.Identifie
 	}
 }
 
-func (r *cteNames) checkFromAll(n *ast.Name) {
+func (r *exposedNamesCte) checkFromAll(n *ast.Name) {
 	if len(r.names) == 0 {
 		return
 	}
@@ -361,7 +360,7 @@ func (r *cteNames) checkFromAll(n *ast.Name) {
 	r.issues = append(r.issues, i)
 }
 
-func (r *cteNames) getFieldsFromTables(nodes []ast.Node) map[string][]ast.Identifier {
+func (r *exposedNamesCte) getFieldsFromTables(nodes []ast.Node) map[string][]ast.Identifier {
 	tables := make(map[string][]ast.Identifier)
 	for _, t := range nodes {
 		if j, ok := t.(*ast.Join); ok {
@@ -387,20 +386,22 @@ func (r *cteNames) getFieldsFromTables(nodes []ast.Node) map[string][]ast.Identi
 	return tables
 }
 
-type cteExposedNames struct {
+type sameNamesCte struct {
 	ast.Visitor
 	*rule
+
+	useSameName bool
 }
 
-func CteExposedNames(level Severity) Rule {
-	a := &cteExposedNames{
+func CteSameNames(level Severity) Rule {
+	a := &sameNamesCte{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "cte-exposed-name", level)
+	a.rule = stdRule(a, cteColumns, level)
 	return a
 }
 
-func (r *cteExposedNames) VisitCte(stmt *ast.CteStatement) error {
+func (r *sameNamesCte) VisitCte(stmt *ast.CteStatement) error {
 	if len(stmt.Columns) == 0 {
 		return nil
 	}
@@ -430,6 +431,9 @@ func (r *cteExposedNames) VisitCte(stmt *ast.CteStatement) error {
 			n, ok := c.(*ast.Name)
 			if !ok {
 				return ok
+			}
+			if r.useSameName {
+				return n.Parts[0] != id
 			}
 			return n.Parts[0] == id
 		})

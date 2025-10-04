@@ -16,6 +16,7 @@ const (
 	identifierNoStar      = "identifier.star"
 	identifierNoDuplicate = "identifier.duplicate"
 	identifierOnlyName    = "identifier.name"
+	identifierQualified   = "identifier.qualified"
 	aliasNoAlias          = "aliasing.alias"
 	aliasSelf             = "aliasing.self"
 	aliasMissing          = "aliasing.missing"
@@ -26,6 +27,8 @@ const (
 	cteSelect             = "cte.select"
 	cteNoCte              = "cte.nocte"
 	cteUnused             = "cte.unused"
+	cteNames              = "cte.names"
+	cteColumns            = "cte.columns"
 	cteShadow             = "cte.shadow"
 	joinLiteral           = "join.literal"
 	joinUnused            = "join.unused"
@@ -35,12 +38,12 @@ var supportedRules = map[string]func(Severity) Rule{
 	identifierNoStar:           NoStar,
 	identifierOnlyName:         OnlyName,
 	identifierNoDuplicate:      DuplicatedName,
-	"unqualified-name":         UnqualifiedName,
+	identifierQualified:        QualifiedName,
 	cteSelect:                  CteOnlySelect,
 	cteNoCte:                   NoCte,
 	cteUnused:                  CteUnused,
-	"cte-name":                 CteNames,
-	"cte-exposed-name":         CteExposedNames,
+	cteNames:                   CteExposedNames,
+	cteColumns:                 CteSameNames,
 	"std-operator":             StdOperator,
 	"self-compare":             SelfCompare,
 	"missing-where":            MissingWhere,
