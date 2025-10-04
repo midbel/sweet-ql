@@ -572,6 +572,29 @@ func (r *tablesJoin) VisitSelect(stmt *ast.SelectStatement) error {
 	return nil
 }
 
+type noUsingJoin struct {
+	ast.Visitor
+	*rule
+}
+
+func JoinNoUsing(level Severity) Rule {
+	a := &noUsingJoin{
+		Visitor: ast.Noop(),
+	}
+	a.rule = stdRule(a, "join.using", level)
+	return a
+}
+
+func (r *noUsingJoin) VisitJoin(join *ast.Join) error {
+	if join.Where == nil {
+		return fmt.Errorf("missing using/on on join")
+	}
+	if _, ok := join.Where.(*ast.List); ok {
+		return r.Report(join.Where, "prefer using on instead of using in join")
+	}
+	return nil
+}
+
 // check that all join made in from clauses are used in other clauses of the query
 type unusedJoin struct {
 	ast.Visitor
