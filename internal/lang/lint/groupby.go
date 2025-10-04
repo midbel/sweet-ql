@@ -16,7 +16,7 @@ func GroupbyColumns(level Severity) Rule {
 	a := &groupbyColumns{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "groupby-columns", level)
+	a.rule = stdRule(a, selectGrpbyColumns, level)
 	return a
 }
 
@@ -67,7 +67,7 @@ func GroupbyDistinct(level Severity) Rule {
 	a := &groupbyDistinct{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "groupby-distinct", level)
+	a.rule = stdRule(a, selectGrpbyDistinct, level)
 	return a
 }
 
@@ -102,7 +102,7 @@ func NoPositionGroupby(level Severity) Rule {
 	a := &noPositionGroupby{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "groupby-no-position", level)
+	a.rule = stdRule(a, selectGrpbyPosition, level)
 	return a
 }
 
@@ -127,7 +127,7 @@ func NoLiteralGroupby(level Severity) Rule {
 	a := &noLiteralGroupby{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "groupby-no-literal", level)
+	a.rule = stdRule(a, selectGrpbyLiteral, level)
 	return a
 }
 
@@ -153,7 +153,7 @@ func GroupbyAggrFunc(level Severity) Rule {
 	a := &groupbyAggrFunc{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "groupby-aggr-function", level)
+	a.rule = stdRule(a, selectGrpbyAggregate, level)
 	return a
 }
 
@@ -187,7 +187,7 @@ func HavingAggrFunc(level Severity) Rule {
 	a := &havingAggrFunc{
 		Visitor: ast.Noop(),
 	}
-	a.rule = stdRule(a, "groupby-having-aggr-function", level)
+	a.rule = stdRule(a, selectHavingAggregate, level)
 	return a
 }
 

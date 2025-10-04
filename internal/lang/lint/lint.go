@@ -32,6 +32,12 @@ const (
 	cteShadow             = "cte.shadow"
 	joinLiteral           = "join.literal"
 	joinUnused            = "join.unused"
+	selectGrpbyDistinct   = "select.groupby.distinct"
+	selectGrpbyColumns    = "select.groupby.columns"
+	selectGrpbyPosition   = "select.groupby.position"
+	selectGrpbyLiteral    = "select.groupby.literal"
+	selectGrpbyAggregate  = "select.groupby.aggregate"
+	selectHavingAggregate = "select.having.aggregate"
 )
 
 var supportedRules = map[string]func(Severity) Rule{
@@ -70,11 +76,12 @@ var supportedRules = map[string]func(Severity) Rule{
 	"recommand-use-quote":      RecommandedQuoted,
 	joinLiteral:                NoLiteralJoin,
 	joinUnused:                 JoinUnused,
-	"groupby-columns":          GroupbyColumns,
-	"no-literal-groupby":       NoLiteralGroupby,
-	"groupby-distinct":         GroupbyDistinct,
-	"grouby-aggr-func":         GroupbyAggrFunc,
-	"having-aggr-func":         HavingAggrFunc,
+	selectGrpbyColumns:         GroupbyColumns,
+	selectGrpbyLiteral:         NoLiteralGroupby,
+	selectGrpbyPosition:        NoPositionGroupby,
+	selectGrpbyDistinct:        GroupbyDistinct,
+	selectGrpbyAggregate:       GroupbyAggrFunc,
+	selectHavingAggregate:      HavingAggrFunc,
 	"no-returning":             NoReturning,
 	"no-default":               NoDefaultValue,
 }
