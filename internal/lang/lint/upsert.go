@@ -97,21 +97,36 @@ func UnconditionalMatch(level Severity) Rule {
 
 func (r *unconditionalMatch) VisitMerge(stmt *ast.MergeStatement) error {
 	var (
-		unconditional int
-		last          ast.Node
+		matched       int
+		lastMatched   ast.Node
+		noMatched     int
+		lastNoMatched ast.Node
 	)
 	for _, a := range stmt.Actions {
 		m, ok := a.(*ast.MatchStatement)
 		if !ok {
-			return fmt.Errorf("%s: unconditional query type", r.Name())
+			return fmt.Errorf("%s: unexpected query type", r.Name())
 		}
-		if m.Condition == nil {
-			unconditional++
-			last = m
+		switch m.Node.(type) {
+		case *ast.InsertStatement:
+			if m.Condition == nil {
+				noMatched++
+				lastNoMatched = m
+			}
+		case *ast.UpdateStatement, *ast.DeleteStatement:
+			if m.Condition == nil {
+				matched++
+				lastMatched = m
+			}
+		default:
+			return fmt.Errorf("%s: unexpected query type", r.Name())
 		}
 	}
-	if unconditional > 0 {
-		return r.Report(last, "one unconditional match allowed in merge statement")
+	if matched > 1 {
+		r.Report(lastMatched, "only one unconditional \"match\" allowed in merge statement")
+	}
+	if noMatched > 1 {
+		r.Report(lastNoMatched, "only one unconditional \"not match\" allowed in merge statement")
 	}
 	return nil
 }

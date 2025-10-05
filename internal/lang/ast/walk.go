@@ -379,8 +379,10 @@ func (v walkVisitor) VisitInsert(node *InsertStatement) error {
 	if err := node.Accept(v.inner); err != nil {
 		return doneVisiting(err)
 	}
-	if err := node.Table.Accept(v); err != nil {
-		return err
+	if node.Table != nil {
+		if err := node.Table.Accept(v); err != nil {
+			return err
+		}
 	}
 	for i := range node.Columns {
 		if err := node.Columns[i].Accept(v); err != nil {
@@ -402,8 +404,10 @@ func (v walkVisitor) VisitUpdate(node *UpdateStatement) error {
 	if err := node.Accept(v.inner); err != nil {
 		return doneVisiting(err)
 	}
-	if err := node.Table.Accept(v); err != nil {
-		return err
+	if node.Table != nil {
+		if err := node.Table.Accept(v); err != nil {
+			return err
+		}
 	}
 	for i := range node.List {
 		if err := node.List[i].Accept(v); err != nil {
@@ -423,8 +427,10 @@ func (v walkVisitor) VisitDelete(node *DeleteStatement) error {
 	if err := node.Accept(v.inner); err != nil {
 		return doneVisiting(err)
 	}
-	if err := node.Table.Accept(v); err != nil {
-		return err
+	if node.Table != nil {
+		if err := node.Table.Accept(v); err != nil {
+			return err
+		}
 	}
 	if node.Where != nil {
 		return node.Where.Accept(v)
@@ -466,12 +472,37 @@ func (v walkVisitor) VisitCte(node *CteStatement) error {
 	return node.Node.Accept(v)
 }
 
-func (v walkVisitor) VisitMerge(_ *MergeStatement) error {
+func (v walkVisitor) VisitMerge(node *MergeStatement) error {
+	if err := node.Accept(v.inner); err != nil {
+		return doneVisiting(err)
+	}
+	if err := node.Target.Accept(v); err != nil {
+		return err
+	}
+	if err := node.Source.Accept(v); err != nil {
+		return err
+	}
+	if err := node.Join.Accept(v); err != nil {
+		return err
+	}
+	for _, a := range node.Actions {
+		if err := a.Accept(v); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (v walkVisitor) VisitMatch(_ *MatchStatement) error {
-	return nil
+func (v walkVisitor) VisitMatch(node *MatchStatement) error {
+	if err := node.Accept(v.inner); err != nil {
+		return doneVisiting(err)
+	}
+	if node.Condition != nil {
+		if err := node.Condition.Accept(v); err != nil {
+			return err
+		}
+	}
+	return node.Node.Accept(v)
 }
 
 func (v walkVisitor) VisitCall(_ *CallStatement) error {

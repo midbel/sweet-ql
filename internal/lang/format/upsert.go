@@ -41,9 +41,9 @@ func (w *Writer) VisitUpdate(stmt *ast.UpdateStatement) error {
 	if stmt.Table != nil {
 		stmt.Table.Accept(w)
 		w.WriteBlank()
-		w.Enter()
-		defer w.Leave()
 	}
+	w.Enter()
+	defer w.Leave()
 	w.WriteKeyword("set")
 	w.WriteNL()
 	for i, n := range stmt.List {

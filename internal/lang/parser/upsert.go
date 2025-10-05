@@ -66,6 +66,7 @@ func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 	var (
 		stmt ast.Node
 		err  error
+		pos  = p.GetCurrPosition()
 	)
 	switch {
 	case p.IsKeyword("DELETE"):
@@ -73,6 +74,7 @@ func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 		stmt = &ast.MatchStatement{
 			Condition: cdt,
 			Node:      &ast.DeleteStatement{},
+			Position:  pos,
 		}
 	case p.IsKeyword("UPDATE"):
 		p.Next()
@@ -87,10 +89,14 @@ func (p *Parser) parseMergeMatched(cdt ast.Node) (ast.Node, error) {
 				return nil, err
 			}
 			upd.List = append(upd.List, s)
+			if p.Is(token.Comma) {
+				p.Next()
+			}
 		}
 		stmt = &ast.MatchStatement{
 			Condition: cdt,
 			Node:      &upd,
+			Position:  pos,
 		}
 	default:
 		err = p.Unexpected("matched", defaultReason)

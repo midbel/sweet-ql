@@ -7,16 +7,30 @@ import (
 func TestUnconditionalMatch(t *testing.T) {
 	tests := []TestCase{
 		{
-			Query:  "merge into foo f using bar b on f.id=b.id",
+			Query: `merge into foo f using bar b on f.id=b.id
+when matched then 
+	update set name = 'foobar'
+when not matched then 
+	insert(id, name) values (default, 'foobar')`,
 			Issues: 0,
 		},
 		{
-			Query:  "",
-			Issues: 1,
+			Query: `merge into foo f using bar b on f.id=b.id
+when matched then 
+	update set name = 'foobar'
+when matched and email = '' then 
+	update set email = 'noreply@foobar.org'	
+when not matched then 
+	insert(id, name) values (default, 'foobar')`,
+			Issues: 0,
 		},
 		{
-			Query:  "",
-			Issues: 2,
+			Query: `merge into foo f using bar b on f.id=b.id
+when matched then 
+	update set name = 'foobar'
+when matched then 
+	update set email = 'noreply@foobar.org'	`,
+			Issues: 1,
 		},
 	}
 	runTests(t, tests, UnconditionalMatch(Warning))
