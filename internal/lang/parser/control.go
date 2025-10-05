@@ -13,7 +13,10 @@ func (p *Parser) ParseBegin() (ast.Node, error) {
 	if err == nil {
 		p.Next()
 	}
-	return stmt, err
+	beg := &ast.Begin{
+		Node: stmt,
+	}
+	return beg, err
 }
 
 func (p *Parser) parseSet() (ast.Node, error) {

@@ -51,6 +51,7 @@ type StmtVisitor interface {
 	VisitOffset(*Offset) error
 
 	VisitReturning(*Returning) error
+	VisitBegin(*Begin) error
 }
 
 type ExprVisitor interface {
@@ -364,7 +365,11 @@ func (noopVisitor) VisitOffset(*Offset) error {
 	return nil
 }
 
-func (v noopVisitor) VisitReturning(*Returning) error {
+func (noopVisitor) VisitReturning(*Returning) error {
+	return nil
+}
+
+func (noopVisitor) VisitBegin(*Begin) error {
 	return nil
 }
 

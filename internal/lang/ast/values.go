@@ -7,6 +7,19 @@ import (
 	"github.com/midbel/sweet/internal/token"
 )
 
+type Begin struct {
+	token.Position
+	Node
+}
+
+func (b *Begin) Pos() token.Position {
+	return b.Position
+}
+
+func (b *Begin) Accept(visit Visitor) error {
+	return visit.VisitBegin(b)
+}
+
 type Body struct {
 	token.Position
 	Values []Node

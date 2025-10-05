@@ -4,6 +4,20 @@ import (
 	"github.com/midbel/sweet/internal/lang/ast"
 )
 
+func (w *Writer) VisitBegin(begin *ast.Begin) error {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("begin")
+	w.WriteNL()
+	if err := begin.Node.Accept(w); err != nil {
+		return err
+	}
+	w.WritePrefix()
+	w.WriteKeyword("end")
+	return nil
+}
+
 func (w *Writer) VisitIf(stmt *ast.If) error {
 	w.Enter()
 	defer w.Leave()
@@ -104,5 +118,22 @@ func (w *Writer) VisitCall(stmt *ast.CallStatement) error {
 		a.Accept(w)
 	}
 	w.WriteString(")")
+	return nil
+}
+
+func (w *Writer) VisitReturn(stmt *ast.Return) error {
+	w.Enter()
+	defer w.Leave()
+	w.WritePrefix()
+	w.WriteKeyword("return")
+	w.WriteBlank()
+	for i, v := range stmt.Values {
+		if i > 0 {
+			w.WriteComma()
+		}
+		if err := v.Accept(w); err != nil {
+			return err
+		}
+	}
 	return nil
 }

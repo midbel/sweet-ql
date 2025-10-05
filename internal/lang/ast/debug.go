@@ -258,6 +258,10 @@ func (v *debugVisitor) VisitReturning(*Returning) error {
 	return nil
 }
 
+func (v *debugVisitor) VisitBegin(*Begin) error {
+	return nil
+}
+
 func (v *debugVisitor) VisitBinary(*Binary) error {
 	return nil
 }

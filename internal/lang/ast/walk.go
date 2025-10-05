@@ -574,6 +574,10 @@ func (v walkVisitor) VisitReturning(ret *Returning) error {
 	return ret.Accept(v.inner)
 }
 
+func (v walkVisitor) VisitBegin(begin *Begin) error {
+	return begin.Accept(v.inner)
+}
+
 func (v walkVisitor) VisitBinary(binary *Binary) error {
 	if err := binary.Accept(v.inner); err != nil {
 		return doneVisiting(err)
