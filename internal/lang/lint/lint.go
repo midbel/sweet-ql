@@ -13,34 +13,35 @@ import (
 )
 
 const (
-	identifierNoStar      = "identifier.star"
-	identifierNoDuplicate = "identifier.duplicate"
-	identifierOnlyName    = "identifier.name"
-	identifierQualified   = "identifier.qualified"
-	aliasNoAlias          = "aliasing.alias"
-	aliasSelf             = "aliasing.self"
-	aliasMissing          = "aliasing.missing"
-	aliasInvalid          = "aliasing.invalid"
-	aliasUndefined        = "aliasing.undefined"
-	aliasUnused           = "aliasing.unused"
-	aliasRecommanded      = "aliasing.recommanded"
-	cteSelect             = "cte.select"
-	cteNoCte              = "cte.nocte"
-	cteUnused             = "cte.unused"
-	cteNames              = "cte.names"
-	cteColumns            = "cte.columns"
-	cteShadow             = "cte.shadow"
-	joinLiteral           = "join.literal"
-	joinUnused            = "join.unused"
-	joinTables            = "join.tables"
-	selectGrpbyDistinct   = "select.groupby.distinct"
-	selectGrpbyColumns    = "select.groupby.columns"
-	selectGrpbyPosition   = "select.groupby.position"
-	selectGrpbyLiteral    = "select.groupby.literal"
-	selectGrpbyAggregate  = "select.groupby.aggregate"
-	selectHavingAggregate = "select.having.aggregate"
-	upsertDefault         = "upsert.default"
-	upsertReturn          = "upsert.returning"
+	identifierNoStar         = "identifier.star"
+	identifierNoDuplicate    = "identifier.duplicate"
+	identifierOnlyName       = "identifier.name"
+	identifierQualified      = "identifier.qualified"
+	aliasNoAlias             = "aliasing.alias"
+	aliasSelf                = "aliasing.self"
+	aliasMissing             = "aliasing.missing"
+	aliasInvalid             = "aliasing.invalid"
+	aliasUndefined           = "aliasing.undefined"
+	aliasUnused              = "aliasing.unused"
+	aliasRecommanded         = "aliasing.recommanded"
+	cteSelect                = "cte.select"
+	cteNoCte                 = "cte.nocte"
+	cteUnused                = "cte.unused"
+	cteNames                 = "cte.names"
+	cteColumns               = "cte.columns"
+	cteShadow                = "cte.shadow"
+	joinLiteral              = "join.literal"
+	joinUnused               = "join.unused"
+	joinTables               = "join.tables"
+	selectGrpbyDistinct      = "select.groupby.distinct"
+	selectGrpbyColumns       = "select.groupby.columns"
+	selectGrpbyPosition      = "select.groupby.position"
+	selectGrpbyLiteral       = "select.groupby.literal"
+	selectGrpbyAggregate     = "select.groupby.aggregate"
+	selectHavingAggregate    = "select.having.aggregate"
+	upsertDefault            = "upsert.default"
+	upsertReturn             = "upsert.returning"
+	upsertMergeUnconditional = "upsert.merge.unconditional"
 )
 
 var supportedRules = map[string]func(Severity) Rule{
@@ -90,6 +91,7 @@ var supportedRules = map[string]func(Severity) Rule{
 	selectHavingAggregate:      HavingAggrFunc,
 	upsertReturn:               NoReturning,
 	upsertDefault:              NoDefaultValue,
+	upsertMergeUnconditional:   UnconditionalMatch,
 }
 
 func GetSupportedRules() []string {

@@ -4,6 +4,24 @@ import (
 	"testing"
 )
 
+func TestUnconditionalMatch(t *testing.T) {
+	tests := []TestCase{
+		{
+			Query:  "merge into foo f using bar b on f.id=b.id",
+			Issues: 0,
+		},
+		{
+			Query:  "",
+			Issues: 1,
+		},
+		{
+			Query:  "",
+			Issues: 2,
+		},
+	}
+	runTests(t, tests, UnconditionalMatch(Warning))
+}
+
 func TestNoReturning(t *testing.T) {
 	tests := []TestCase{
 		{

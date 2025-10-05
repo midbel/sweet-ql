@@ -40,20 +40,21 @@ func (w *Writer) VisitUpdate(stmt *ast.UpdateStatement) error {
 	w.WriteBlank()
 	if stmt.Table != nil {
 		stmt.Table.Accept(w)
-		w.WriteNL()
+		w.WriteBlank()
 		w.Enter()
 		defer w.Leave()
-		w.WritePrefix()
 	}
 	w.WriteKeyword("set")
-	w.WriteBlank()
+	w.WriteNL()
 	for i, n := range stmt.List {
 		if i > 0 {
 			w.WriteComma()
 			w.WriteNL()
-			w.WritePrefix()
 		}
-		n.Accept(w)
+		w.WritePrefix()
+		if err := n.Accept(w); err != nil {
+			return err
+		}
 	}
 	w.visitWhere(stmt.Where)
 	return nil

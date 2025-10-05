@@ -207,27 +207,31 @@ func (p *Parser) ParseUpdate() (ast.Node, error) {
 	if stmt.List, err = p.ParseUpdateSet(); err != nil {
 		return nil, err
 	}
-	if stmt.Where, err = p.ParseWhere(); err != nil {
-		return nil, err
+	if !p.QueryEnds() {
+		if stmt.Where, err = p.ParseWhere(); err != nil {
+			return nil, err
+		}
 	}
-	stmt.Returning, err = p.ParseReturning()
+	if !p.QueryEnds() {
+		stmt.Returning, err = p.ParseReturning()
+	}
 	return stmt, err
 }
 
 func (p *Parser) ParseUpdateSet() ([]ast.Node, error) {
 	var list []ast.Node
-	for !p.Done() && !p.Is(token.EOL) && !p.IsKeyword("WHERE") && !p.IsKeyword("FROM") && !p.IsKeyword("RETURNING") {
+	for !p.Done() && !p.QueryEnds() && !p.IsKeyword("WHERE") && !p.IsKeyword("RETURNING") {
 		stmt, err := p.parseAssignment()
 		if err != nil {
 			return nil, err
 		}
-		if p.Is(token.EOL) {
+		list = append(list, stmt)
+		if p.QueryEnds() {
 			break
 		}
 		if err := p.EnsureEnd("update", token.Comma, token.Keyword); err != nil {
 			return nil, err
 		}
-		list = append(list, stmt)
 	}
 	return list, nil
 }

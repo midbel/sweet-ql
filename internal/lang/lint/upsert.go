@@ -1,7 +1,7 @@
 package lint
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/midbel/sweet/internal/lang/ast"
 )
@@ -84,27 +84,34 @@ func (r *noDefaultValue) visitList(list ast.Node) error {
 // check that only one unconditional match in a merge statement is present
 type unconditionalMatch struct {
 	ast.Visitor
-	severity Severity
-	issues   []Issue
+	*rule
 }
 
 func UnconditionalMatch(level Severity) Rule {
-	return &unconditionalMatch{
-		Visitor:  ast.Noop(),
-		severity: level,
+	a := &unconditionalMatch{
+		Visitor: ast.Noop(),
 	}
+	a.rule = stdRule(a, upsertMergeUnconditional, level)
+	return a
 }
 
-func (_ *unconditionalMatch) Name() string {
-	return "merge-unconditional-match"
-}
-
-func (r *unconditionalMatch) Verify(stmt ast.Node) ([]Issue, error) {
-	r.issues = r.issues[:0]
-
-	err := stmt.Accept(ast.Walk(r))
-	if errors.Is(err, ast.ErrStop) {
-		err = nil
+func (r *unconditionalMatch) VisitMerge(stmt *ast.MergeStatement) error {
+	var (
+		unconditional int
+		last          ast.Node
+	)
+	for _, a := range stmt.Actions {
+		m, ok := a.(*ast.MatchStatement)
+		if !ok {
+			return fmt.Errorf("%s: unconditional query type", r.Name())
+		}
+		if m.Condition == nil {
+			unconditional++
+			last = m
+		}
 	}
-	return r.issues, err
+	if unconditional > 0 {
+		return r.Report(last, "one unconditional match allowed in merge statement")
+	}
+	return nil
 }
