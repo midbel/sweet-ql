@@ -155,8 +155,8 @@ var builtins = []Function{
 		NewArg("arg1", ast.TypeAny),
 		NewArg("arg2", ast.TypeAny),
 	)...),
-	variadicFunc("least", ast.TypeAny)
-	variadicFunc("greatest", ast.TypeAny)
+	variadicFunc("least", ast.TypeAny),
+	variadicFunc("greatest", ast.TypeAny),
 }
 
 func Func(ident string) (Function, error) {
