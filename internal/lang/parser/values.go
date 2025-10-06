@@ -211,7 +211,7 @@ func (p *Parser) ParseCast() (ast.Node, error) {
 		return nil, p.Unexpected("cast", keywordExpected("AS"))
 	}
 	p.Next()
-	if cast.Type, err = p.ParseType(); err != nil {
+	if cast.Target, err = p.ParseType(); err != nil {
 		return nil, err
 	}
 	if !p.Is(token.Rparen) {

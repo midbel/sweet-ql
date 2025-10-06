@@ -9,6 +9,11 @@ type Node interface {
 	Pos() token.Position
 }
 
+type TypedNode interface {
+	Node
+	Type() StaticType
+}
+
 type CommentedNode struct {
 	Node
 	Before []string
@@ -33,6 +38,10 @@ func (n *CommentedNode) Transform(tr Transformer) (Node, error) {
 type Returning struct {
 	token.Position
 	Node
+}
+
+func (r *Returning) Type() StaticType {
+	return getNodeType(r.Node)
 }
 
 func (r *Returning) Pos() token.Position {
@@ -265,6 +274,10 @@ type SelectStatement struct {
 	Limit    Node
 }
 
+func (s *SelectStatement) Type() StaticType {
+	return TypeSet
+}
+
 func (s *SelectStatement) Pos() token.Position {
 	return s.Position
 }
@@ -284,6 +297,10 @@ type UnionStatement struct {
 	Right    Node
 	All      bool
 	Distinct bool
+}
+
+func (s *UnionStatement) Type() StaticType {
+	return TypeSet
 }
 
 func (s *UnionStatement) Pos() token.Position {
@@ -307,6 +324,10 @@ type IntersectStatement struct {
 	Distinct bool
 }
 
+func (s *IntersectStatement) Type() StaticType {
+	return TypeSet
+}
+
 func (s *IntersectStatement) Pos() token.Position {
 	return s.Position
 }
@@ -328,6 +349,10 @@ type ExceptStatement struct {
 	Distinct bool
 }
 
+func (s *ExceptStatement) Type() StaticType {
+	return TypeSet
+}
+
 func (s *ExceptStatement) Pos() token.Position {
 	return s.Position
 }
@@ -345,6 +370,10 @@ type MatchStatement struct {
 
 	Condition Node
 	Node
+}
+
+func (s *MatchStatement) Type() StaticType {
+	return TypeVoid
 }
 
 func (s *MatchStatement) Pos() token.Position {
@@ -368,6 +397,10 @@ type MergeStatement struct {
 	Actions []Node
 }
 
+func (s *MergeStatement) Type() StaticType {
+	return TypeVoid
+}
+
 func (s *MergeStatement) Pos() token.Position {
 	return s.Position
 }
@@ -385,6 +418,10 @@ type Assignment struct {
 
 	Field Node
 	Value Node
+}
+
+func (a *Assignment) Type() StaticType {
+	return getNodeType(a.Value)
 }
 
 func (a *Assignment) Pos() token.Position {
@@ -409,6 +446,14 @@ type InsertStatement struct {
 	Returning Node
 }
 
+func (s *InsertStatement) Type() StaticType {
+	z := getNodeType(s.Returning)
+	if z == 0 {
+		return TypeVoid
+	}
+	return z
+}
+
 func (s *InsertStatement) Pos() token.Position {
 	return s.Position
 }
@@ -431,6 +476,14 @@ type UpdateStatement struct {
 	Returning Node
 }
 
+func (s *UpdateStatement) Type() StaticType {
+	z := getNodeType(s.Returning)
+	if z == 0 {
+		return TypeVoid
+	}
+	return z
+}
+
 func (s *UpdateStatement) Pos() token.Position {
 	return s.Position
 }
@@ -449,6 +502,10 @@ type TruncateStatement struct {
 	Tables   []Node
 	Cascade  CascadeMode
 	Identity IdentityMode
+}
+
+func (s *TruncateStatement) Type() StaticType {
+	return TypeVoid
 }
 
 func (s *TruncateStatement) Pos() token.Position {
@@ -472,6 +529,14 @@ type DeleteStatement struct {
 	Returning Node
 }
 
+func (s *DeleteStatement) Type() StaticType {
+	z := getNodeType(s.Returning)
+	if z == 0 {
+		return TypeVoid
+	}
+	return z
+}
+
 func (s *DeleteStatement) Pos() token.Position {
 	return s.Position
 }
@@ -489,6 +554,10 @@ type CallStatement struct {
 	Ident Node
 	Names []string
 	Args  []Node
+}
+
+func (s *CallStatement) Type() StaticType {
+	return TypeVoid
 }
 
 func (s *CallStatement) Pos() token.Position {

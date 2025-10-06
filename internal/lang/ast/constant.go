@@ -1,5 +1,7 @@
 package ast
 
+import "strings"
+
 type StaticType int16
 
 const (
@@ -10,10 +12,38 @@ const (
 	TypeInterval
 	TypeBool
 	TypeXml
+	TypeJson
 	TypeNull
 	TypeSet
-	TypeNode
+	TypeRow
+	TypeVoid
 )
+
+func getTypeFromNode(name string) StaticType {
+	switch strings.ToUpper(name) {
+	case "char", "varchar":
+		return TypeText
+	case "int", "integer", "double", "real":
+		return TypeNumber
+	case "date":
+		return TypeDate
+	case "bool", "boolean":
+		return TypeBool
+	default:
+		return TypeAny
+	}
+}
+
+func getNodeType(node Node) StaticType {
+	if node == nil {
+		return 0
+	}
+	t, ok := node.(TypedNode)
+	if ok {
+		return t.Type()
+	}
+	return 0
+}
 
 type OrderDir uint8
 

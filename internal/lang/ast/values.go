@@ -75,7 +75,11 @@ type Cast struct {
 	token.Position
 
 	Node
-	Type Type
+	Target Type
+}
+
+func (c *Cast) Type() StaticType {
+	return c.Target.Type()
 }
 
 func (c *Cast) Pos() token.Position {
@@ -98,6 +102,10 @@ type Type struct {
 	Precision int
 }
 
+func (t *Type) Type() StaticType {
+	return TypeAny
+}
+
 func (t *Type) Pos() token.Position {
 	return t.Position
 }
@@ -105,6 +113,10 @@ func (t *Type) Pos() token.Position {
 type Not struct {
 	token.Position
 	Node
+}
+
+func (n *Not) Type() StaticType {
+	return TypeBool
 }
 
 func (n *Not) Pos() token.Position {
@@ -140,6 +152,10 @@ func (c *Collate) Transform(tr Transformer) (Node, error) {
 type Exists struct {
 	token.Position
 	Node
+}
+
+func (e *Exists) Type() StaticType {
+	return TypeBool
 }
 
 func (e *Exists) Pos() token.Position {
@@ -188,6 +204,10 @@ type Row struct {
 	Values []Node
 }
 
+func (r *Row) Type() StaticType {
+	return TypeRow
+}
+
 func (r *Row) Pos() token.Position {
 	return r.Position
 }
@@ -204,6 +224,10 @@ type Unary struct {
 	token.Position
 	Right Node
 	Op    string
+}
+
+func (u *Unary) Type() StaticType {
+	return getNodeType(u.Right)
 }
 
 func (u *Unary) Pos() token.Position {
@@ -223,6 +247,10 @@ type Binary struct {
 	Left  Node
 	Right Node
 	Op    string
+}
+
+func (b *Binary) Type() StaticType {
+	return TypeAny
 }
 
 func (b *Binary) Pos() token.Position {
@@ -250,6 +278,10 @@ type All struct {
 	Node
 }
 
+func (a *All) Type() StaticType {
+	return TypeBool
+}
+
 func (a *All) Pos() token.Position {
 	return a.Position
 }
@@ -265,6 +297,10 @@ func (a *All) Transform(tr Transformer) (Node, error) {
 type Any struct {
 	token.Position
 	Node
+}
+
+func (a *Any) Type() StaticType {
+	return TypeBool
 }
 
 func (a *Any) Pos() token.Position {
@@ -285,6 +321,10 @@ type Is struct {
 	Value Node
 }
 
+func (i *Is) Type() StaticType {
+	return TypeBool
+}
+
 func (i *Is) Pos() token.Position {
 	return i.Position
 }
@@ -301,6 +341,10 @@ type In struct {
 	token.Position
 	Ident Node
 	Value Node
+}
+
+func (i *In) Type() StaticType {
+	return TypeBool
 }
 
 func (i *In) Pos() token.Position {
@@ -322,6 +366,10 @@ type Between struct {
 	Upper Node
 }
 
+func (b *Between) Type() StaticType {
+	return TypeBool
+}
+
 func (b *Between) Pos() token.Position {
 	return b.Position
 }
@@ -337,6 +385,10 @@ func (b *Between) Transform(tr Transformer) (Node, error) {
 type Placeholder struct {
 	token.Position
 	Node
+}
+
+func (p *Placeholder) Type() StaticType {
+	return TypeAny
 }
 
 func (p *Placeholder) Pos() token.Position {
@@ -378,6 +430,9 @@ func (v *Value) Type() StaticType {
 	if v.Number() {
 		return TypeNumber
 	}
+	if v.Default() {
+		return TypeAny
+	}
 	return TypeText
 }
 
@@ -415,6 +470,10 @@ type Alias struct {
 	Node
 	Identifier
 	Columns []Node
+}
+
+func (a *Alias) Type() StaticType {
+	return getNodeType(a.Node)
 }
 
 func (a *Alias) Pos() token.Position {

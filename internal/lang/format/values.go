@@ -233,7 +233,7 @@ func (w *Writer) VisitCast(cast *ast.Cast) error {
 	w.WriteBlank()
 	w.WriteKeyword("as")
 	w.WriteBlank()
-	w.visitType(cast.Type)
+	w.visitType(cast.Target)
 	w.WriteString(")")
 	return nil
 }
