@@ -8,6 +8,7 @@ const (
 	TypeAny StaticType = 1 << iota
 	TypeNumber
 	TypeText
+	TypeBin
 	TypeDate
 	TypeInterval
 	TypeBool
@@ -19,23 +20,69 @@ const (
 	TypeVoid
 )
 
-func getTypeFromBinary(left, right StaticType) StaticType {
-	if left == right {
-		return left
+func (t StaticType) String() string {
+	var str string
+	switch t {
+	case TypeAny:
+		str = "any"
+	case TypeNumber:
+		str = "number"
+	case TypeText:
+		str = "text"
+	case TypeBin:
+		str = "bin"
+	case TypeDate:
+		str = "date"
+	case TypeInterval:
+		str = "interval"
+	case TypeBool:
+		str = "bool"
+	case TypeXml:
+		str = "xml"
+	case TypeJson:
+		str = "json"
+	case TypeNull:
+		str = "null"
+	case TypeSet:
+		str = "set"
+	case TypeRow:
+		str = "row"
+	case TypeVoid:
+		str = "void"
+	}
+	return str
+}
+
+func (t StaticType) IsCompatible(other StaticType) bool {
+	if t == TypeAny {
+		return true
+	}
+	return t == other
+}
+
+func getTypeFromBinary(left, right Node) StaticType {
+	if t := getNodeType(left); t == getNodeType(right) {
+		return t
 	}
 	return TypeAny
 }
 
-func getTypeFromNode(name string) StaticType {
+func getTypeFromName(name string) StaticType {
 	switch strings.ToUpper(name) {
-	case "char", "varchar":
+	case "CHAR", "VARCHAR", "CLOB":
 		return TypeText
-	case "int", "integer", "double", "real":
+	case "BLOB":
+		return TypeBin
+	case "INT", "INTEGER", "DOUBLE", "REAL":
 		return TypeNumber
-	case "date":
+	case "DATE", "TIME":
 		return TypeDate
-	case "bool", "boolean":
+	case "INTERVAL":
+		return TypeInterval
+	case "BOOL", "BOOLEAN":
 		return TypeBool
+	case "ROW":
+		return TypeRow
 	default:
 		return TypeAny
 	}

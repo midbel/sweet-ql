@@ -502,6 +502,10 @@ type Name struct {
 	Parts []Identifier
 }
 
+func (n *Name) Type() StaticType {
+	return TypeAny
+}
+
 func (n *Name) Pos() token.Position {
 	return n.Position
 }
