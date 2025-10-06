@@ -250,7 +250,7 @@ type Binary struct {
 }
 
 func (b *Binary) Type() StaticType {
-	return TypeAny
+	return getTypeFromBinary(b.Left, b.Right)
 }
 
 func (b *Binary) Pos() token.Position {

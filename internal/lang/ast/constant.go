@@ -19,6 +19,13 @@ const (
 	TypeVoid
 )
 
+func getTypeFromBinary(left, right StaticType) StaticType {
+	if left == right {
+		return left
+	}
+	return TypeAny
+}
+
 func getTypeFromNode(name string) StaticType {
 	switch strings.ToUpper(name) {
 	case "char", "varchar":
