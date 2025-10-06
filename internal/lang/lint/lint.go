@@ -42,9 +42,13 @@ const (
 	upsertDefault            = "upsert.default"
 	upsertReturn             = "upsert.returning"
 	upsertMergeUnconditional = "upsert.merge.unconditional"
+	funcArity                = "function.arguments.arity"
+	funcTypes                = "function.arguments.types"
+	funcCheck                = "functions.check"
 )
 
 var supportedRules = map[string]func(Severity) Rule{
+	funcCheck:                  CheckFunc,
 	identifierNoStar:           NoStar,
 	identifierOnlyName:         OnlyName,
 	identifierNoDuplicate:      DuplicatedName,

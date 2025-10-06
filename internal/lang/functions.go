@@ -1,6 +1,7 @@
 package lang
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -160,8 +161,14 @@ var builtins = []Function{
 }
 
 func Func(ident string) (Function, error) {
-	var fn Function
-	return fn, nil
+	ix := slices.IndexFunc(builtins, func(fn Function) bool {
+		return strings.ToUpper(fn.Name) == strings.ToUpper(ident)
+	})
+	if ix < 0 {
+		var fn Function
+		return fn, fmt.Errorf("%s not a builtin function", ident)
+	}
+	return builtins[ix], nil
 }
 
 func IsBuiltinFunc(ident string) bool {
