@@ -54,7 +54,7 @@ func (t StaticType) String() string {
 }
 
 func (t StaticType) IsCompatible(other StaticType) bool {
-	if t == TypeAny {
+	if t == TypeAny || other == TypeAny {
 		return true
 	}
 	return t == other

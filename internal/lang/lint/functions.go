@@ -29,5 +29,21 @@ func (r *checkFunc) VisitCallFunc(call *ast.Call) error {
 			return err
 		}
 	}
+	for i, a := range fn.Args {
+		t, ok := call.Args[i].(ast.TypedNode)
+		if !ok {
+			err := r.Report(call.Args[i], "sql clause without type")
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		if !a.Type.IsCompatible(t.Type()) {
+			err := r.Report(call.Args[i], "incompatible type")
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
