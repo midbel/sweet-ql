@@ -59,6 +59,10 @@ type Group struct {
 	Node
 }
 
+func (g *Group) Type() StaticType {
+	return getNodeType(g.Node)
+}
+
 func (g *Group) Pos() token.Position {
 	return g.Position
 }
