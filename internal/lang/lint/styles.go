@@ -62,8 +62,3 @@ func (r *caseIdent) VisitCallFunc(call *ast.Call) error {
 	}
 	return nil
 }
-
-type caseConstant struct {
-	ast.Visitor
-	*rule
-}
