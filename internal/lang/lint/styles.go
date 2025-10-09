@@ -33,32 +33,24 @@ func UpperIdent(level Severity) Rule {
 
 func (r *caseIdent) VisitName(name *ast.Name) error {
 	for _, i := range name.Parts {
-		if i.Name != r.transform(i.Name) {
-			err := r.Report(name, "invalid identifier case")
-			if err != nil {
-				return err
-			}
+		if err := r.check(i.Name); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
 func (r *caseIdent) VisitAlias(alias *ast.Alias) error {
-	if alias.Name != r.transform(alias.Name) {
-		err := r.Report(alias, "invalid identifier case")
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return r.check(alias.Name)
 }
 
 func (r *caseIdent) VisitCallFunc(call *ast.Call) error {
-	if ident := call.GetIdent(); ident != r.transform(ident) {
-		err := r.Report(call, "invalid identifier case")
-		if err != nil {
-			return err
-		}
+	return r.check(call.GetIdent())
+}
+
+func (r *caseIdent) check(name string) error {
+	if name == r.transform(name) {
+		return nil
 	}
-	return nil
+	return r.Report(call, "invalid identifier case")
 }
