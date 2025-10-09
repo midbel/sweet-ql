@@ -17,6 +17,8 @@ const (
 	identifierNoDuplicate    = "identifier.duplicate"
 	identifierOnlyName       = "identifier.name"
 	identifierQualified      = "identifier.qualified"
+	styleIdentLower          = "style.identifier.lowercase"
+	styleIdentUpper          = "style.identifier.uppercase"
 	aliasNoAlias             = "aliasing.alias"
 	aliasSelf                = "aliasing.self"
 	aliasMissing             = "aliasing.missing"
@@ -48,6 +50,8 @@ const (
 )
 
 var supportedRules = map[string]func(Severity) Rule{
+	styleIdentLower:            LowerIdent,
+	styleIdentUpper:            UpperIdent,
 	funcCheck:                  CheckFunc,
 	identifierNoStar:           NoStar,
 	identifierOnlyName:         OnlyName,
